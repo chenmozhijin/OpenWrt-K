@@ -52,7 +52,7 @@ jobs:
           cat ./config/other.config >> /workdir/openwrt/.config
           cat ./config/kmod.config >> /workdir/openwrt/.config
           cat ./config/image.config >> /workdir/openwrt/.config
-          cd ./workdir/openwrt/
+          cd /workdir/openwrt/
           ls
 
       - name: defconfig
