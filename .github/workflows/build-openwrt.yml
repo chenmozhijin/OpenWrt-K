@@ -223,28 +223,25 @@ jobs:
       - name: Prepare artifact
         working-directory: /workdir/openwrt
         run: |
-          mkdir -p ./artifact/package
-          mkdir -p ./artifact/buildinfo
-          rm -rf $(find ./bin/targets/ -type d -name "packages")
-          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
-          cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
+          mkdir -p /workdir/openwrt/artifact/package
+          mkdir -p /workdir/openwrt/artifact/buildinfo
+          rm -rf $(find /workdir/openwrt/bin/targets/ -type d -name "packages")
+          cp -rf $(find /workdir/openwrt/bin/packages/ -type f -name "*.ipk") /workdir/openwrt/artifact/package/
+          cp -rf $(find /workdir/openwrt/bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") /workdir/openwrt/artifact/buildinfo/
       - name: Upload buildinfo
-        working-directory: /workdir/openwrt
         uses: actions/upload-artifact@v3
         with:
           name: OpenWrt_buildinfo
-          path: ./artifact/buildinfo/
+          path: /workdir/openwrt/artifact/buildinfo/
 
       - name: Upload package
-        working-directory: /workdir/openwrt
         uses: actions/upload-artifact@v3
         with:
           name: OpenWrt_package
-          path: ./artifact/package/
+          path: /workdir/openwrt/artifact/package/
 
       - name: Upload firmware
-        working-directory: /workdir/openwrt
         uses: actions/upload-artifact@v3
         with:
           name: OpenWrt_firmware
-          path: ./bin/targets/
+          path: /workdir/openwrt/bin/targets/
