@@ -1,0 +1,103 @@
+
+config global
+	option socks_enabled '0'
+	option dns_mode 'dns2tcp'
+	option localhost_tcp_proxy_mode 'default'
+	option localhost_udp_proxy_mode 'default'
+	option close_log_tcp '0'
+	option close_log_udp '0'
+	option trojan_loglevel '4'
+	option tcp_proxy_mode 'gfwlist'
+	option loglevel 'info'
+	option tcp_node_socks_port '1070'
+	option remote_dns '127.0.0.1:1745'
+	option udp_proxy_mode 'gfwlist'
+	option udp_node 'tcp'
+	option tcp_node 'nil'
+	option enabled '0'
+
+config global_haproxy
+	option balancing_enable '0'
+
+config global_delay
+	option auto_on '0'
+	option start_daemon '1'
+	option start_delay '1'
+
+config global_forwarding
+	option tcp_no_redir_ports 'disable'
+	option udp_no_redir_ports 'disable'
+	option tcp_proxy_drop_ports 'disable'
+	option udp_proxy_drop_ports '80,443'
+	option tcp_redir_ports '22,25,53,143,465,587,853,993,995,80,443'
+	option udp_redir_ports '1:65535'
+	option use_nft '0'
+	option tcp_proxy_way 'redirect'
+	option ipv6_tproxy '0'
+	option sniffing '1'
+	option route_only '0'
+	option accept_icmp '0'
+
+config global_other
+	option nodes_ping 'auto_ping tcping info'
+
+config global_rules
+	option gfwlist_update '1'
+	list chnroute6_url 'https://ispip.clang.cn/all_cn_ipv6.txt'
+	list chnroute6_url 'https://fastly.jsdelivr.net/gh/gaoyifan/china-operator-ip@ip-lists/china6.txt'
+	option v2ray_location_asset '/usr/share/v2ray/'
+	option auto_update '1'
+	option time_update '0'
+	list chnroute_url 'https://ispip.clang.cn/all_cn.txt'
+	list chnroute_url 'https://fastly.jsdelivr.net/gh/gaoyifan/china-operator-ip@ip-lists/china.txt'
+	list chnroute_url 'https://ispip.clang.cn/all_cn_cidr.txt'
+	list chnroute_url 'https://fastly.jsdelivr.net/gh/soffchen/GeoIP2-CN@release/CN-ip-cidr.txt'
+	list chnroute_url 'https://fastly.jsdelivr.net/gh/Hackl0us/GeoIP2-CN@release/CN-ip-cidr.txt'
+	list chnlist_url 'https://fastly.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf'
+	list chnlist_url 'https://fastly.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/apple.china.conf'
+	list chnlist_url 'https://fastly.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/google.china.conf'
+	list chnlist_url 'https://fastly.jsdelivr.net/gh/felixonmars/dnsmasq-china-list/accelerated-domains.china.conf'
+	option week_update '7'
+	list gfwlist_url 'https://fastly.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/gfw.txt'
+	list gfwlist_url 'https://fastly.jsdelivr.net/gh/YW5vbnltb3Vz/domain-list-community@release/gfwlist.txt'
+	list gfwlist_url 'https://fastly.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
+	option geoip_update '0'
+	option geosite_update '0'
+	option chnroute_update '0'
+	option chnroute6_update '0'
+	option chnlist_update '0'
+
+config global_app
+	option v2ray_file '/usr/bin/v2ray'
+	option xray_file '/usr/bin/xray'
+	option trojan_go_file '/usr/bin/trojan-go'
+	option brook_file '/usr/bin/brook'
+	option hysteria_file '/usr/bin/hysteria'
+
+config global_subscribe
+	option filter_keyword_mode '1'
+	option subscribe_proxy '1'
+	option trojan_type 'trojan-plus'
+	list filter_discard_list '过期时间'
+	list filter_discard_list '剩余流量'
+	list filter_discard_list 'QQ群'
+	list filter_discard_list '官网'
+	list filter_discard_list '导航'
+	option ss_aead_type 'shadowsocks-rust'
+
+config auto_switch
+	option retry_num '3'
+	option shunt_logic '1'
+	option connect_timeout '1'
+	option restore_switch '1'
+	option testing_time '1'
+	option enable '1'
+
+config shunt_rules 'AD'
+	option remarks 'AD'
+	option domain_list 'geosite:category-ads-all'
+
+config shunt_rules 'BT'
+	option remarks 'BT'
+	option protocol 'bittorrent'
+

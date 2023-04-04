@@ -1,0 +1,229 @@
+bind_host: 0.0.0.0
+bind_port: 3000
+users:
+  - name: root
+    password: $2y$10$A4Uk1jWYhpj8GJawJeNF4ukA2aW55u/SEcgzd9MVl342RVZWrVDeO
+auth_attempts: 5
+block_auth_min: 15
+http_proxy: ""
+language: zh-cn
+theme: auto
+debug_pprof: false
+web_session_ttl: 720
+dns:
+  bind_hosts:
+    - 0.0.0.0
+  port: 1745
+  anonymize_client_ip: false
+  protection_enabled: true
+  blocking_mode: default
+  blocking_ipv4: ""
+  blocking_ipv6: ""
+  blocked_response_ttl: 60
+  parental_block_host: family-block.dns.adguard.com
+  safebrowsing_block_host: standard-block.dns.adguard.com
+  ratelimit: 0
+  ratelimit_whitelist: []
+  refuse_any: false
+  upstream_dns:
+    - 223.5.5.5
+  upstream_dns_file: /etc/AdGuardHome-dnslist(by cmzj).yaml
+  bootstrap_dns:
+    - 119.29.29.29
+    - 223.5.5.5
+    - 144.144.144.144
+    - 101.6.6.6
+    - 119.29.29.29
+    - 101.226.4.6
+    - 180.76.76.76
+  all_servers: false
+  fastest_addr: false
+  fastest_timeout: 1s
+  allowed_clients: []
+  disallowed_clients: []
+  blocked_hosts:
+    - version.bind
+    - id.server
+    - hostname.bind
+  trusted_proxies:
+    - 127.0.0.0/8
+    - ::1/128
+  cache_size: 0
+  cache_ttl_min: 0
+  cache_ttl_max: 0
+  cache_optimistic: false
+  bogus_nxdomain: []
+  aaaa_disabled: false
+  enable_dnssec: false
+  edns_client_subnet:
+    custom_ip: ""
+    enabled: false
+    use_custom: false
+  max_goroutines: 300
+  handle_ddr: true
+  ipset: []
+  ipset_file: ""
+  filtering_enabled: true
+  filters_update_interval: 24
+  parental_enabled: false
+  safesearch_enabled: false
+  safebrowsing_enabled: false
+  safebrowsing_cache_size: 1048576
+  safesearch_cache_size: 1048576
+  parental_cache_size: 1048576
+  cache_time: 30
+  rewrites: []
+  blocked_services: []
+  upstream_timeout: 10s
+  private_networks: []
+  use_private_ptr_resolvers: true
+  local_ptr_upstreams: []
+  use_dns64: false
+  dns64_prefixes: []
+  serve_http3: false
+  use_http3_upstreams: false
+tls:
+  enabled: false
+  server_name: ""
+  force_https: false
+  port_https: 443
+  port_dns_over_tls: 853
+  port_dns_over_quic: 784
+  port_dnscrypt: 0
+  dnscrypt_config_file: ""
+  allow_unencrypted_doh: false
+  certificate_chain: ""
+  private_key: ""
+  certificate_path: ""
+  private_key_path: ""
+  strict_sni_check: false
+querylog:
+  enabled: true
+  file_enabled: true
+  interval: 6h
+  size_memory: 1000
+  ignored: []
+statistics:
+  enabled: true
+  interval: 30
+  ignored: []
+filters:
+  - enabled: true
+    url: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
+    name: AdGuard DNS filter
+    id: 1628750870
+  - enabled: true
+    url: https://anti-ad.net/easylist.txt
+    name: anti-AD
+    id: 1628750871
+  - enabled: true
+    url: https://easylist-downloads.adblockplus.org/easylist.txt
+    name: EasyList
+    id: 1677875715
+  - enabled: true
+    url: https://easylist-downloads.adblockplus.org/easylistchina.txt
+    name: EasylistChina
+    id: 1677875716
+  - enabled: true
+    url: https://cdn.jsdelivr.net/gh/cjx82630/cjxlist@master/cjx-annoyance.txt
+    name: CJX'sAnnoyanceList
+    id: 1677875717
+  - enabled: true
+    url: https://cdn.jsdelivr.net/gh/zsakvo/AdGuard-Custom-Rule@master/rule/zhihu-strict.txt
+    name: 移除知乎部分广告
+    id: 1677875718
+  - enabled: true
+    url: https://gist.githubusercontent.com/Ewpratten/a25ae63a7200c02c850fede2f32453cf/raw/b9318009399b99e822515d388b8458557d828c37/hosts-yt-ads
+    name: Youtube去广告
+    id: 1677875720
+  - enabled: true
+    url: https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt
+    name: Adbyby-lazy
+    id: 1677875721
+  - enabled: true
+    url: https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt
+    name: Adbyby-video
+    id: 1677875722
+  - enabled: true
+    url: https://raw.githubusercontent.com/banbendalao/ADgk/master/ADgk.txt
+    name: ADgk
+    id: 1677875724
+  - enabled: true
+    url: https://www.i-dont-care-about-cookies.eu/abp/
+    name: I don't care about cookies
+    id: 1677875725
+  - enabled: true
+    url: https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts
+    name: 大圣净化 - 针对国内视频网站
+    id: 1677875726
+  - enabled: true
+    url: https://raw.githubusercontent.com/Goooler/1024_hosts/master/hosts
+    name: 1024_hosts - 1024网站和澳门皇家赌场
+    id: 1677875727
+  - enabled: true
+    url: https://winhelp2002.mvps.org/hosts.txt
+    name: Mvps - 屏蔽美欧地区英文网站相关的广告
+    id: 1677875728
+whitelist_filters:
+  - enabled: true
+    url: https://cdn.jsdelivr.net/gh/hl2guide/Filterlist-for-AdGuard@master/filter_whitelist.txt
+    name: hl2guideFilterlist-for-AdGuard
+    id: 1677875733
+  - enabled: true
+    url: https://cdn.jsdelivr.net/gh/hg1978/AdGuard-Home-Whitelist@master/whitelist.txt
+    name: hg1978/AdGuard-Home-Whitelist
+    id: 1677875734
+  - enabled: true
+    url: https://cdn.jsdelivr.net/gh/mmotti/adguard-home-filters@master/whitelist.txt
+    name: mmotti/adguard-home-filters
+    id: 1677875735
+  - enabled: true
+    url: https://cdn.jsdelivr.net/gh/liwenjie119/adg-rules@master/white.txt
+    name: LWJ'swhitelist
+    id: 1677875737
+  - enabled: true
+    url: https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt
+    name: JamesDamp/Personal-Whitelist
+    id: 1677875739
+  - enabled: true
+    url: https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt
+    name: scarletbane/AdGuard-Home-Whitelist
+    id: 1677875740
+user_rules: []
+dhcp:
+  enabled: false
+  interface_name: ""
+  local_domain_name: lan
+  dhcpv4:
+    gateway_ip: ""
+    subnet_mask: ""
+    range_start: ""
+    range_end: ""
+    lease_duration: 86400
+    icmp_timeout_msec: 1000
+    options: []
+  dhcpv6:
+    range_start: ""
+    lease_duration: 86400
+    ra_slaac_only: false
+    ra_allow_slaac: false
+clients:
+  runtime_sources:
+    whois: true
+    arp: true
+    rdns: true
+    dhcp: true
+    hosts: true
+  persistent: []
+log_file: ""
+log_max_backups: 0
+log_max_size: 100
+log_max_age: 3
+log_compress: false
+log_localtime: false
+verbose: false
+os:
+  group: ""
+  user: ""
+  rlimit_nofile: 0
+schema_version: 17

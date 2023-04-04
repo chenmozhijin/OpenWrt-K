@@ -1,0 +1,9 @@
+#!/bin/sh
+sed -i 's_downloads.openwrt.org_mirrors.tuna.tsinghua.edu.cn/openwrt_' /etc/opkg/distfeeds.conf
+sed -i 's/setting")/netdata")/' /usr/lib/lua/luci/controller/netdata.lua
+sed -i "/^DISTRIB_DESCRIPTION/s/'/CMZJ/g" /etc/openwrt_release
+sed -i "/^DISTRIB_DESCRIPTION/s/DISTRIB_DESCRIPTION=CMZJO/DISTRIB_DESCRIPTION='O/g" /etc/openwrt_release
+sed -i "/^DISTRIB_DESCRIPTION/s/CMZJ/ Compiled by 沉默の金'/g" /etc/openwrt_release
+chmod 755 /etc/init.d/netdata
+chmod 755 /usr/bin/AdGuardHome/AdGuardHome
+exit 0
