@@ -184,31 +184,69 @@ jobs:
           unzip $WORKINGDIR/${LUCIBRANCH}.zip -d $WORKINGDIR
           mv $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}/* $WORKINGDIR/
           rmdir $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}
-         rm $WORKINGDIR/${LUCIBRANCH}.zip
+          rm $WORKINGDIR/${LUCIBRANCH}.zip
       
-        - name: Update feeds
-          working-directory: /workdir/openwrt
-          run: |
-            ./scripts/feeds update -a
-            ./scripts/feeds install -a
+      - name: Update feeds
+        working-directory: /workdir/openwrt
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
 
-        - name: Generate configuration file
-          working-directory: /workdir/openwrt
-          run: make defconfig
+      - name: Generate configuration file
+        working-directory: /
+        run: |
+        cat /config/target.config >> /workdir/openwrt/.config
+        cat config/luci.config >> /workdir/openwrt/.config
+        cat config/utilities.config >> /workdir/openwrt/.config
+        cat config/network.config >> /workdir/openwrt/.config
+        cat config/other.config >> /workdir/openwrt/.config
+        cat config/kmod.config >> /workdir/openwrt/.config
+        cat config/image.config >> /workdir/openwrt/.config
+        cd /workdir/openwrt
+        make defconfig
 
-        - name: Download packages
-          working-directory: /workdir/openwrt
-          run: make download -j16
+      - name: Download packages
+        working-directory: /workdir/openwrt
+        run: make download -j16
 
-        - name: Compile firmware
-          working-directory: /workdir/openwrt
-          run: |
-            make -j$(nproc) || make -j1 V=s
-            echo "======================="
-            echo "Space usage:"
-            echo "======================="
-            df -h
-            echo "======================="
-            du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
-            du -h --max-depth=1 ./build_dir
-            du -h --max-depth=1 ./bin
+      - name: Compile firmware
+        working-directory: /workdir/openwrt
+        run: |
+          make -j$(nproc) || make -j1 V=s
+          echo "======================="
+          echo "Space usage:"
+          echo "======================="
+          df -h
+          echo "======================="
+          du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
+          du -h --max-depth=1 ./build_dir
+          du -h --max-depth=1 ./bin
+
+      - name: Prepare artifact
+        working-directory: /workdir/openwrt
+        run: |
+          mkdir -p ./artifact/package
+          mkdir -p ./artifact/buildinfo
+          rm -rf $(find ./bin/targets/ -type d -name "packages")
+          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
+          cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
+      - name: Upload buildinfo
+        working-directory: /workdir/openwrt
+        uses: actions/upload-artifact@v3
+        with:
+          name: OpenWrt_buildinfo
+          path: ./artifact/buildinfo/
+
+      - name: Upload package
+        working-directory: /workdir/openwrt
+        uses: actions/upload-artifact@v3
+        with:
+          name: OpenWrt_package
+          path: ./artifact/package/
+
+      - name: Upload firmware
+        working-directory: /workdir/openwrt
+        uses: actions/upload-artifact@v3
+        with:
+          name: OpenWrt_firmware
+          path: ./bin/targets/
