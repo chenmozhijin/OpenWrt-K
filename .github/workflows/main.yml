@@ -28,6 +28,7 @@ jobs:
       - name: Generate configuration file
         working-directory: /
         run: |
+          ls
           sudo mkdir -p /workdir
           sudo chown $USER:$GROUPS /workdir
           mkdir -p ./workdir/openwrt/
