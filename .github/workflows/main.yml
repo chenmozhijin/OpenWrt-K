@@ -44,5 +44,10 @@ jobs:
           ls
           cd files
           ls
+          
+      - name: Generate configuration file
+        working-directory: /workdir
+        run: |
+          ls
 
     
