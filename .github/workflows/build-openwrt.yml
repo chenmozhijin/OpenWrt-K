@@ -195,15 +195,15 @@ jobs:
       - name: Generate configuration file
         working-directory: /
         run: |
-        cat /config/target.config >> /workdir/openwrt/.config
-        cat config/luci.config >> /workdir/openwrt/.config
-        cat config/utilities.config >> /workdir/openwrt/.config
-        cat config/network.config >> /workdir/openwrt/.config
-        cat config/other.config >> /workdir/openwrt/.config
-        cat config/kmod.config >> /workdir/openwrt/.config
-        cat config/image.config >> /workdir/openwrt/.config
-        cd /workdir/openwrt
-        make defconfig
+          cat /config/target.config >> /workdir/openwrt/.config
+          cat config/luci.config >> /workdir/openwrt/.config
+          cat config/utilities.config >> /workdir/openwrt/.config
+          cat config/network.config >> /workdir/openwrt/.config
+          cat config/other.config >> /workdir/openwrt/.config
+          cat config/kmod.config >> /workdir/openwrt/.config
+          cat config/image.config >> /workdir/openwrt/.config
+          cd /workdir/openwrt
+          make defconfig
 
       - name: Download packages
         working-directory: /workdir/openwrt
