@@ -50,10 +50,10 @@ jobs:
         working-directory: /workdir
         run: |
           git clone https://git.openwrt.org/openwrt/openwrt.git
-          mkdir package
+          mkdir -p package
           cd package
-          mkdir chen
-          mkdir cmzj_package
+          mkdir -p chen
+          mkdir -p cmzj_package
           cd chen
           git clone https://github.com/Lienol/openwrt-package
           git clone https://github.com/xiaorouji/openwrt-passwall -b luci
@@ -66,7 +66,7 @@ jobs:
           cd ..
           cd ..
           cd cmzj_package
-          mkdir turboacc
+          mkdir -p turboacc
           git clone https://github.com/rufengsuixing/luci-app-adguardhome
           git clone https://github.com/jerrykuku/luci-app-argon-config
           git clone https://github.com/csrutil/OpenWrt-NIC-Drivers
@@ -143,9 +143,9 @@ jobs:
         working-directory: /workdir
         run: |
           cp -r ./package/cmzj_package ./openwrt/package/cmzj_package
-          mkdir ./openwrt/package/network/config/firewall4/patches/
-          mkdir ./openwrt/package/libs/libnftnl/patches/
-          mkdir ./openwrt/package/network/utils/nftables/patches/
+          mkdir -p ./openwrt/package/network/config/firewall4/patches/
+          mkdir -p ./openwrt/package/libs/libnftnl/patches/
+          mkdir -p ./openwrt/package/network/utils/nftables/patches/
           cp -r ./package/chen/turboacc/firewall4-7ae5e14bbd7265cc67ec870c3bb0c8e197bb7ca9/firewall4/patches/* ./openwrt/package/network/config/firewall4/patches
           cp -r ./package/chen/turboacc/libs-1.2.1/libnftnl/patches/* ./openwrt/package/libs/libnftnl/patches
           sed -i '/PKG_FIXUP:=autoreconf/'d ./openwrt/package/libs/libnftnl/Makefile
@@ -154,6 +154,7 @@ jobs:
           cp ./package/chen/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch ./openwrt/target/linux/generic/hack-5.10
           cp ./package/chen/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch ./openwrt/target/linux/generic/hack-5.10
           cp ./package/chen/lede/target/linux/generic/hack-5.10/982-add-bcm-fullconenat-support.patch ./openwrt/target/linux/generic/hack-5.10
+          rm -rf ./package
 
 
       - name: 修复问题
@@ -191,16 +192,17 @@ jobs:
           ./scripts/feeds install -a
 
       - name: Generate configuration file
-        working-directory: /
         run: |
-          cat /config/target.config >> /workdir/openwrt/.config
-          cat config/luci.config >> /workdir/openwrt/.config
-          cat config/utilities.config >> /workdir/openwrt/.config
-          cat config/network.config >> /workdir/openwrt/.config
-          cat config/other.config >> /workdir/openwrt/.config
-          cat config/kmod.config >> /workdir/openwrt/.config
-          cat config/image.config >> /workdir/openwrt/.config
-          cd /workdir/openwrt
+          mkdir -p ./workdir/openwrt/
+          cp -r files ./workdir/openwrt/files
+          cat ./config/target.config >> ./workdir/openwrt/.config
+          cat ./config/luci.config >> ./workdir/openwrt/.config
+          cat ./config/utilities.config >> ./workdir/openwrt/.config
+          cat ./config/network.config >> ./workdir/openwrt/.config
+          cat ./config/other.config >> ./workdir/openwrt/.config
+          cat ./config/kmod.config >> ./workdir/openwrt/.config
+          cat ./config/image.config >> ./workdir/openwrt/.config
+          cd ./workdir/openwrt
           make defconfig
 
       - name: Download packages
@@ -221,13 +223,13 @@ jobs:
           du -h --max-depth=1 ./bin
 
       - name: Prepare artifact
-        working-directory: /workdir/openwrt
+        working-directory: /workdir/openwrt      
         run: |
-          mkdir -p /workdir/openwrt/artifact/package
-          mkdir -p /workdir/openwrt/artifact/buildinfo
-          rm -rf $(find /workdir/openwrt/bin/targets/ -type d -name "packages")
-          cp -rf $(find /workdir/openwrt/bin/packages/ -type f -name "*.ipk") /workdir/openwrt/artifact/package/
-          cp -rf $(find /workdir/openwrt/bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") /workdir/openwrt/artifact/buildinfo/
+          mkdir -p ./artifact/package
+          mkdir -p ./artifact/buildinfo
+          rm -rf $(find ./bin/targets/ -type d -name "packages")
+          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
+          cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
       - name: Upload buildinfo
         uses: actions/upload-artifact@v3
         with:
