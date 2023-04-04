@@ -28,6 +28,8 @@ jobs:
       - name: Generate configuration file
         working-directory: /
         run: |
+          sudo mkdir -p /workdir
+          sudo chown $USER:$GROUPS /workdir
           mkdir -p ./workdir/openwrt/
           cp -r files /workdir/openwrt/files
           cat /config/target.config >> /workdir/openwrt/.config
