@@ -31,15 +31,16 @@ jobs:
           sudo mkdir -p /workdir
           sudo chown $USER:$GROUPS /workdir
           mkdir -p ./workdir/openwrt/
-          cp -r files /workdir/openwrt/files
-          cat /config/target.config >> /workdir/openwrt/.config
-          cat config/luci.config >> /workdir/openwrt/.config
-          cat config/utilities.config >> /workdir/openwrt/.config
-          cat config/network.config >> /workdir/openwrt/.config
-          cat config/other.config >> /workdir/openwrt/.config
-          cat config/kmod.config >> /workdir/openwrt/.config
-          cat config/image.config >> /workdir/openwrt/.config
-          cd /workdir/openwrt
+          cp -r files ./workdir/openwrt/files
+          cat config/target.config >> ./workdir/openwrt/.config
+          cat config/luci.config >> ./workdir/openwrt/.config
+          cat config/utilities.config >> ./workdir/openwrt/.config
+          cat config/network.config >> ./workdir/openwrt/.config
+          cat config/other.config >> ./workdir/openwrt/.config
+          cat config/kmod.config >> ./workdir/openwrt/.config
+          cat config/image.config >> ./workdir/openwrt/.config
+          cd ./workdir/openwrt
+          cd ./workdir/openwrt
           ls
           cd files
           ls
