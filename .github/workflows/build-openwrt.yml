@@ -56,6 +56,7 @@ jobs:
           mkdir -p cmzj_package
           cd chen
           git clone https://github.com/Lienol/openwrt-package
+          git clone https://github.com/immortalwrt/luci
           git clone https://github.com/xiaorouji/openwrt-passwall -b luci
           git clone https://github.com/wongsyrone/lede-1
           git clone https://github.com/coolsnowwolf/lede
@@ -87,6 +88,7 @@ jobs:
       - name: copy source code
         working-directory: /workdir/package
         run: |
+          cp -r ./chen/luci/applications/luci-app-transmission ./cmzj_package/
           cp -r ./chen/openwrt-package/luci-app-fileassistant ./cmzj_package/
           cp -r ./chen/openwrt-package/luci-app-socat ./cmzj_package/
           cp -r ./chen/lede/feeds/luci/applications/luci-app-baidupcs-web ./cmzj_package/
@@ -94,12 +96,14 @@ jobs:
           cp -r ./chen/lede/feeds/luci/applications/luci-app-syncdial ./cmzj_package/
           cp -r ./chen/lede/feeds/luci/applications/luci-app-usb-printer ./cmzj_package/
           cp -r ./chen/lede/feeds/luci/applications/luci-app-qbittorrent ./cmzj_package/
-          cp -r ./chen/lede/feeds/luci/applications/luci-app-transmission ./cmzj_package/
           cp -r ./chen/lede/feeds/luci/applications/luci-app-vlmcsd ./cmzj_package/
           cp -r ./chen/lede/feeds/packages/net/vlmcsd ./cmzj_package/
           cp -r ./chen/lede/feeds/packages/net/baidupcs-web ./cmzj_package/
           cp -r ./chen/lede/feeds/packages/net/qBittorrent ./cmzj_package/
           cp -r ./chen/lede/feeds/packages/net/qBittorrent-static ./cmzj_package/
+          cp -r ./chen/lede/feeds/packages/libs/rblibtorrent ./cmzj_package/
+          cp -r ./chen/lede/feeds/packages/libs/qtbase ./cmzj_package/
+          cp -r ./chen/lede/feeds/packages/libs/qttools ./cmzj_package/
           cp -r ./chen/lede/feeds/luci/applications/luci-app-zerotier ./cmzj_package/
           cp -r ./chen/lede/feeds/luci/applications/luci-app-webadmin ./cmzj_package/
           cp -r ./chen/lede/feeds/luci/applications/luci-app-cifs-mount ./cmzj_package/
@@ -193,16 +197,15 @@ jobs:
 
       - name: Generate configuration file
         run: |
-          mkdir -p ./workdir/openwrt/
-          cp -r files ./workdir/openwrt/files
-          cat ./config/target.config >> ./workdir/openwrt/.config
-          cat ./config/luci.config >> ./workdir/openwrt/.config
-          cat ./config/utilities.config >> ./workdir/openwrt/.config
-          cat ./config/network.config >> ./workdir/openwrt/.config
-          cat ./config/other.config >> ./workdir/openwrt/.config
-          cat ./config/kmod.config >> ./workdir/openwrt/.config
-          cat ./config/image.config >> ./workdir/openwrt/.config
-          cd ./workdir/openwrt/
+          cp -r files /workdir/openwrt/files
+          cat ./config/target.config >> /workdir/openwrt/.config
+          cat ./config/luci.config >> /workdir/openwrt/.config
+          cat ./config/utilities.config >> /workdir/openwrt/.config
+          cat ./config/network.config >> /workdir/openwrt/.config
+          cat ./config/other.config >> /workdir/openwrt/.config
+          cat ./config/kmod.config >> /workdir/openwrt/.config
+          cat ./config/image.config >> /workdir/openwrt/.config
+          cd /workdir/openwrt/
           ls
 
       - name: defconfig
