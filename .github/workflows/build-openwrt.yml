@@ -121,7 +121,6 @@ jobs:
           cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-usb-printer/po/
           cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-qbittorrent/po/
           sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/turboacc/luci-app-turboacc/Makefile
-          sed -i 's/include ..\/..\/lang\/golang\/golang-package.mk/include $(TOPDIR)\/feeds\/packages\/lang\/golang\/golang-package.mk/' ./cmzj_package/turboacc/dnsproxy/Makefile
           sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-vlmcsd/Makefile
           sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-webadmin/Makefile
           sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-zerotier/Makefile
