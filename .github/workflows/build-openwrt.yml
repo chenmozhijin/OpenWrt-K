@@ -1,31 +1,51 @@
-# This is a basic workflow to help you get started with Actions
+#MIT License
+
+#Copyright (c) 2023 沉默の金
+
+#Permission is hereby granted, free of charge, to any person obtaining a copy
+#of this software and associated documentation files (the "Software"), to deal
+#in the Software without restriction, including without limitation the rights
+#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the Software is
+#furnished to do so, subject to the following conditions:
+
+#The above copyright notice and this permission notice shall be included in all
+#copies or substantial portions of the Software.
+
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#SOFTWARE.
 
 name: Build OpenWrt-K
 
-# Controls when the workflow will run
+
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
+
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
-  # Allows you to run this workflow manually from the Actions tab
+
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+
 jobs:
-  # This workflow contains a single job called "build"
+
   build:
-    # The type of runner that the job will run on
+
     runs-on: ubuntu-22.04
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
+
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+
       - uses: actions/checkout@v3
 
-      - name: Space cleanup
+      - name: 清理空间
         run:  |
           sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /etc/mysql /etc/php
           sudo -E apt-mark hold grub-efi-amd64-signed
@@ -33,19 +53,19 @@ jobs:
           sudo -E apt -y purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell* openjdk* mysql* php* mongodb* dotnet* moby* snap*
       
       
-      - name: Initialization environment
+      - name: 安装编译依赖并建立工作文件夹
         run: |
           sudo -E apt-mark hold grub-efi-amd64-signed
           sudo -E apt update
           sudo -E apt -y full-upgrade
-          sudo -E apt update -y && sudo apt full-upgrade -y && sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils rsync unzip zlib1g-dev
+          sudo -E apt update -y && sudo apt full-upgrade -y && sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils rsync unzip zlib1g-dev wget
           sudo -E systemctl daemon-reload 
           sudo -E apt -y autoremove --purge
           sudo -E apt clean
           sudo timedatectl set-timezone "Asia/Shanghai"
           sudo mkdir -p /workdir
           sudo chown $USER:$GROUPS /workdir
-      - name: Clone source code
+      - name: 下载源代码
         working-directory: /workdir
         run: |
           git clone https://git.openwrt.org/openwrt/openwrt.git
@@ -83,7 +103,7 @@ jobs:
           git clone https://github.com/chenmozhijin/turboacc
           mv ./turboacc/luci-app-turboacc ./
           rm -rf ./turboacc
-      - name: copy source code
+      - name: 复制源代码修复中文支持与Makefile文件
         working-directory: /workdir/package
         run: |
           cp -r ./chen/luci/applications/luci-app-transmission ./cmzj_package/
@@ -156,13 +176,13 @@ jobs:
           sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk 
           sed -i 's/256/1024/' ./target/linux/x86/image/Makefile
       
-      - name: Update feeds 1
+      - name: 更新 feeds 
         working-directory: /workdir/openwrt
         run: |
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: smartdns
+      - name: 更新smartdns
         working-directory: /workdir/openwrt
         run: |
           WORKINGDIR="`pwd`/feeds/packages/net/smartdns"
@@ -183,11 +203,11 @@ jobs:
           rmdir $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}
           rm $WORKINGDIR/${LUCIBRANCH}.zip
       
-      - name: Install feeds
+      - name: 安装 feeds 
         working-directory: /workdir/openwrt
         run: ./scripts/feeds install -a
 
-      - name: Generate configuration file
+      - name: 复制自定义文件并加载自定义配置
         run: |
           cp -r files /workdir/openwrt/files
           chmod 755 ./files/usr/bin/AdGuardHome/AdGuardHome
@@ -199,14 +219,73 @@ jobs:
           cat ./config/other.config >> /workdir/openwrt/.config
           cat ./config/kmod.config >> /workdir/openwrt/.config
           cat ./config/image.config >> /workdir/openwrt/.config
+      
+      - name: 更新AdGuardHome核心
+        working-directory: /workdir/openwrt  
+        run: |
+	        mkdir -p ./files/usr/bin/AdGuardHome/tmp
+          rm ./files/usr/bin/AdGuardHome/tmp/* -fr        
+          latest_ver="$(curl https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
+	        Archt="$(rm Archt && sed -n '/^CONFIG_TARGET_.*=y/p' .config > Archt0 && sed -n '/^CONFIG_TARGET_.*_.*=y/!p' Archt0 > Archt && rm Archt0 && sed -i 's/CONFIG_TARGET_//' Archt && sed -i 's/=y//' Archt && cat Archt)"
+	        case $Archt in
+	        "i386")
+	        Arch="386"
+	        ;;
+	        "i686")
+	        Arch="386"
+	        ;;
+	        "x86")
+	        Arch="amd64"
+	        ;;
+	        "mipsel")
+	        Arch="mipsle"
+	        ;;
+	        "mips64el")
+	        Arch="mips64le"
+	        Arch="mipsle"
+	        echo -e "mips64el use $Arch may have bug" 
+	        ;;
+	        "mips")
+	        Arch="mips"
+	        ;;
+	        "mips64")
+	        Arch="mips64"
+	        Arch="mips"
+	        echo -e "mips64 use $Arch may have bug" 
+	        ;;
+	        "arm")
+	        Arch="arm"
+	        ;;
+	        "aarch64")
+	        Arch="arm64"
+	        ;;
+	        "powerpc")
+	        Arch="ppc"
+	        echo -e "error not support $Archt" 
+	        EXIT 1
+	        ;;
+	        "powerpc64")
+	        Arch="ppc64"
+	        echo -e "error not support $Archt" 
+	        EXIT 1
+	        ;;
+	        *)
+	        echo -e "error not support $Archt if you can use offical release please issue a bug" 
+	        EXIT 1
+	        ;;
+	        esac
+          wget https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_ver}/AdGuardHome_linux_${Arch}.tar.gz -O ./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz
+          tar -zxf "./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz" -C "./files/usr/bin/AdGuardHome/tmp/"
+          mv -f ./files/usr/bin/AdGuardHome/tmp/AdGuardHome/AdGuardHome ./files/usr/bin/AdGuardHome
+          rm -rf ./files/usr/bin/AdGuardHome/tmp
 
-      - name: defconfig
+      - name: 生成配置文件
         working-directory: /workdir/openwrt
         run: |
           make defconfig
           ./scripts/diffconfig.sh
 
-      - name: Download packages
+      - name: 下载 dl 库
         working-directory: /workdir/openwrt
         run: |
           make download -j16
@@ -215,7 +294,7 @@ jobs:
           make download -j16 || make download -j1 V=s
 
 
-      - name: Compile firmware
+      - name: 编译固件 
         working-directory: /workdir/openwrt
         run: |
           make -j$(nproc) || make -j1 V=s
@@ -236,20 +315,31 @@ jobs:
           rm -rf $(find ./bin/targets/ -type d -name "packages")
           cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
           cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
-      - name: Upload buildinfo
+          export BUILD_DATE=$(date +"%Y-%m-%d")
+          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+      - name: 上传 buildinfo
         uses: actions/upload-artifact@v3
         with:
           name: OpenWrt_buildinfo
           path: /workdir/openwrt/artifact/buildinfo/
 
-      - name: Upload package
+      - name: 上传 package
         uses: actions/upload-artifact@v3
         with:
           name: OpenWrt_package
           path: /workdir/openwrt/artifact/package/
 
-      - name: Upload firmware
+      - name: 上传 firmware
         uses: actions/upload-artifact@v3
         with:
           name: OpenWrt_firmware
           path: /workdir/openwrt/bin/targets/
+      
+      - name: 上传到 Release
+        uses: ncipollo/release-action@v1.8.0
+        with:
+          name: OpenWrt-K
+          allowUpdates: true
+          replacesArtifacts: true
+          body: 编译于${{ env.BUILD_DATE }}
+          artifacts: /workdir/openwrt/bin/targets/x86/64/*      
