@@ -22,25 +22,16 @@
 
 name: Build OpenWrt-K
 
-
 on:
-
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
-
   workflow_dispatch:
 
-
 jobs:
-
   build:
-
     runs-on: ubuntu-22.04
-
-
     steps:
 
       - uses: actions/checkout@v3
@@ -51,20 +42,20 @@ jobs:
           sudo -E apt-mark hold grub-efi-amd64-signed
           sudo -E apt update
           sudo -E apt -y purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell* openjdk* mysql* php* mongodb* dotnet* moby* snap*
-      
-      
+         
       - name: 安装编译依赖并建立工作文件夹
         run: |
           sudo -E apt-mark hold grub-efi-amd64-signed
           sudo -E apt update
           sudo -E apt -y full-upgrade
-          sudo -E apt update -y && sudo apt full-upgrade -y && sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils rsync unzip zlib1g-dev wget
+          sudo -E apt update -y && sudo apt full-upgrade -y && sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 cat ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils rsync unzip zlib1g-dev wget
           sudo -E systemctl daemon-reload 
           sudo -E apt -y autoremove --purge
           sudo -E apt clean
           sudo timedatectl set-timezone "Asia/Shanghai"
           sudo mkdir -p /workdir
           sudo chown $USER:$GROUPS /workdir
+
       - name: 下载源代码
         working-directory: /workdir
         run: |
@@ -103,6 +94,7 @@ jobs:
           git clone https://github.com/chenmozhijin/turboacc
           mv ./turboacc/luci-app-turboacc ./
           rm -rf ./turboacc
+
       - name: 复制源代码修复中文支持与Makefile文件
         working-directory: /workdir/package
         run: |
@@ -152,6 +144,7 @@ jobs:
           sed -i 's/setting")/netdata")/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
           sed -i 's/("Base Setting"), 20/("Base Setting"), 30/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
           sed -i 's/("NetData"), 30/("NetData"), 20/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
+
       - name: 切换到新的稳定版分支
         working-directory: /workdir/openwrt
         run: git checkout v22.03.3
@@ -160,13 +153,36 @@ jobs:
         working-directory: /workdir
         run: |
           cp -r ./package/cmzj_package ./openwrt/package/cmzj_package
+          cp ./package/chen/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch ./openwrt/target/linux/generic/hack-5.10
+          cp ./package/chen/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch ./openwrt/target/linux/generic/hack-5.10
+          cp ./package/chen/lede/target/linux/generic/hack-5.10/982-add-bcm-fullconenat-support.patch ./openwrt/target/linux/generic/hack-5.10
           mkdir -p ./openwrt/package/network/config/firewall4/patches/
           mkdir -p ./openwrt/package/libs/libnftnl/patches/
           mkdir -p ./openwrt/package/network/utils/nftables/patches/
           cp -r ./package/chen/turboacc/firewall4-7ae5e14bbd7265cc67ec870c3bb0c8e197bb7ca9/firewall4/patches/* ./openwrt/package/network/config/firewall4/patches
           cp -r ./package/chen/turboacc/libs-1.2.1/libnftnl/patches/* ./openwrt/package/libs/libnftnl/patches
           cp -r ./package/chen/turboacc/nftables-1.0.2/nftables/patches/* ./openwrt/package/network/utils/nftables/patches
+          sed -i '/PKG_FIXUP:=autoreconf/'d ./openwrt/package/libs/libnftnl/Makefile
+          sed -i '/^PKG_INSTALL:/i\PKG_FIXUP:=autoreconf' ./openwrt/package/libs/libnftnl/Makefile
+          echo "libnftnl-Makefile"
+          cat ./openwrt/package/libs/libnftnl/Makefile
+          echo "firewall4-patches"
+          cd ./openwrt/package/network/config/firewall4/patches
+          ls
+          echo "libnftnl-patches"
+          cd /workdir
+          cd ./openwrt/package/libs/libnftnl/patches/
+          ls
+          echo "nftables-patches"
+          cd /workdir
+          cd ./openwrt/package/network/utils/nftables/patches/
+          ls
+          echo "hack-5.10" 
+          cd /workdir
+          cd ./openwrt/target/linux/generic/hack-5.10
+          ls
           rm -rf ./package
+
       - name: 修复问题
         working-directory: /workdir/openwrt
         run: |
@@ -290,12 +306,27 @@ jobs:
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
           make download -j16 || make download -j1 V=s
+      
+      - name: 构建工具
+        working-directory: /workdir/openwrt
+        run: make tools/install -j$(nproc) || make tools/install -j1 V=s 
 
+      - name: 构建工具链
+        working-directory: /workdir/openwrt
+        run: make toolchain/install -j$(nproc) || make toolchain/install -j1 V=s
+
+      - name: 构建内核
+        working-directory: /workdir/openwrt
+        run: make target/compile -j$(nproc) || make target/compile -j$(nproc) || make target/compile -j1 V=s
+
+      - name: 构建内核模块
+        working-directory: /workdir/openwrt
+        run:  make package/linux/compile -j$(nproc) || make package/linux/compile -j$(nproc) V=s || make package/linux/compile -j1 V=s
 
       - name: 编译固件 
         working-directory: /workdir/openwrt
         run: |
-          make -j$(nproc) || make -j1 V=s
+          make -j$(nproc) || make -j$(nproc) V=s || make -j1 V=s
           echo "======================="
           echo "Space usage:"
           echo "======================="
@@ -305,7 +336,14 @@ jobs:
           du -h --max-depth=1 ./build_dir
           du -h --max-depth=1 ./bin
       
-      - name: Prepare artifact
+      - name: 上传日志
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: x86-64-logs
+          path: "/workdir/openwrt/logs"     
+      
+      - name: 准备 artifact
         working-directory: /workdir/openwrt      
         run: |
           mkdir -p ./artifact/package
@@ -315,6 +353,7 @@ jobs:
           cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
           export BUILD_DATE=$(date +"%Y-%m-%d")
           echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+
       - name: 上传 buildinfo
         uses: actions/upload-artifact@v3
         with:
