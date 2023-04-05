@@ -149,7 +149,7 @@ jobs:
         working-directory: /workdir/openwrt
         run: git checkout v22.03.3
 
-      - name: 复制cmzj_package 打补丁
+      - name: 复制cmzj_package 打补丁 
         working-directory: /workdir
         run: |
           cp -r ./package/cmzj_package ./openwrt/package/cmzj_package
@@ -181,7 +181,11 @@ jobs:
           cd /workdir
           cd ./openwrt/target/linux/generic/hack-5.10
           ls
+          cd /workdir
           rm -rf ./package
+          sed -i '$a CONFIG_SHORTCUT_FE=y' ./openwrt/target/linux/generic/config-5.10
+          sed -i '$a # CONFIG_MERAKI_MX100 is not set' ./openwrt/target/linux/generic/config-5.10
+        
 
       - name: 修复问题
         working-directory: /workdir/openwrt
