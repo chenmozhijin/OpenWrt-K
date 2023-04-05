@@ -165,8 +165,6 @@ jobs:
           mkdir -p ./openwrt/package/network/utils/nftables/patches/
           cp -r ./package/chen/turboacc/firewall4-7ae5e14bbd7265cc67ec870c3bb0c8e197bb7ca9/firewall4/patches/* ./openwrt/package/network/config/firewall4/patches
           cp -r ./package/chen/turboacc/libs-1.2.1/libnftnl/patches/* ./openwrt/package/libs/libnftnl/patches
-          sed -i '/PKG_FIXUP:=autoreconf/'d ./openwrt/package/libs/libnftnl/Makefile
-          sed -i '/^PKG_INSTALL:/i\PKG_FIXUP:=autoreconf' ./openwrt/package/libs/libnftnl/Makefile
           cp -r ./package/chen/turboacc/nftables-1.0.2/nftables/patches/* ./openwrt/package/network/utils/nftables/patches
           rm -rf ./package
       - name: 修复问题
@@ -223,57 +221,57 @@ jobs:
       - name: 更新AdGuardHome核心
         working-directory: /workdir/openwrt  
         run: |
-	        mkdir -p ./files/usr/bin/AdGuardHome/tmp
+          mkdir -p ./files/usr/bin/AdGuardHome/tmp
           rm ./files/usr/bin/AdGuardHome/tmp/* -fr        
           latest_ver="$(curl https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
-	        Archt="$(rm Archt && sed -n '/^CONFIG_TARGET_.*=y/p' .config > Archt0 && sed -n '/^CONFIG_TARGET_.*_.*=y/!p' Archt0 > Archt && rm Archt0 && sed -i 's/CONFIG_TARGET_//' Archt && sed -i 's/=y//' Archt && cat Archt)"
-	        case $Archt in
-	        "i386")
-	        Arch="386"
-	        ;;
-	        "i686")
-	        Arch="386"
-	        ;;
-	        "x86")
-	        Arch="amd64"
-	        ;;
-	        "mipsel")
-	        Arch="mipsle"
-	        ;;
-	        "mips64el")
-	        Arch="mips64le"
-	        Arch="mipsle"
-	        echo -e "mips64el use $Arch may have bug" 
-	        ;;
-	        "mips")
-	        Arch="mips"
-	        ;;
-	        "mips64")
-	        Arch="mips64"
-	        Arch="mips"
-	        echo -e "mips64 use $Arch may have bug" 
-	        ;;
-	        "arm")
-	        Arch="arm"
-	        ;;
-	        "aarch64")
-	        Arch="arm64"
-	        ;;
-	        "powerpc")
-	        Arch="ppc"
-	        echo -e "error not support $Archt" 
-	        EXIT 1
-	        ;;
-	        "powerpc64")
-	        Arch="ppc64"
-	        echo -e "error not support $Archt" 
-	        EXIT 1
-	        ;;
-	        *)
-	        echo -e "error not support $Archt if you can use offical release please issue a bug" 
-	        EXIT 1
-	        ;;
-	        esac
+          Archt="$(rm Archt && sed -n '/^CONFIG_TARGET_.*=y/p' .config > Archt0 && sed -n '/^CONFIG_TARGET_.*_.*=y/!p' Archt0 > Archt && rm Archt0 && sed -i 's/CONFIG_TARGET_//' Archt && sed -i 's/=y//' Archt && cat Archt)"
+          case $Archt in
+          "i386")
+          Arch="386"
+          ;;
+          "i686")
+          Arch="386"
+          ;;
+          "x86")
+          Arch="amd64"
+          ;;
+          "mipsel")
+          Arch="mipsle"
+          ;;
+          "mips64el")
+          Arch="mips64le"
+          Arch="mipsle"
+          echo -e "mips64el use $Arch may have bug" 
+          ;;
+          "mips")
+          Arch="mips"
+          ;;
+          "mips64")
+          Arch="mips64"
+          Arch="mips"
+          echo -e "mips64 use $Arch may have bug" 
+          ;;
+          "arm")
+          Arch="arm"
+          ;;
+	  "aarch64")
+          Arch="arm64"
+          ;;
+          "powerpc")
+          Arch="ppc"
+          echo -e "error not support $Archt" 
+          EXIT 1
+          ;;
+          "powerpc64")
+          Arch="ppc64"
+          echo -e "error not support $Archt" 
+          EXIT 1
+          ;;
+          *)
+          echo -e "error not support $Archt if you can use offical release please issue a bug" 
+          EXIT 1
+          ;;
+          esac
           wget https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_ver}/AdGuardHome_linux_${Arch}.tar.gz -O ./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz
           tar -zxf "./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz" -C "./files/usr/bin/AdGuardHome/tmp/"
           mv -f ./files/usr/bin/AdGuardHome/tmp/AdGuardHome/AdGuardHome ./files/usr/bin/AdGuardHome
@@ -342,4 +340,4 @@ jobs:
           allowUpdates: true
           replacesArtifacts: true
           body: 编译于${{ env.BUILD_DATE }}
-          artifacts: /workdir/openwrt/bin/targets/x86/64/*      
+          artifacts: /workdir/openwrt/bin/targets/x86/64/*
