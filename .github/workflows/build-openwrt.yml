@@ -224,7 +224,7 @@ jobs:
           mkdir -p ./files/usr/bin/AdGuardHome/tmp
           rm ./files/usr/bin/AdGuardHome/tmp/* -fr        
           latest_ver="$(curl https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
-          Archt="$(rm Archt && sed -n '/^CONFIG_TARGET_.*=y/p' .config > Archt0 && sed -n '/^CONFIG_TARGET_.*_.*=y/!p' Archt0 > Archt && rm Archt0 && sed -i 's/CONFIG_TARGET_//' Archt && sed -i 's/=y//' Archt && cat Archt)"
+          Archt="$(rm -rf Archt && sed -n '/^CONFIG_TARGET_.*=y/p' .config > Archt0 && sed -n '/^CONFIG_TARGET_.*_.*=y/!p' Archt0 > Archt && rm Archt0 && sed -i 's/CONFIG_TARGET_//' Archt && sed -i 's/=y//' Archt && cat Archt)"
           case $Archt in
           "i386")
           Arch="386"
