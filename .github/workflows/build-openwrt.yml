@@ -204,6 +204,7 @@ jobs:
         working-directory: /workdir/openwrt
         run: |
           make defconfig
+          ./scripts/diffconfig.sh
 
       - name: Download packages
         working-directory: /workdir/openwrt
