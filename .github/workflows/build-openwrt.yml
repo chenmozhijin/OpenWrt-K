@@ -45,7 +45,6 @@ jobs:
           sudo timedatectl set-timezone "Asia/Shanghai"
           sudo mkdir -p /workdir
           sudo chown $USER:$GROUPS /workdir
-
       - name: Clone source code
         working-directory: /workdir
         run: |
@@ -84,7 +83,6 @@ jobs:
           git clone https://github.com/chenmozhijin/turboacc
           mv ./turboacc/luci-app-turboacc ./
           rm -rf ./turboacc
-
       - name: copy source code
         working-directory: /workdir/package
         run: |
@@ -134,7 +132,6 @@ jobs:
           sed -i 's/setting")/netdata")/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
           sed -i 's/("Base Setting"), 20/("Base Setting"), 30/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
           sed -i 's/("NetData"), 30/("NetData"), 20/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
-
       - name: 切换到新的稳定版分支
         working-directory: /workdir/openwrt
         run: git checkout v22.03.3
@@ -152,14 +149,18 @@ jobs:
           sed -i '/^PKG_INSTALL:/i\PKG_FIXUP:=autoreconf' ./openwrt/package/libs/libnftnl/Makefile
           cp -r ./package/chen/turboacc/nftables-1.0.2/nftables/patches/* ./openwrt/package/network/utils/nftables/patches
           rm -rf ./package
-
-
       - name: 修复问题
         working-directory: /workdir/openwrt
         run: |
           sed -i 's/-full//' ./include/target.mk 
           sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk 
           sed -i 's/256/1024/' ./target/linux/x86/image/Makefile
+      
+      - name: Update feeds 1
+        working-directory: /workdir/openwrt
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
 
       - name: smartdns
         working-directory: /workdir/openwrt
@@ -182,15 +183,15 @@ jobs:
           rmdir $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}
           rm $WORKINGDIR/${LUCIBRANCH}.zip
       
-      - name: Update feeds
+      - name: Install feeds
         working-directory: /workdir/openwrt
-        run: |
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
+        run: ./scripts/feeds install -a
 
       - name: Generate configuration file
         run: |
           cp -r files /workdir/openwrt/files
+          chmod 755 ./files/usr/bin/AdGuardHome/AdGuardHome
+          chmod 755 ./files/etc/uci-defaults/99_chenmozhijin
           cat ./config/target.config >> /workdir/openwrt/.config
           cat ./config/luci.config >> /workdir/openwrt/.config
           cat ./config/utilities.config >> /workdir/openwrt/.config
@@ -198,18 +199,20 @@ jobs:
           cat ./config/other.config >> /workdir/openwrt/.config
           cat ./config/kmod.config >> /workdir/openwrt/.config
           cat ./config/image.config >> /workdir/openwrt/.config
-          cd /workdir/openwrt/
-          ls
 
       - name: defconfig
         working-directory: /workdir/openwrt
         run: |
-          ls
           make defconfig
 
       - name: Download packages
         working-directory: /workdir/openwrt
-        run: make download -j16
+        run: |
+          make download -j16
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
+          make download -j16 || make download -j1 V=s
+
 
       - name: Compile firmware
         working-directory: /workdir/openwrt
@@ -223,7 +226,7 @@ jobs:
           du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
           du -h --max-depth=1 ./build_dir
           du -h --max-depth=1 ./bin
-
+      
       - name: Prepare artifact
         working-directory: /workdir/openwrt      
         run: |
