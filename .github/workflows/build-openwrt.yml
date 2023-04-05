@@ -254,7 +254,7 @@ jobs:
           "arm")
           Arch="arm"
           ;;
-	  "aarch64")
+          "aarch64")
           Arch="arm64"
           ;;
           "powerpc")
