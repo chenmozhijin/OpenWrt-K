@@ -112,8 +112,6 @@ jobs:
           cp -r ./chen/lede/package/lean/ddns-scripts_dnspod ./cmzj_package/
           cp -r ./chen/lede/package/lean/r8168 ./cmzj_package/
           cp -r ./chen/lede/package/lean/shortcut-fe ./cmzj_package/turboacc/
-          cp -r ./chen/lede/feeds/packages/net/dnsforwarder ./cmzj_package/turboacc/
-          cp -r ./chen/lede/feeds/packages/net/dnsproxy ./cmzj_package/turboacc/
           cp -r ./chen/openwrt-passwall/luci-app-passwall  ./cmzj_package/
           cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-webadmin/po/
           cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-netdata/po/
@@ -154,9 +152,6 @@ jobs:
           sed -i '/PKG_FIXUP:=autoreconf/'d ./openwrt/package/libs/libnftnl/Makefile
           sed -i '/^PKG_INSTALL:/i\PKG_FIXUP:=autoreconf' ./openwrt/package/libs/libnftnl/Makefile
           cp -r ./package/chen/turboacc/nftables-1.0.2/nftables/patches/* ./openwrt/package/network/utils/nftables/patches
-          cp ./package/chen/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch ./openwrt/target/linux/generic/hack-5.10
-          cp ./package/chen/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch ./openwrt/target/linux/generic/hack-5.10
-          cp ./package/chen/lede/target/linux/generic/hack-5.10/982-add-bcm-fullconenat-support.patch ./openwrt/target/linux/generic/hack-5.10
           rm -rf ./package
 
 
