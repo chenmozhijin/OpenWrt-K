@@ -32,7 +32,6 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-
       - uses: actions/checkout@v3
       - name: 清理空间
         run:  |
@@ -73,7 +72,6 @@ jobs:
           sudo mount -B $GITHUB_WORKSPACE/tmp /tmp
           df -hT $GITHUB_WORKSPACE
           sudo btrfs filesystem usage $GITHUB_WORKSPACE
-
           
       - name: 建立工作文件夹
         run:  |
@@ -89,7 +87,6 @@ jobs:
           echo "PACKAGE_ROOT_PATH=$PACKAGE_ROOT_PATH" >> $GITHUB_ENV
           mkdir -p chen
           mkdir -p cmzj_package
-          
           
       - name: 下载源代码
         working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
