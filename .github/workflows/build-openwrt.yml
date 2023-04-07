@@ -330,10 +330,9 @@ jobs:
           df -h
           echo "======================="
       - name: test
-        working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
           mkdir -p ./openwrt/bin/targets/x86/64/
-          cp ./package/chen/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch ./openwrt/bin/targets/x86/64/
+          cp ./config/network.config $OPENWRT_ROOT_PATH/bin/targets/x86/64/
       - name: 上传日志
         if: failure()
         uses: actions/upload-artifact@v3
