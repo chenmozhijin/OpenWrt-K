@@ -105,7 +105,6 @@ jobs:
 
       - name: 上传到 Release
         uses: ncipollo/release-action@v1.8.0
-        if: env.FIRMWARE_RELEASE_UPLOAD == 'true'
         with:
           name: openwrt-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
           allowUpdates: true
