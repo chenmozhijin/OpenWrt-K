@@ -87,6 +87,8 @@ jobs:
           export RELEASE_NAME="OpenWrt-K V$(date +"%y.%m.%d-%H")"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
           echo ${{ env.RELEASE_NAME }} >> $GITHUB_OUTPUT
+          echo ${{ env.RELEASE_NAME }}
+          echo ${{ steps.tag.outputs.release_tag }}
 
       - name: 上传 buildinfo
         uses: actions/upload-artifact@v3
