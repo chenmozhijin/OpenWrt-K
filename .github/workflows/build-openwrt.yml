@@ -85,6 +85,7 @@ jobs:
           echo 编译于$(date +"%Y-%m-%d %H:%M") >> release.txt
           export RELEASE_NAME="OpenWrt-K V$(date +"%y.%m.%d-%H")"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
+          echo ${{ env.RELEASE_NAME }}
       - name: 上传 buildinfo
         uses: actions/upload-artifact@v3
         with:
