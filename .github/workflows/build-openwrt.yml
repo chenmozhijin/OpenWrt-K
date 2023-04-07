@@ -110,7 +110,7 @@ jobs:
           name: openwrt-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
           allowUpdates: true
           replacesArtifacts: true
-          tag: ${{ env.RELEASE_NAME }}
+          tag: 123
           body: 编译于$(date +"%Y-%m-%d %H:%M")
           commit: ${{ env.CURRENT_BRANCH }}
           token: ${{ secrets.GITHUB_TOKEN }}
