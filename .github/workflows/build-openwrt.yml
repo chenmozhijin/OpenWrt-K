@@ -33,7 +33,6 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-
       - uses: actions/checkout@v3
       - name: 清理空间
         run:  |
@@ -52,7 +51,7 @@ jobs:
           sudo -E apt -y autoremove --purge
           sudo -E apt clean
           sudo timedatectl set-timezone "Asia/Shanghai"
-          
+
       - name: 合并磁盘
         run: |
           sudo swapoff -a && sudo rm -f /mnt/swapfile
@@ -74,7 +73,7 @@ jobs:
           sudo mount -B $GITHUB_WORKSPACE/tmp /tmp
           df -hT $GITHUB_WORKSPACE
           sudo btrfs filesystem usage $GITHUB_WORKSPACE
-          
+
       - name: 建立工作文件夹
         run:  |
           cd $GITHUB_WORKSPACE
@@ -89,7 +88,7 @@ jobs:
           echo "PACKAGE_ROOT_PATH=$PACKAGE_ROOT_PATH" >> $GITHUB_ENV
           mkdir -p chen
           mkdir -p cmzj_package
-          
+
       - name: 下载源代码
         working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
@@ -130,7 +129,7 @@ jobs:
           git clone https://github.com/chenmozhijin/turboacc
           mv ./turboacc/luci-app-turboacc ./
           rm -rf ./turboacc
-          
+
       - name: 复制源代码修复中文支持与Makefile文件
         working-directory: ${{ env.PACKAGE_ROOT_PATH }}
         run: |
@@ -180,12 +179,12 @@ jobs:
           sed -i 's/setting")/netdata")/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
           sed -i 's/("Base Setting"), 20/("Base Setting"), 30/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
           sed -i 's/("NetData"), 30/("NetData"), 20/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
-          
+
       - name: 切换到新的稳定版分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: git checkout v22.03.3
 
-       - name: 复制cmzj_package 打补丁 
+      - name: 复制cmzj_package 打补丁 
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
           cp -r ./package/cmzj_package ./openwrt/package/cmzj_package
@@ -225,7 +224,7 @@ jobs:
           sed -i 's/-full//' ./include/target.mk 
           sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk 
           sed -i 's/256/1024/' ./target/linux/x86/image/Makefile                
-      
+
       - name: 更新 feeds 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -252,11 +251,11 @@ jobs:
           mv $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}/* $WORKINGDIR/
           rmdir $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}
           rm $WORKINGDIR/${LUCIBRANCH}.zip
-      
+
       - name: 安装 feeds 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: ./scripts/feeds install -a
-      
+
       - name: 复制自定义文件并加载自定义配置
         run: |
           cp -r files $OPENWRT_ROOT_PATH/files
@@ -269,7 +268,7 @@ jobs:
           cat ./config/other.config >> $OPENWRT_ROOT_PATH/.config
           cat ./config/kmod.config >> $OPENWRT_ROOT_PATH/.config
           cat ./config/image.config >> $OPENWRT_ROOT_PATH/.config
-      
+
       - name: 更新AdGuardHome核心
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -333,6 +332,7 @@ jobs:
         run: |
           make defconfig
           ./scripts/diffconfig.sh          
+
       - name: 剩余空间
         run:  |
           echo "======================="
@@ -358,7 +358,7 @@ jobs:
           echo "======================="
           df -h
           echo "======================="
-          
+  
       - name: 构建工具链
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
