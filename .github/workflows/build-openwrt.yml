@@ -112,7 +112,7 @@ jobs:
       - name: 上传到 Release
         uses: softprops/action-gh-release@v0.1.15
         with:
-          tag_name: ${{ steps.tag.outputs.release_tag }}
+          tag_name: ${{ env.RELEASE_NAME }}
           files: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64/*
           body_path: ${{ env.OPENWRT_ROOT_PATH }}/release.txt
           
