@@ -104,14 +104,19 @@ jobs:
           path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/
 
       - name: 上传到 Release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ncipollo/release-action@v1.8.0
+        if: env.FIRMWARE_RELEASE_UPLOAD == 'true'
         with:
-          tag_name: ${{ env.RELEASE_NAME }}
-          target_commitish: ${{ github.sha }}
-          files: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64/*
-          body_path: ${{ env.OPENWRT_ROOT_PATH }}/release.txt
+          name: openwrt-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
+          allowUpdates: true
+          replacesArtifacts: true
+          tag: ${{ env.RELEASE_NAME }}
+          body: 编译于$(date +"%Y-%m-%d %H:%M")
+          commit: ${{ env.CURRENT_BRANCH }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64/*
+          
+          
       - name: Delete Older Releases
         uses: dev-drprasad/delete-older-releases@v0.2.1
         with:
