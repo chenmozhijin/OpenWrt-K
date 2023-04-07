@@ -33,7 +33,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+
       - name: 清理空间
         run:  |
           sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /etc/mysql /etc/php
@@ -71,6 +71,7 @@ jobs:
           sudo mount -B $GITHUB_WORKSPACE/tmp /tmp
           df -hT $GITHUB_WORKSPACE
           sudo btrfs filesystem usage $GITHUB_WORKSPACE
+      - uses: actions/checkout@v3
       - name: 建立工作文件夹
         run:  |
           cd $GITHUB_WORKSPACE
