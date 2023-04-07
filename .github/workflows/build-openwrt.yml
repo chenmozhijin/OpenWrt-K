@@ -105,9 +105,10 @@ jobs:
 
       - name: 上传到 Release
         uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ env.RELEASE_NAME }}
-          token: ${{ secrets.GITHUB_TOKEN }}
           files: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64/*
           body_path: ${{ env.OPENWRT_ROOT_PATH }}/release.txt
       - name: Delete Older Releases
