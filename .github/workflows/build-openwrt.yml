@@ -80,12 +80,14 @@ jobs:
 
 
       - name: 生成 release tag
+        id: tag
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           echo 编译于$(date +"%Y-%m-%d %H:%M") >> release.txt
           export RELEASE_NAME="OpenWrt-K V$(date +"%y.%m.%d-%H")"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          echo ${{ env.RELEASE_NAME }}
+          echo ${{ env.RELEASE_NAME }} >> $GITHUB_OUTPUT
+
       - name: 上传 buildinfo
         uses: actions/upload-artifact@v3
         with:
@@ -108,7 +110,7 @@ jobs:
       - name: 上传到 Release
         uses: softprops/action-gh-release@v0.1.15
         with:
-          tag_name: 1
+          tag_name: ${{ steps.tag.outputs.release_tag }}
           files: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64/*
           body_path: ${{ env.OPENWRT_ROOT_PATH }}/release.txt
           
