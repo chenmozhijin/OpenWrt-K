@@ -24,9 +24,9 @@ name: Build OpenWrt-K
 
 on:
   push:
-    branches: [ "test" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "test" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
