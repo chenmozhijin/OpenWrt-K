@@ -70,7 +70,7 @@ jobs:
           #mkdir $GITHUB_WORKSPACE/tmp
           #chmod 777 $GITHUB_WORKSPACE/tmp
           #sudo cp -rp /tmp/* $GITHUB_WORKSPACE/tmp
-          sudo mount -B $GITHUB_WORKSPACE/tmp /tmp
+          #sudo mount -B $GITHUB_WORKSPACE/tmp /tmp
           df -hT $GITHUB_WORKSPACE
           sudo btrfs filesystem usage $GITHUB_WORKSPACE
       - uses: actions/checkout@v3
