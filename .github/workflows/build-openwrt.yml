@@ -84,7 +84,7 @@ jobs:
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           echo 编译于$(date +"%Y-%m-%d %H:%M") >> release.txt
-          export RELEASE_NAME="OpenWrt-K V$(date +"%y.%m.%d-%H")"
+          export RELEASE_NAME="OpenWrt-K_V$(date +"%y.%m.%d-%H")"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
           echo ${{ env.RELEASE_NAME }} >> $GITHUB_OUTPUT
           echo ${{ env.RELEASE_NAME }}
