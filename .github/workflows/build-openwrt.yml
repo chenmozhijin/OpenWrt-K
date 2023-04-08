@@ -79,7 +79,7 @@ jobs:
           sudo btrfs filesystem usage $GITHUB_WORKSPACE
           
       - name: 将存储库签出到运行器
-      - uses: actions/checkout@v3
+        uses: actions/checkout@v3
       
       - name: 建立工作文件夹
         run:  |
