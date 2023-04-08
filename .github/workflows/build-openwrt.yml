@@ -158,7 +158,7 @@ jobs:
       - name: 下载固件
         uses: actions/download-artifact@v3
         with:
-          name: OpenWrt_firmware
+          name: OpenWrt-firmware
           path: ${{ env.UPLOAD_ROOT_PATH }}
           
       - name: 上传到 Release
