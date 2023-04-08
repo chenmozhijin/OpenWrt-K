@@ -65,7 +65,7 @@ jobs:
           export OPENWRT_ROOT_PATH="$(pwd)"
           echo "OPENWRT_ROOT_PATH=$OPENWRT_ROOT_PATH" >> $GITHUB_ENV
       
-      -name: test
+      - name: test
         run: |
           mkdir -p ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64
           mkdir -p ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64/packages
