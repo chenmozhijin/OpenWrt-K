@@ -118,7 +118,7 @@ jobs:
         with:
           name: OpenWrt-firmware
           path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/
-Upload:
+  Upload:
     needs: build
     runs-on: ubuntu-22.04
 
