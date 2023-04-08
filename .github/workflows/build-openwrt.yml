@@ -1,3 +1,4 @@
+#=============================================================================#
 #MIT License
 
 #Copyright (c) 2023 沉默の金
@@ -19,9 +20,9 @@
 #LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #SOFTWARE.
+#=============================================================================#
 
 name: Build OpenWrt-K
-
 on:
   schedule:
     - cron: '0 4 * * *'
@@ -37,13 +38,13 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-
       - name: 清理空间
         run:  |
           sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /etc/mysql /etc/php
           sudo -E apt-mark hold grub-efi-amd64-signed
           sudo -E apt update
           sudo -E apt -y purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell* openjdk* mysql* php* mongodb* dotnet* moby* snap*
+          
       - name: 安装编译依赖
         run: |
           sudo -E apt-mark hold grub-efi-amd64-signed
@@ -54,6 +55,7 @@ jobs:
           sudo -E apt -y autoremove --purge
           sudo -E apt clean
           sudo timedatectl set-timezone "Asia/Shanghai"
+          
       - name: 合并磁盘
         run: |
           sudo swapoff -a && sudo rm -f /mnt/swapfile
@@ -75,7 +77,10 @@ jobs:
           #sudo mount -B $GITHUB_WORKSPACE/tmp /tmp
           df -hT $GITHUB_WORKSPACE
           sudo btrfs filesystem usage $GITHUB_WORKSPACE
+          
+      - name: 将存储库签出到运行器
       - uses: actions/checkout@v3
+      
       - name: 建立工作文件夹
         run:  |
           cd $GITHUB_WORKSPACE
@@ -90,6 +95,7 @@ jobs:
           echo "PACKAGE_ROOT_PATH=$PACKAGE_ROOT_PATH" >> $GITHUB_ENV
           mkdir -p chen
           mkdir -p cmzj_package
+          
       - name: 下载源代码
         working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
@@ -130,6 +136,7 @@ jobs:
           git clone https://github.com/chenmozhijin/turboacc
           mv ./turboacc/luci-app-turboacc ./
           rm -rf ./turboacc
+          
       - name: 复制源代码修复中文支持与Makefile文件
         working-directory: ${{ env.PACKAGE_ROOT_PATH }}
         run: |
@@ -179,6 +186,7 @@ jobs:
           sed -i 's/setting")/netdata")/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
           sed -i 's/("Base Setting"), 20/("Base Setting"), 30/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
           sed -i 's/("NetData"), 30/("NetData"), 20/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
+          
       - name: 切换到新的稳定版分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: git checkout v22.03.3
@@ -216,17 +224,20 @@ jobs:
           rm -rf ./package
           sed -i '$a CONFIG_SHORTCUT_FE=y' ./openwrt/target/linux/generic/config-5.10
           sed -i '$a # CONFIG_MERAKI_MX100 is not set' ./openwrt/target/linux/generic/config-5.10 
+      
       - name: 修复问题
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           sed -i 's/-full//' ./include/target.mk 
           sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk 
           sed -i 's/256/1024/' ./target/linux/x86/image/Makefile                
+      
       - name: 更新 feeds 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+      
       - name: 更新smartdns
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -247,6 +258,7 @@ jobs:
           mv $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}/* $WORKINGDIR/
           rmdir $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}
           rm $WORKINGDIR/${LUCIBRANCH}.zip
+      
       - name: 安装 feeds 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: ./scripts/feeds install -a
@@ -263,6 +275,7 @@ jobs:
           cat ./config/other.config >> $OPENWRT_ROOT_PATH/.config
           cat ./config/kmod.config >> $OPENWRT_ROOT_PATH/.config
           cat ./config/image.config >> $OPENWRT_ROOT_PATH/.config
+      
       - name: 更新AdGuardHome核心
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -321,18 +334,21 @@ jobs:
           tar -zxf "./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz" -C "./files/usr/bin/AdGuardHome/tmp/"
           mv -f ./files/usr/bin/AdGuardHome/tmp/AdGuardHome/AdGuardHome ./files/usr/bin/AdGuardHome
           rm -rf ./files/usr/bin/AdGuardHome/tmp
+      
       - name: 生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           make defconfig
           ./scripts/diffconfig.sh          
-      - name: 剩余空间
+      
+      - name: 检查剩余空间
         run:  |
           echo "======================="
           echo "空间使用情况:"
           echo "======================="
           df -h
           echo "======================="
+      
       - name: 下载 dl 库
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -340,6 +356,7 @@ jobs:
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
           make download -j16 || make download -j1 V=s
+      
       - name: 构建工具
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -359,6 +376,7 @@ jobs:
           echo "======================="
           df -h
           echo "======================="
+      
       - name: 构建内核
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -368,6 +386,7 @@ jobs:
           echo "======================="
           df -h
           echo "======================="
+      
       - name: 构建内核模块
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -377,6 +396,7 @@ jobs:
           echo "======================="
           df -h
           echo "======================="
+      
       - name: 编译固件 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -389,6 +409,7 @@ jobs:
           du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
           du -h --max-depth=1 ./build_dir
           du -h --max-depth=1 ./bin
+      
       - name: 上传日志
         if: failure()
         uses: actions/upload-artifact@v3
@@ -404,6 +425,7 @@ jobs:
           rm -rf $(find ./bin/targets/ -type d -name "packages")
           cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
           cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
+      
       - name: 生成 release tag
         id: tag
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -414,6 +436,7 @@ jobs:
           echo ${{ env.RELEASE_NAME }} >> $GITHUB_OUTPUT
           echo ${{ env.RELEASE_NAME }}
           echo ${{ steps.tag.outputs.release_tag }}
+      
       - name: 上传 buildinfo
         uses: actions/upload-artifact@v3
         with:
@@ -441,7 +464,7 @@ jobs:
           files: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64/*
           body_path: ${{ env.OPENWRT_ROOT_PATH }}/release.txt
           
-          
+        
       - name: 删除旧的Releases
         uses: dev-drprasad/delete-older-releases@v0.2.1
         with:
@@ -457,4 +480,4 @@ jobs:
           tag_name: ${{ env.RELEASE_NAME }}
           files: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64/*
           body_path: ${{ env.OPENWRT_ROOT_PATH }}/release.txt
-          
+        
