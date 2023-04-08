@@ -168,7 +168,7 @@ jobs:
           allowUpdates: true
           replacesArtifacts: true
           tag: ${{ env.RELEASE_NAME }}
-          bodyFile: release.txt
+          bodyFile: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: ${{ env.UPLOAD_ROOT_PATH }}/x86/64/*
           
