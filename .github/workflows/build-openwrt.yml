@@ -23,6 +23,8 @@
 name: Build OpenWrt-K
 
 on:
+  schedule:
+    - cron: '0 4 * * *'
   push:
     branches: [ "main" ]
   pull_request:
@@ -432,6 +434,7 @@ jobs:
 
 
       - name: 上传到 Release
+        id: release
         uses: softprops/action-gh-release@v0.1.15
         with:
           tag_name: ${{ env.RELEASE_NAME }}
@@ -446,3 +449,12 @@ jobs:
           delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+ 
+      - name: 重试上传到 Release
+        uses: softprops/action-gh-release@v0.1.15
+        if: ${{ failure() && steps.release.conclusion == 'failure' }} || ${{ cancelled() && steps.release.conclusion == 'canceled' }}
+        with:
+          tag_name: ${{ env.RELEASE_NAME }}
+          files: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64/*
+          body_path: ${{ env.OPENWRT_ROOT_PATH }}/release.txt
+          
