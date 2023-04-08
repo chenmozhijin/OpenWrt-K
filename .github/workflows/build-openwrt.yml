@@ -138,7 +138,7 @@ jobs:
       - name: 初始化环境
         run: |
           sudo -E apt update
-          sudo -E apt install -y install git aria2 zip bzip2 curl rsync unzip wget
+          sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget
           sudo timedatectl set-timezone "Asia/Shanghai"
           sudo mkdir -p update
           sudo chown $USER:$GROUPS update
