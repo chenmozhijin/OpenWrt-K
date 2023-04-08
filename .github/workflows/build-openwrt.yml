@@ -432,25 +432,26 @@ jobs:
           echo ${{ env.RELEASE_NAME }} >> $GITHUB_OUTPUT
           echo ${{ env.RELEASE_NAME }}
           echo ${{ steps.tag.outputs.release_tag }}
+          cd ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64
+          rm -rf packages
       
       - name: 上传 buildinfo
         uses: actions/upload-artifact@v3
         with:
-          name: OpenWrt_buildinfo
+          name: OpenWrt-buildinfo
           path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/buildinfo/
 
       - name: 上传 package
         uses: actions/upload-artifact@v3
         with:
-          name: OpenWrt_package
+          name: OpenWrt-package
           path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/package/
 
       - name: 上传 firmware
         uses: actions/upload-artifact@v3
         with:
-          name: OpenWrt_firmware
+          name: OpenWrt-firmware
           path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/
-
 
       - name: 上传到 Release
         id: release
@@ -460,7 +461,6 @@ jobs:
           files: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64/*
           body_path: ${{ env.OPENWRT_ROOT_PATH }}/release.txt
           
-        
       - name: 删除旧的Releases
         uses: dev-drprasad/delete-older-releases@v0.2.1
         with:
@@ -469,11 +469,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
  
-      - name: 重试上传到 Release
-        uses: softprops/action-gh-release@v0.1.15
-        if: ${{ failure() && steps.release.conclusion == 'failure' }} || ${{ cancelled() && steps.release.conclusion == 'canceled' }}
-        with:
-          tag_name: ${{ env.RELEASE_NAME }}
-          files: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64/*
-          body_path: ${{ env.OPENWRT_ROOT_PATH }}/release.txt
+
         
