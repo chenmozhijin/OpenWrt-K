@@ -44,7 +44,7 @@
 +    luci-app-wireguard
 +    luci-app-wol
 +    luci-app-zerotier
-内置的LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
++    内置的LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
 ## 感谢
  感谢以下项目
  
