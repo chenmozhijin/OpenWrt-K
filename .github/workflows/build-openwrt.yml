@@ -27,9 +27,15 @@ on:
   schedule:
     - cron: '0 4 * * *'
   push:
-    branches: [ "main" ]
+    paths:
+      - 'config/**'
+      - '.github/**'
+      - 'files/**'
   pull_request:
-    branches: [ "main" ]
+            paths:
+              - 'config/**'
+              - '.github/**'
+              - 'files/**'
   workflow_dispatch:
 permissions:
   contents: write
