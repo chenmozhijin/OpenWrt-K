@@ -489,15 +489,12 @@ jobs:
           path: ${{ env.UPLOAD_ROOT_PATH }}
           
       - name: 上传到 Release
-        uses: ncipollo/release-action@v1.12.0
+        id: release
+        uses: softprops/action-gh-release@v0.1.15
         with:
-          name: ${{ env.RELEASE_NAME }}
-          allowUpdates: true
-          replacesArtifacts: true
-          tag: ${{ env.RELEASE_NAME }}
-          bodyFile: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
-          token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: ${{ env.UPLOAD_ROOT_PATH }}/x86/64/*
+          tag_name: ${{ env.RELEASE_NAME }}
+          files: ${{ env.UPLOAD_ROOT_PATH }}/x86/64/*
+          body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
           
       - name: 删除旧的Releases
         uses: dev-drprasad/delete-older-releases@v0.2.1
