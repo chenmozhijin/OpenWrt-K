@@ -9,34 +9,34 @@
 5. 使用清华镜像源加快软件包下载
 
 ## 内置功能
-已内置以下插件：
-+    luci-app-adguardhome
-+    luci-app-argon-config
+已内置以下LuCI插件：
++    [luci-app-adguardhome](https://github.com/rufengsuixing/luci-app-adguardhome)
++    [luci-app-argon-config](https://github.com/jerrykuku/luci-app-argon-config)
 +    luci-app-aria2
 +    luci-app-baidupcs-web
 +    luci-app-cifs-mount
 +    luci-app-ddns
 +    luci-app-diag-core
-+    luci-app-diskman
++    [luci-app-diskman](https://github.com/lisaac/luci-app-diskman)
 +    luci-app-fileassistant
 +    luci-app-firewall
 +    luci-app-mwan3
-+    luci-app-netdata
-+    luci-app-netspeedtest
++    [luci-app-netdata](https://github.com/jerrykuku/luci-theme-argon)
++    [luci-app-netspeedtest](https://github.com/sirpdboy/netspeedtest)
 +    luci-app-nlbwmon
 +    luci-app-opkg
-+    luci-app-passwall
-+    luci-app-passwall2
++    [luci-app-passwall](https://github.com/xiaorouji/openwrt-passwall/tree/luci)
++    [luci-app-passwall2](https://github.com/xiaorouji/openwrt-passwall2)
 +    luci-app-qbittorrent
 +    luci-app-rclone
 +    luci-app-samba4
-+    luci-app-serverchan
-+    luci-app-smartdns
++    [luci-app-serverchan](https://github.com/tty228/luci-app-serverchan)
++    [luci-app-smartdns](https://github.com/pymumu/luci-app-smartdns)
 +    luci-app-socat
 +    luci-app-syncdial
 +    luci-app-transmission
 +    luci-app-ttyd
-+    luci-app-turboacc
++    [luci-app-turboacc](https://github.com/chenmozhijin/turboacc)
 +    luci-app-upnp
 +    luci-app-usb-printer
 +    luci-app-vlmcsd
@@ -44,7 +44,7 @@
 +    luci-app-wireguard
 +    luci-app-wol
 +    luci-app-zerotier
-
+内置的LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
 ## 感谢
  感谢以下项目
  
