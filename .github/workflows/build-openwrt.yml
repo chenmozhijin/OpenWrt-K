@@ -330,6 +330,7 @@ jobs:
           tar -zxf "./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz" -C "./files/usr/bin/AdGuardHome/tmp/"
           mv -f ./files/usr/bin/AdGuardHome/tmp/AdGuardHome/AdGuardHome ./files/usr/bin/AdGuardHome
           rm -rf ./files/usr/bin/AdGuardHome/tmp
+          chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
       
       - name: 生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
