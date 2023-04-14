@@ -27,15 +27,17 @@ on:
   schedule:
     - cron: '0 4 * * *'
   push:
-    paths:
+    branches:    
+      - main
       - 'config/**'
       - '.github/**'
       - 'files/**'
   pull_request:
-            paths:
-              - 'config/**'
-              - '.github/**'
-              - 'files/**'
+     branches:    
+      - main
+      - 'config/**'
+      - '.github/**'
+      - 'files/**'
   workflow_dispatch:
 permissions:
   contents: write
@@ -203,7 +205,7 @@ jobs:
           mkdir -p ./openwrt/package/libs/libnftnl/patches/
           mkdir -p ./openwrt/package/network/utils/nftables/patches/
           cp -r ./package/chen/turboacc/firewall4-7ae5e14bbd7265cc67ec870c3bb0c8e197bb7ca9/firewall4/patches/* ./openwrt/package/network/config/firewall4/patches
-          cp -r ./package/chen/turboacc/libs-1.2.1/libnftnl/patches/* ./openwrt/package/libs/libnftnl/patches
+          cp -r ./package/chen/turboacc/libnftnl-1.2.1/libnftnl/patches/* ./openwrt/package/libs/libnftnl/patches
           cp -r ./package/chen/turboacc/nftables-1.0.2/nftables/patches/* ./openwrt/package/network/utils/nftables/patches
           sed -i '/PKG_FIXUP:=autoreconf/'d ./openwrt/package/libs/libnftnl/Makefile
           sed -i '/^PKG_INSTALL:/i\PKG_FIXUP:=autoreconf' ./openwrt/package/libs/libnftnl/Makefile
