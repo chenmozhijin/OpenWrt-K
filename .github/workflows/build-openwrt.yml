@@ -1,14 +1,19 @@
+
 #=============================================================================#
 #MIT License
+
 #Copyright (c) 2023 沉默の金
+
 #Permission is hereby granted, free of charge, to any person obtaining a copy
 #of this software and associated documentation files (the "Software"), to deal
 #in the Software without restriction, including without limitation the rights
 #to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 #copies of the Software, and to permit persons to whom the Software is
 #furnished to do so, subject to the following conditions:
+
 #The above copyright notice and this permission notice shall be included in all
 #copies or substantial portions of the Software.
+
 #THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 #IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,22 +22,18 @@
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #SOFTWARE.
 #=============================================================================#
+
 name: Build OpenWrt-K
 on:
   schedule:
     - cron: '0 4 * * *'
   push:
-    paths:
     branches:    
       - main
       - 'config/**'
       - '.github/**'
       - 'files/**'
   pull_request:
-            paths:
-              - 'config/**'
-              - '.github/**'
-              - 'files/**'
      branches:    
       - main
       - 'config/**'
@@ -41,11 +42,170 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
-@@ -203,7 +205,7 @@ jobs:
+  discussions: write
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 清理空间
+        run:  |
+          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /etc/mysql /etc/php
+          sudo -E apt-mark hold grub-efi-amd64-signed
+          sudo -E apt update
+          sudo -E apt -y purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell* openjdk* mysql* php* mongodb* dotnet* moby* snap*
+          
+      - name: 安装编译依赖
+        run: |
+          sudo -E apt-mark hold grub-efi-amd64-signed
+          sudo -E apt update
+          sudo -E apt -y full-upgrade
+          sudo -E apt update -y && sudo apt full-upgrade -y && sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils rsync unzip zlib1g-dev wget
+          sudo -E systemctl daemon-reload 
+          sudo -E apt -y autoremove --purge
+          sudo -E apt clean
+          sudo timedatectl set-timezone "Asia/Shanghai"
+          
+      - name: 合并磁盘
+        run: |
+          sudo swapoff -a && sudo rm -f /mnt/swapfile
+          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail / | tail -1 ) - 1048576) \* 1024) /root.img
+          export ROOT_LOOP_DEVNAME=$(sudo losetup -Pf --show /root.img)
+          sudo pvcreate -f $ROOT_LOOP_DEVNAME
+          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail /mnt | tail -1) - 102400) \* 1024) /mnt/mnt.img
+          export MNT_LOOP_DEVNAME=$(sudo losetup -Pf --show /mnt/mnt.img)
+          sudo pvcreate -f $MNT_LOOP_DEVNAME
+          sudo vgcreate vgstorage $ROOT_LOOP_DEVNAME $MNT_LOOP_DEVNAME
+          sudo lvcreate -n lvstorage -l 100%FREE vgstorage
+          export LV_DEVNAME=$(sudo lvscan | awk -F "'" '{print $2}')
+          sudo mkfs.btrfs -L combinedisk $LV_DEVNAME
+          sudo mount -o compress=zstd $LV_DEVNAME $GITHUB_WORKSPACE
+          sudo chown -R runner:runner $GITHUB_WORKSPACE
+          df -hT $GITHUB_WORKSPACE
+          sudo btrfs filesystem usage $GITHUB_WORKSPACE
+          
+      - name: 将存储库签出到运行器
+        uses: actions/checkout@v3
+      
+      - name: 建立工作文件夹
+        run:  |
+          cd $GITHUB_WORKSPACE
+          sudo mkdir -p workspace
+          sudo chown $USER:$GROUPS workspace
+          cd workspace
+          export WORKSPACE_ROOT_PATH="$(pwd)"
+          echo "WORKSPACE_ROOT_PATH=$WORKSPACE_ROOT_PATH" >> $GITHUB_ENV
+          mkdir -p package
+          cd package
+          export PACKAGE_ROOT_PATH="$(pwd)"
+          echo "PACKAGE_ROOT_PATH=$PACKAGE_ROOT_PATH" >> $GITHUB_ENV
+          mkdir -p chen
+          mkdir -p cmzj_package
+          
+      - name: 下载源代码
+        working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
+        run: |
+          git clone https://git.openwrt.org/openwrt/openwrt.git
+          cd openwrt
+          export OPENWRT_ROOT_PATH="$(pwd)"
+          echo "OPENWRT_ROOT_PATH=$OPENWRT_ROOT_PATH" >> $GITHUB_ENV
+          cd $PACKAGE_ROOT_PATH
+          mkdir -p chen
+          mkdir -p cmzj_package
+          cd chen
+          git clone https://github.com/Lienol/openwrt-package
+          git clone https://github.com/immortalwrt/luci
+          git clone https://github.com/xiaorouji/openwrt-passwall -b luci
+          git clone https://github.com/wongsyrone/lede-1
+          git clone https://github.com/coolsnowwolf/lede
+          git clone https://github.com/chenmozhijin/turboacc -b package
+          cd lede
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          cd ..
+          cd ..
+          cd cmzj_package
+          mkdir -p turboacc
+          git clone https://github.com/rufengsuixing/luci-app-adguardhome
+          git clone https://github.com/jerrykuku/luci-app-argon-config
+          git clone https://github.com/csrutil/OpenWrt-NIC-Drivers
+          git clone https://github.com/lisaac/luci-app-diskman
+          git clone https://github.com/sirpdboy/luci-app-netdata
+          git clone https://github.com/sirpdboy/NetSpeedTest
+          git clone https://github.com/xiaorouji/openwrt-passwall
+          git clone https://github.com/xiaorouji/openwrt-passwall2
+          git clone https://github.com/tty228/luci-app-serverchan
+          git clone https://github.com/jerrykuku/luci-theme-argon
+          cd turboacc
+          git clone https://github.com/fullcone-nat-nftables/nft-fullcone
+          git clone https://github.com/chenmozhijin/turboacc
+          mv ./turboacc/luci-app-turboacc ./
+          rm -rf ./turboacc
+          
+      - name: 复制源代码修复中文支持与Makefile文件
+        working-directory: ${{ env.PACKAGE_ROOT_PATH }}
+        run: |
+          cp -r ./chen/luci/applications/luci-app-transmission ./cmzj_package/
+          cp -r ./chen/openwrt-package/luci-app-fileassistant ./cmzj_package/
+          cp -r ./chen/openwrt-package/luci-app-socat ./cmzj_package/
+          cp -r ./chen/lede/feeds/luci/applications/luci-app-baidupcs-web ./cmzj_package/
+          cp -r ./chen/lede/feeds/luci/applications/luci-app-rclone ./cmzj_package/
+          cp -r ./chen/lede/feeds/luci/applications/luci-app-syncdial ./cmzj_package/
+          cp -r ./chen/lede/feeds/luci/applications/luci-app-usb-printer ./cmzj_package/
+          cp -r ./chen/lede/feeds/luci/applications/luci-app-qbittorrent ./cmzj_package/
+          cp -r ./chen/lede/feeds/luci/applications/luci-app-vlmcsd ./cmzj_package/
+          cp -r ./chen/lede/feeds/packages/net/vlmcsd ./cmzj_package/
+          cp -r ./chen/lede/feeds/packages/net/baidupcs-web ./cmzj_package/
+          cp -r ./chen/lede/feeds/packages/net/qBittorrent ./cmzj_package/
+          cp -r ./chen/lede/feeds/packages/net/qBittorrent-static ./cmzj_package/
+          cp -r ./chen/lede/feeds/packages/libs/rblibtorrent ./cmzj_package/
+          cp -r ./chen/lede/feeds/packages/libs/qtbase ./cmzj_package/
+          cp -r ./chen/lede/feeds/packages/libs/qttools ./cmzj_package/
+          cp -r ./chen/lede/feeds/luci/applications/luci-app-zerotier ./cmzj_package/
+          cp -r ./chen/lede/feeds/luci/applications/luci-app-webadmin ./cmzj_package/
+          cp -r ./chen/lede/feeds/luci/applications/luci-app-cifs-mount ./cmzj_package/
+          cp -r ./chen/lede/package/lean/ipv6-helper ./cmzj_package/
+          cp -r ./chen/lede/package/lean/ddns-scripts_aliyun ./cmzj_package/
+          cp -r ./chen/lede/package/lean/ddns-scripts_dnspod ./cmzj_package/
+          cp -r ./chen/lede/package/lean/r8168 ./cmzj_package/
+          cp -r ./chen/lede/package/lean/shortcut-fe ./cmzj_package/turboacc/
+          cp -r ./chen/openwrt-passwall/luci-app-passwall  ./cmzj_package/
+          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-webadmin/po/
+          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-netdata/po/
+          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-vlmcsd/po/
+          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/NetSpeedTest/luci-app-netspeedtest/po/
+          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-zerotier/po/
+          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-usb-printer/po/
+          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-qbittorrent/po/
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/turboacc/luci-app-turboacc/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-vlmcsd/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-webadmin/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-zerotier/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-cifs-mount/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-baidupcs-web/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-rclone/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-syncdial/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-usb-printer/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-transmission/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-qbittorrent/Makefile
+          sed -i 's/setting")/netdata")/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
+          sed -i 's/("Base Setting"), 20/("Base Setting"), 30/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
+          sed -i 's/("NetData"), 30/("NetData"), 20/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
+          
+      - name: 切换到新的稳定版分支
+        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        run: git checkout v22.03.3
+
+      - name: 复制cmzj_package 打补丁 
+        working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
+        run: |
+          cp -r ./package/cmzj_package ./openwrt/package/cmzj_package
+          cp ./package/chen/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch ./openwrt/target/linux/generic/hack-5.10
+          cp ./package/chen/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch ./openwrt/target/linux/generic/hack-5.10
+          cp ./package/chen/lede/target/linux/generic/hack-5.10/982-add-bcm-fullconenat-support.patch ./openwrt/target/linux/generic/hack-5.10
+          mkdir -p ./openwrt/package/network/config/firewall4/patches/
           mkdir -p ./openwrt/package/libs/libnftnl/patches/
           mkdir -p ./openwrt/package/network/utils/nftables/patches/
           cp -r ./package/chen/turboacc/firewall4-7ae5e14bbd7265cc67ec870c3bb0c8e197bb7ca9/firewall4/patches/* ./openwrt/package/network/config/firewall4/patches
-          cp -r ./package/chen/turboacc/libs-1.2.1/libnftnl/patches/* ./openwrt/package/libs/libnftnl/patches
           cp -r ./package/chen/turboacc/libnftnl-1.2.1/libnftnl/patches/* ./openwrt/package/libs/libnftnl/patches
           cp -r ./package/chen/turboacc/nftables-1.0.2/nftables/patches/* ./openwrt/package/network/utils/nftables/patches
           sed -i '/PKG_FIXUP:=autoreconf/'d ./openwrt/package/libs/libnftnl/Makefile
@@ -106,6 +266,7 @@ permissions:
       - name: 安装 feeds 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: ./scripts/feeds install -a
+
       - name: 复制自定义文件并加载自定义配置
         run: |
           cp -r files $OPENWRT_ROOT_PATH/files
@@ -260,6 +421,7 @@ permissions:
         with:
           name: x86-64-logs
           path: "${{ env.OPENWRT_ROOT_PATH }}/logs"
+
       - name: 准备 artifact
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -280,11 +442,13 @@ permissions:
         with:
           name: OpenWrt-buildinfo
           path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/buildinfo/
+
       - name: 上传 package
         uses: actions/upload-artifact@v3
         with:
           name: OpenWrt-package
           path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/package/
+
       - name: 上传 firmware
         uses: actions/upload-artifact@v3
         with:
@@ -293,9 +457,11 @@ permissions:
   Upload:
     needs: build
     runs-on: ubuntu-22.04
+
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
+
       - name: 建立工作文件夹
         run:  |
           cd $GITHUB_WORKSPACE
