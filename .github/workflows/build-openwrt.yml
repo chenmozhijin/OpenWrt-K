@@ -27,487 +27,183 @@ on:
   schedule:
     - cron: '0 4 * * *'
   push:
-    branches:    
-      - main
+    paths:
       - 'config/**'
       - '.github/**'
       - 'files/**'
   pull_request:
-     branches:    
-      - main
-      - 'config/**'
-      - '.github/**'
-      - 'files/**'
+            paths:
+              - 'config/**'
+              - '.github/**'
+              - 'files/**'
   workflow_dispatch:
 permissions:
   contents: write
   discussions: write
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-22.04
     steps:
-      - name: 清理空间
+      - name: 准备环境
         run:  |
-          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /etc/mysql /etc/php
-          sudo -E apt-mark hold grub-efi-amd64-signed
           sudo -E apt update
-          sudo -E apt -y purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell* openjdk* mysql* php* mongodb* dotnet* moby* snap*
-          
-      - name: 安装编译依赖
-        run: |
-          sudo -E apt-mark hold grub-efi-amd64-signed
-          sudo -E apt update
-          sudo -E apt -y full-upgrade
-          sudo -E apt update -y && sudo apt full-upgrade -y && sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils rsync unzip zlib1g-dev wget
-          sudo -E systemctl daemon-reload 
-          sudo -E apt -y autoremove --purge
-          sudo -E apt clean
-          sudo timedatectl set-timezone "Asia/Shanghai"
-          
-      - name: 合并磁盘
-        run: |
-          sudo swapoff -a && sudo rm -f /mnt/swapfile
-          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail / | tail -1 ) - 1048576) \* 1024) /root.img
-          export ROOT_LOOP_DEVNAME=$(sudo losetup -Pf --show /root.img)
-          sudo pvcreate -f $ROOT_LOOP_DEVNAME
-          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail /mnt | tail -1) - 102400) \* 1024) /mnt/mnt.img
-          export MNT_LOOP_DEVNAME=$(sudo losetup -Pf --show /mnt/mnt.img)
-          sudo pvcreate -f $MNT_LOOP_DEVNAME
-          sudo vgcreate vgstorage $ROOT_LOOP_DEVNAME $MNT_LOOP_DEVNAME
-          sudo lvcreate -n lvstorage -l 100%FREE vgstorage
-          export LV_DEVNAME=$(sudo lvscan | awk -F "'" '{print $2}')
-          sudo mkfs.btrfs -L combinedisk $LV_DEVNAME
-          sudo mount -o compress=zstd $LV_DEVNAME $GITHUB_WORKSPACE
-          sudo chown -R runner:runner $GITHUB_WORKSPACE
-          df -hT $GITHUB_WORKSPACE
-          sudo btrfs filesystem usage $GITHUB_WORKSPACE
-          
+          sudo apt install -y curl git  rsync unzip wget sed
+      
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
-      
+              
       - name: 建立工作文件夹
         run:  |
           cd $GITHUB_WORKSPACE
-          sudo mkdir -p workspace
-          sudo chown $USER:$GROUPS workspace
-          cd workspace
-          export WORKSPACE_ROOT_PATH="$(pwd)"
-          echo "WORKSPACE_ROOT_PATH=$WORKSPACE_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p package
-          cd package
-          export PACKAGE_ROOT_PATH="$(pwd)"
-          echo "PACKAGE_ROOT_PATH=$PACKAGE_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p chen
-          mkdir -p cmzj_package
-          
-      - name: 下载源代码
-        working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
-        run: |
-          git clone https://git.openwrt.org/openwrt/openwrt.git
-          cd openwrt
-          export OPENWRT_ROOT_PATH="$(pwd)"
-          echo "OPENWRT_ROOT_PATH=$OPENWRT_ROOT_PATH" >> $GITHUB_ENV
-          cd $PACKAGE_ROOT_PATH
-          mkdir -p chen
-          mkdir -p cmzj_package
-          cd chen
-          git clone https://github.com/Lienol/openwrt-package
-          git clone https://github.com/immortalwrt/luci
-          git clone https://github.com/xiaorouji/openwrt-passwall -b luci
-          git clone https://github.com/wongsyrone/lede-1
-          git clone https://github.com/coolsnowwolf/lede
-          git clone https://github.com/chenmozhijin/turboacc -b package
-          cd lede
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-          cd ..
-          cd ..
-          cd cmzj_package
+          mkdir -p download
+          cd download
+          export DOWNLOAD_ROOT_PATH="$(pwd)"
+          echo "DOWNLOAD_ROOT_PATH=$DOWNLOAD_ROOT_PATH" >> $GITHUB_ENV
+          mkdir -p lede
+          mkdir -p Lienol
+          mkdir -p immortalwrt
+          mkdir -p wongsyrone
+          mkdir -p passwall
           mkdir -p turboacc
+          mkdir -p other
+          cd $GITHUB_WORKSPACE
+          mkdir -p cmzj_package
+          cd cmzj_package
+          export CMZJ_PACKAGE_ROOT_PATH="$(pwd)"
+          echo "CMZJ_PACKAGE_ROOT_PATH=$CMZJ_PACKAGE_ROOT_PATH" >> $GITHUB_ENV
+          mkdir -p turboacc
+          cd $GITHUB_WORKSPACE
+          mkdir -p cmzj_patch
+          cd cmzj_patch
+          export CMZJ_PATCH_ROOT_PATH="$(pwd)"
+          echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
+          mkdir -p $CMZJ_PATCH_ROOT_PATH/firewall4/patches/
+          mkdir -p $CMZJ_PATCH_ROOT_PATH/libnftnl/patches/
+          mkdir -p $CMZJ_PATCH_ROOT_PATH/nftables/patches/          
+
+      - name: 克隆源代码
+        working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}
+        run:  |
+          cd lede
+          git clone https://github.com/coolsnowwolf/lede
+          git clone https://github.com/coolsnowwolf/luci
+          git clone https://github.com/coolsnowwolf/packages         
+          cd Lienol
+          git clone https://github.com/Lienol/openwrt-package
+          cd $DOWNLOAD_ROOT_PATH
+          cd immortalwrt
+          git clone https://github.com/immortalwrt/luci
+          cd $DOWNLOAD_ROOT_PATH
+          cd wongsyrone
+          git clone https://github.com/wongsyrone/lede-1
+          cd $DOWNLOAD_ROOT_PATH
+          cd passwall
+          git clone https://github.com/xiaorouji/openwrt-passwall -b luci
+          mv ./openwrt-passwall/luci-app-passwall ./luci-app-passwall
+          rm -rf openwrt-passwall
+          git clone https://github.com/xiaorouji/openwrt-passwall
+          git clone https://github.com/xiaorouji/openwrt-passwall2
+          cd $DOWNLOAD_ROOT_PATH
+          cd turboacc
+          git clone https://github.com/chenmozhijin/turboacc
+          mv ./turboacc/luci-app-turboacc ./luci-app-turboacc
+          rm -rf ./turboacc
+          git clone https://github.com/chenmozhijin/turboacc -b package
+          git clone https://github.com/fullcone-nat-nftables/nft-fullcone
+          cd $DOWNLOAD_ROOT_PATH
+          cd other
           git clone https://github.com/rufengsuixing/luci-app-adguardhome
           git clone https://github.com/jerrykuku/luci-app-argon-config
           git clone https://github.com/csrutil/OpenWrt-NIC-Drivers
           git clone https://github.com/lisaac/luci-app-diskman
           git clone https://github.com/sirpdboy/luci-app-netdata
           git clone https://github.com/sirpdboy/NetSpeedTest
-          git clone https://github.com/xiaorouji/openwrt-passwall
-          git clone https://github.com/xiaorouji/openwrt-passwall2
           git clone https://github.com/tty228/luci-app-serverchan
           git clone https://github.com/jerrykuku/luci-theme-argon
-          cd turboacc
-          git clone https://github.com/fullcone-nat-nftables/nft-fullcone
-          git clone https://github.com/chenmozhijin/turboacc
-          mv ./turboacc/luci-app-turboacc ./
-          rm -rf ./turboacc
-          
-      - name: 复制源代码修复中文支持与Makefile文件
-        working-directory: ${{ env.PACKAGE_ROOT_PATH }}
-        run: |
-          cp -r ./chen/luci/applications/luci-app-transmission ./cmzj_package/
-          cp -r ./chen/openwrt-package/luci-app-fileassistant ./cmzj_package/
-          cp -r ./chen/openwrt-package/luci-app-socat ./cmzj_package/
-          cp -r ./chen/lede/feeds/luci/applications/luci-app-baidupcs-web ./cmzj_package/
-          cp -r ./chen/lede/feeds/luci/applications/luci-app-rclone ./cmzj_package/
-          cp -r ./chen/lede/feeds/luci/applications/luci-app-syncdial ./cmzj_package/
-          cp -r ./chen/lede/feeds/luci/applications/luci-app-usb-printer ./cmzj_package/
-          cp -r ./chen/lede/feeds/luci/applications/luci-app-qbittorrent ./cmzj_package/
-          cp -r ./chen/lede/feeds/luci/applications/luci-app-vlmcsd ./cmzj_package/
-          cp -r ./chen/lede/feeds/packages/net/vlmcsd ./cmzj_package/
-          cp -r ./chen/lede/feeds/packages/net/baidupcs-web ./cmzj_package/
-          cp -r ./chen/lede/feeds/packages/net/qBittorrent ./cmzj_package/
-          cp -r ./chen/lede/feeds/packages/net/qBittorrent-static ./cmzj_package/
-          cp -r ./chen/lede/feeds/packages/libs/rblibtorrent ./cmzj_package/
-          cp -r ./chen/lede/feeds/packages/libs/qtbase ./cmzj_package/
-          cp -r ./chen/lede/feeds/packages/libs/qttools ./cmzj_package/
-          cp -r ./chen/lede/feeds/luci/applications/luci-app-zerotier ./cmzj_package/
-          cp -r ./chen/lede/feeds/luci/applications/luci-app-webadmin ./cmzj_package/
-          cp -r ./chen/lede/feeds/luci/applications/luci-app-cifs-mount ./cmzj_package/
-          cp -r ./chen/lede/package/lean/ipv6-helper ./cmzj_package/
-          cp -r ./chen/lede/package/lean/ddns-scripts_aliyun ./cmzj_package/
-          cp -r ./chen/lede/package/lean/ddns-scripts_dnspod ./cmzj_package/
-          cp -r ./chen/lede/package/lean/r8168 ./cmzj_package/
-          cp -r ./chen/lede/package/lean/shortcut-fe ./cmzj_package/turboacc/
-          cp -r ./chen/openwrt-passwall/luci-app-passwall  ./cmzj_package/
-          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-webadmin/po/
-          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-netdata/po/
-          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-vlmcsd/po/
-          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/NetSpeedTest/luci-app-netspeedtest/po/
-          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-zerotier/po/
-          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-usb-printer/po/
-          cp -r ./cmzj_package/luci-app-argon-config/po/zh_Hans ./cmzj_package/luci-app-qbittorrent/po/
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/turboacc/luci-app-turboacc/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-vlmcsd/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-webadmin/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-zerotier/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-cifs-mount/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-baidupcs-web/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-rclone/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-syncdial/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-usb-printer/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-transmission/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./cmzj_package/luci-app-qbittorrent/Makefile
-          sed -i 's/setting")/netdata")/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
-          sed -i 's/("Base Setting"), 20/("Base Setting"), 30/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
-          sed -i 's/("NetData"), 30/("NetData"), 20/' ./cmzj_package/luci-app-netdata/luasrc/controller/netdata.lua
-          
-      - name: 切换到新的稳定版分支
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: git checkout v22.03.3
 
-      - name: 复制cmzj_package 打补丁 
-        working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
+      - name: 复制到cmzj_package
         run: |
-          cp -r ./package/cmzj_package ./openwrt/package/cmzj_package
-          cp ./package/chen/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch ./openwrt/target/linux/generic/hack-5.10
-          cp ./package/chen/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch ./openwrt/target/linux/generic/hack-5.10
-          cp ./package/chen/lede/target/linux/generic/hack-5.10/982-add-bcm-fullconenat-support.patch ./openwrt/target/linux/generic/hack-5.10
-          mkdir -p ./openwrt/package/network/config/firewall4/patches/
-          mkdir -p ./openwrt/package/libs/libnftnl/patches/
-          mkdir -p ./openwrt/package/network/utils/nftables/patches/
-          cp -r ./package/chen/turboacc/firewall4-7ae5e14bbd7265cc67ec870c3bb0c8e197bb7ca9/firewall4/patches/* ./openwrt/package/network/config/firewall4/patches
-          cp -r ./package/chen/turboacc/libnftnl-1.2.1/libnftnl/patches/* ./openwrt/package/libs/libnftnl/patches
-          cp -r ./package/chen/turboacc/nftables-1.0.2/nftables/patches/* ./openwrt/package/network/utils/nftables/patches
-          sed -i '/PKG_FIXUP:=autoreconf/'d ./openwrt/package/libs/libnftnl/Makefile
-          sed -i '/^PKG_INSTALL:/i\PKG_FIXUP:=autoreconf' ./openwrt/package/libs/libnftnl/Makefile
-          echo "libnftnl-Makefile"
-          cat ./openwrt/package/libs/libnftnl/Makefile
-          echo "firewall4-patches"
-          cd ./openwrt/package/network/config/firewall4/patches
-          ls
-          echo "libnftnl-patches"
-          cd $OPENWRT_ROOT_PATH/package/libs/libnftnl/patches/
-          ls
-          echo "nftables-patches"
-          cd $OPENWRT_ROOT_PATH/package/network/utils/nftables/patches/
-          ls
-          echo "hack-5.10" 
-          cd $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
-          ls
-          cd $WORKSPACE_ROOT_PATH
-          rm -rf ./package
-          sed -i '$a CONFIG_SHORTCUT_FE=y' ./openwrt/target/linux/generic/config-5.10
-          sed -i '$a # CONFIG_MERAKI_MX100 is not set' ./openwrt/target/linux/generic/config-5.10 
-      
-      - name: 修复问题
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          sed -i 's/-full//' ./include/target.mk 
-          sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk 
-          sed -i 's/256/1024/' ./target/linux/x86/image/Makefile                
-      
-      - name: 更新 feeds 
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-      
-      - name: 更新smartdns
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          WORKINGDIR="`pwd`/feeds/packages/net/smartdns"
-          mkdir $WORKINGDIR -p
-          rm $WORKINGDIR/* -fr
-          wget https://github.com/pymumu/openwrt-smartdns/archive/master.zip -O $WORKINGDIR/master.zip
-          unzip $WORKINGDIR/master.zip -d $WORKINGDIR
-          mv $WORKINGDIR/openwrt-smartdns-master/* $WORKINGDIR/
-          rmdir $WORKINGDIR/openwrt-smartdns-master
-          rm $WORKINGDIR/master.zip
-          LUCIBRANCH="master" #更换此变量
-          WORKINGDIR="`pwd`/feeds/luci/applications/luci-app-smartdns"
-          mkdir $WORKINGDIR -p
-          rm $WORKINGDIR/* -fr
-          wget https://github.com/pymumu/luci-app-smartdns/archive/${LUCIBRANCH}.zip -O $WORKINGDIR/${LUCIBRANCH}.zip
-          unzip $WORKINGDIR/${LUCIBRANCH}.zip -d $WORKINGDIR
-          mv $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}/* $WORKINGDIR/
-          rmdir $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}
-          rm $WORKINGDIR/${LUCIBRANCH}.zip
-      
-      - name: 安装 feeds 
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: ./scripts/feeds install -a
+          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-baidupcs-web $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-rclone $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-syncdial $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-usb-printer $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-qbittorrent $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-vlmcsd $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-zerotier $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-webadmin $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-cifs-mount $CMZJ_PACKAGE_ROOT_PATH/         
+          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/net/vlmcsd $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/net/baidupcs-web $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/net/qBittorrent $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/net/qBittorrent-static $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/libs/rblibtorrent $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/libs/qtbase $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/libs/qttools $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ipv6-helper $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ddns-scripts_aliyun $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ddns-scripts_dnspod $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/r8168 $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/shortcut-fe $CMZJ_PACKAGE_ROOT_PATH/turboacc/
+          cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-transmission $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/Lienol/openwrt-package/luci-app-fileassistant $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/Lienol/openwrt-package/luci-app-socat $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/passwall/luci-app-passwall $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/passwall/openwrt-passwall $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/passwall/openwrt-passwall2 $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc $CMZJ_PACKAGE_ROOT_PATH/turboacc/
+          cp -r $DOWNLOAD_ROOT_PATH/turboacc/nft-fullcone $CMZJ_PACKAGE_ROOT_PATH/turboacc/
+          cp -r $DOWNLOAD_ROOT_PATH/other/* $CMZJ_PACKAGE_ROOT_PATH/
 
-      - name: 复制自定义文件并加载自定义配置
+      - name: 修改Makefile文件
+        working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
-          cp -r files $OPENWRT_ROOT_PATH/files
-          chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
-          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
-          cat ./config/target.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/luci.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/utilities.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/network.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/other.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/kmod.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/image.config >> $OPENWRT_ROOT_PATH/.config
-      
-      - name: 更新AdGuardHome核心
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-vlmcsd/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-webadmin/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-zerotier/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-cifs-mount/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-baidupcs-web/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-rclone/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-syncdial/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-usb-printer/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-transmission/Makefile
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-qbittorrent/Makefile         
+
+      - name: 创建软连接以修复中文支持
+        working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
-          mkdir -p ./files/usr/bin/AdGuardHome/tmp
-          rm ./files/usr/bin/AdGuardHome/tmp/* -fr        
-          latest_ver="$(curl https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
-          Archt="$(rm -rf Archt && sed -n '/^CONFIG_TARGET_.*=y/p' .config > Archt0 && sed -n '/^CONFIG_TARGET_.*_.*=y/!p' Archt0 > Archt && rm Archt0 && sed -i 's/CONFIG_TARGET_//' Archt && sed -i 's/=y//' Archt && cat Archt)"
-          case $Archt in
-          "i386")
-          Arch="386"
-          ;;
-          "i686")
-          Arch="386"
-          ;;
-          "x86")
-          Arch="amd64"
-          ;;
-          "mipsel")
-          Arch="mipsle"
-          ;;
-          "mips64el")
-          Arch="mips64le"
-          Arch="mipsle"
-          echo -e "mips64el use $Arch may have bug" 
-          ;;
-          "mips")
-          Arch="mips"
-          ;;
-          "mips64")
-          Arch="mips64"
-          Arch="mips"
-          echo -e "mips64 use $Arch may have bug" 
-          ;;
-          "arm")
-          Arch="arm"
-          ;;
-          "aarch64")
-          Arch="arm64"
-          ;;
-          "powerpc")
-          Arch="ppc"
-          echo -e "error not support $Archt" 
-          EXIT 1
-          ;;
-          "powerpc64")
-          Arch="ppc64"
-          echo -e "error not support $Archt" 
-          EXIT 1
-          ;;
-          *)
-          echo -e "error not support $Archt if you can use offical release please issue a bug" 
-          EXIT 1
-          ;;
-          esac
-          wget https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_ver}/AdGuardHome_linux_${Arch}.tar.gz -O ./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz
-          tar -zxf "./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz" -C "./files/usr/bin/AdGuardHome/tmp/"
-          mv -f ./files/usr/bin/AdGuardHome/tmp/AdGuardHome/AdGuardHome ./files/usr/bin/AdGuardHome
-          rm -rf ./files/usr/bin/AdGuardHome/tmp
-          chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
-      
-      - name: 生成配置文件
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+          ln -s
+          ln -s zh-cn ./luci-app-webadmin/po/zh_Hans
+          ln -s zh-cn ./luci-app-netdata/po/zh_Hans
+          ln -s zh-cn ./luci-app-vlmcsd/po/zh_Hans
+          ln -s zh-cn ./NetSpeedTest/luci-app-netspeedtest/po/zh_Hans
+          ln -s zh-cn ./luci-app-zerotier/po/zh_Hans
+          ln -s zh-cn ./luci-app-usb-printer/po/zh_Hans
+          ln -s zh-cn ./luci-app-qbittorrent/po/zh_Hans
+
+      - name: 修改luci-app-netdata
+        working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
-          make defconfig
-          ./scripts/diffconfig.sh          
-      
-      - name: 检查剩余空间
-        run:  |
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-      
-      - name: 下载 dl 库
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+          sed -i 's/setting")/netdata")/' ./luci-app-netdata/luasrc/controller/netdata.lua
+          sed -i 's/("Base Setting"), 20/("Base Setting"), 30/' ./luci-app-netdata/luasrc/controller/netdata.lua
+          sed -i 's/("NetData"), 30/("NetData"), 20/' ./luci-app-netdata/luasrc/controller/netdata.lua
+
+      - name: 复制到cmzj_patch
         run: |
-          make download -j16
-          find dl -size -1024c -exec ls -l {} \;
-          find dl -size -1024c -exec rm -f {} \;
-          make download -j16 || make download -j1 V=s
-      
-      - name: 构建工具
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make tools/install -j$(nproc) || make tools/install -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-  
-      - name: 构建工具链
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make toolchain/install -j$(nproc) || make toolchain/install -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-      
-      - name: 构建内核
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make target/compile -j$(nproc) || make target/compile -j$(nproc) || make target/compile -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-      
-      - name: 构建内核模块
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make package/linux/compile -j$(nproc) || make package/linux/compile -j$(nproc) V=s || make package/linux/compile -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-      
-      - name: 编译固件 
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make -j$(nproc) || make -j$(nproc) V=s || make -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-          du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
-          du -h --max-depth=1 ./build_dir
-          du -h --max-depth=1 ./bin
-      
-      - name: 上传日志
-        if: failure()
+          cp ./download/lede/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/
+          cp ./download/lede/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/
+          cp ./download/lede/lede/target/linux/generic/hack-5.10/982-add-bcm-fullconenat-support.patch $CMZJ_PATCH_ROOT_PATH/
+          cp -r ./package/chen/turboacc/firewall4-7ae5e14bbd7265cc67ec870c3bb0c8e197bb7ca9/firewall4/patches/* $CMZJ_PATCH_ROOT_PATH/firewall4/patches
+          cp -r ./package/chen/turboacc/libnftnl-1.2.1/libnftnl/patches/* $CMZJ_PATCH_ROOT_PATH/libnftnl/patches
+          cp -r ./package/chen/turboacc/nftables-1.0.2/nftables/patches/* $CMZJ_PATCH_ROOT_PATH/nftables/patches         
+          
+      - name: 上传 cmzj_package
         uses: actions/upload-artifact@v3
         with:
-          name: x86-64-logs
-          path: "${{ env.OPENWRT_ROOT_PATH }}/logs"
+          name: OpenWrt-cmzj_package
+          path: ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
 
-      - name: 准备 artifact
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          mkdir -p ./artifact/package
-          mkdir -p ./artifact/buildinfo
-          rm -rf $(find ./bin/targets/ -type d -name "packages")
-          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
-          cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
-      
-      - name: 删除packages
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          cd ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64
-          rm -rf packages
-      
-      - name: 上传 buildinfo
+      - name: 上传 cmzj_patch
         uses: actions/upload-artifact@v3
         with:
-          name: OpenWrt-buildinfo
-          path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/buildinfo/
-
-      - name: 上传 package
-        uses: actions/upload-artifact@v3
-        with:
-          name: OpenWrt-package
-          path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/package/
-
-      - name: 上传 firmware
-        uses: actions/upload-artifact@v3
-        with:
-          name: OpenWrt-firmware
-          path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/
-  Upload:
-    needs: build
-    runs-on: ubuntu-22.04
-
-    steps:
-      - name: 将存储库签出到运行器
-        uses: actions/checkout@v3
-
-      - name: 建立工作文件夹
-        run:  |
-          cd $GITHUB_WORKSPACE
-          sudo mkdir -p upload
-          sudo chown $USER:$GROUPS upload
-          cd upload
-          export UPLOAD_ROOT_PATH="$(pwd)"
-          echo "UPLOAD_ROOT_PATH=$UPLOAD_ROOT_PATH" >> $GITHUB_ENV
-
-      - name: 初始化环境
-        run: |
-          sudo -E apt update
-          sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget
-          sudo timedatectl set-timezone "Asia/Shanghai"
-          sudo mkdir -p update
-          sudo chown $USER:$GROUPS update
-          cd update
-
-      - name: 生成 release tag
-        id: tag
-        working-directory: ${{ env.UPLOAD_ROOT_PATH }}
-        run: |
-          echo 编译于$(date +"%Y-%m-%d %H:%M") >> release.txt
-          export RELEASE_NAME="OpenWrt-K_V$(date +"%y.%m.%d-%H")"
-          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          echo ${{ env.RELEASE_NAME }} >> $GITHUB_OUTPUT
-          echo ${{ env.RELEASE_NAME }}
-          echo ${{ steps.tag.outputs.release_tag }}
-
-      - name: 下载固件
-        uses: actions/download-artifact@v3
-        with:
-          name: OpenWrt-firmware
-          path: ${{ env.UPLOAD_ROOT_PATH }}
-          
-      - name: 上传到 Release
-        id: release
-        uses: softprops/action-gh-release@v0.1.15
-        with:
-          tag_name: ${{ env.RELEASE_NAME }}
-          files: ${{ env.UPLOAD_ROOT_PATH }}/x86/64/*
-          body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
-          
-      - name: 删除旧的Releases
-        uses: dev-drprasad/delete-older-releases@v0.2.1
-        with:
-          keep_latest: 3
-          delete_tags: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: OpenWrt-cmzj_patch
+          path: ${{ env.CMZJ_PATCH_ROOT_PATH }}
