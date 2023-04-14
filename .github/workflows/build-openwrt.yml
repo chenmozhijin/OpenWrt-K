@@ -189,12 +189,12 @@ jobs:
 
       - name: 复制到cmzj_patch
         run: |
-          cp ./download/lede/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/
-          cp ./download/lede/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/
-          cp ./download/lede/lede/target/linux/generic/hack-5.10/982-add-bcm-fullconenat-support.patch $CMZJ_PATCH_ROOT_PATH/
-          cp -r ./package/chen/turboacc/firewall4-7ae5e14bbd7265cc67ec870c3bb0c8e197bb7ca9/firewall4/patches/* $CMZJ_PATCH_ROOT_PATH/firewall4/patches
-          cp -r ./package/chen/turboacc/libnftnl-1.2.1/libnftnl/patches/* $CMZJ_PATCH_ROOT_PATH/libnftnl/patches
-          cp -r ./package/chen/turboacc/nftables-1.0.2/nftables/patches/* $CMZJ_PATCH_ROOT_PATH/nftables/patches         
+          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/
+          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/
+          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/982-add-bcm-fullconenat-support.patch $CMZJ_PATCH_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc/firewall4-7ae5e14bbd7265cc67ec870c3bb0c8e197bb7ca9/firewall4/patches/* $CMZJ_PATCH_ROOT_PATH/firewall4/patches
+          cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc/libnftnl-1.2.1/libnftnl/patches/* $CMZJ_PATCH_ROOT_PATH/libnftnl/patches
+          cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc/nftables-1.0.2/nftables/patches/* $CMZJ_PATCH_ROOT_PATH/nftables/patches         
           
       - name: 上传 cmzj_package
         uses: actions/upload-artifact@v3
