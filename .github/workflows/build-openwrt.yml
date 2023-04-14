@@ -176,7 +176,6 @@ jobs:
           ln -s zh-cn ./luci-app-webadmin/po/zh_Hans
           ln -s zh-cn ./luci-app-netdata/po/zh_Hans
           ln -s zh-cn ./luci-app-vlmcsd/po/zh_Hans
-          ln -s zh-cn ./NetSpeedTest/luci-app-netspeedtest/po/zh_Hans
           ln -s zh-cn ./luci-app-zerotier/po/zh_Hans
           ln -s zh-cn ./luci-app-usb-printer/po/zh_Hans
           ln -s zh-cn ./luci-app-qbittorrent/po/zh_Hans
