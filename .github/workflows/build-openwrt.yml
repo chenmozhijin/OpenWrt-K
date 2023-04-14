@@ -22,7 +22,7 @@
 #SOFTWARE.
 #=============================================================================#
 
-name: Build OpenWrt-K
+name: Build OpenWrt-K-test
 on:
   schedule:
     - cron: '0 4 * * *'
@@ -172,7 +172,6 @@ jobs:
       - name: 创建软连接以修复中文支持
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
-          ln -s
           ln -s zh-cn ./luci-app-webadmin/po/zh_Hans
           ln -s zh-cn ./luci-app-netdata/po/zh_Hans
           ln -s zh-cn ./luci-app-vlmcsd/po/zh_Hans
