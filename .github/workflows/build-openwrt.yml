@@ -87,7 +87,8 @@ jobs:
           cd lede
           git clone https://github.com/coolsnowwolf/lede
           git clone https://github.com/coolsnowwolf/luci
-          git clone https://github.com/coolsnowwolf/packages         
+          git clone https://github.com/coolsnowwolf/packages 
+          cd $DOWNLOAD_ROOT_PATH        
           cd Lienol
           git clone https://github.com/Lienol/openwrt-package
           cd $DOWNLOAD_ROOT_PATH
