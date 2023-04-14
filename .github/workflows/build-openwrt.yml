@@ -200,10 +200,10 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: cmzj_package
-          path: ${{ env.GITHUB_WORKSPACE }}/cmzj_package
+          path: cmzj_package
 
       - name: 上传 cmzj_patch
         uses: actions/upload-artifact@v3
         with:
           name: cmzj_patch
-          path: ${{ env.GITHUB_WORKSPACE }}/cmzj_patch
+          path: cmzj_patch
