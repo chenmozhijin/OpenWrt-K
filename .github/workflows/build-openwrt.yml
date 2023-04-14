@@ -313,13 +313,21 @@ jobs:
           rm -rf $OPENWRT_ROOT_PATH/package/network/utils/nftables
           rm -rf $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
           rm -rf $OPENWRT_ROOT_PATH/package/libs/libubox
-          cp -r $CMZJ_PATCH_ROOT_PATH/firewall4 $OPENWRT_ROOT_PATH/package/network/config/firewall4
-          cp -r $CMZJ_PATCH_ROOT_PATH/libnftnl $OPENWRT_ROOT_PATH/package/libs/libnftnl
-          cp -r $CMZJ_PATCH_ROOT_PATH/nftables $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          cp -r $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
-          cp -r $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+          cp -r $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4
+          cp -r $CMZJ_PATCH_ROOT_PATH/libnftnl/* $OPENWRT_ROOT_PATH/package/libs/libnftnl
+          cp -r $CMZJ_PATCH_ROOT_PATH/nftables/* $OPENWRT_ROOT_PATH/package/network/utils/nftables
+          cp -r $CMZJ_PATCH_ROOT_PATH/libubox/* $OPENWRT_ROOT_PATH/package/libs/libubox
+          cp -r $CMZJ_PATCH_ROOT_PATH/dnsmasq/* $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
           echo "libnftnl-Makefile"
           cat $OPENWRT_ROOT_PATH/package/libs/libnftnl/Makefile
+          echo "firewall4-Makefile"
+          cat $OPENWRT_ROOT_PATH/package/network/config/firewall4/Makefile
+          echo "nftables-Makefile"
+          cat $OPENWRT_ROOT_PATH/package/network/utils/nftables/Makefile
+          echo "libubox-Makefile"
+          cat $OPENWRT_ROOT_PATH/package/libs/libubox/Makefile
+          echo "dnsmasq-Makefile"
+          cat $OPENWRT_ROOT_PATH/package/network/services/dnsmasq/Makefile
           echo "firewall4-patches"
           cd $OPENWRT_ROOT_PATH/package/network/config/firewall4/patches
           ls
