@@ -22,7 +22,7 @@
 #SOFTWARE.
 #=============================================================================#
 
-name: Build OpenWrt-K-test
+name: Build OpenWrt-K
 on:
   schedule:
     - cron: '0 4 * * *'
@@ -154,6 +154,7 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc $CMZJ_PACKAGE_ROOT_PATH/turboacc/
           cp -r $DOWNLOAD_ROOT_PATH/turboacc/nft-fullcone $CMZJ_PACKAGE_ROOT_PATH/turboacc/
           cp -r $DOWNLOAD_ROOT_PATH/other/* $CMZJ_PACKAGE_ROOT_PATH/
+          cd $CMZJ_PACKAGE_ROOT_PATH && ls
 
       - name: 修改Makefile文件
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
