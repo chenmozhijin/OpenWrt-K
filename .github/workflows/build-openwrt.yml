@@ -199,11 +199,11 @@ jobs:
       - name: 上传 cmzj_package
         uses: actions/upload-artifact@v3
         with:
-          name: OpenWrt-cmzj_package
+          name: cmzj_package
           path: ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
 
       - name: 上传 cmzj_patch
         uses: actions/upload-artifact@v3
         with:
-          name: OpenWrt-cmzj_patch
+          name: cmzj_patch
           path: ${{ env.CMZJ_PATCH_ROOT_PATH }}
