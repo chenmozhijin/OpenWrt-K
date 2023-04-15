@@ -1,3 +1,4 @@
+
 #=============================================================================#
 #MIT License
 
@@ -154,7 +155,7 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/passwall/luci-app-passwall $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/passwall/openwrt-passwall $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/passwall/openwrt-passwall2 $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc $CMZJ_PACKAGE_ROOT_PATH/turboacc/
+          cp -r $DOWNLOAD_ROOT_PATH/turboacc/luci-app-turboacc $CMZJ_PACKAGE_ROOT_PATH/turboacc/
           cp -r $DOWNLOAD_ROOT_PATH/turboacc/nft-fullcone $CMZJ_PACKAGE_ROOT_PATH/turboacc/
           cp -r $DOWNLOAD_ROOT_PATH/other/* $CMZJ_PACKAGE_ROOT_PATH/
           cd $CMZJ_PACKAGE_ROOT_PATH && ls
@@ -196,17 +197,21 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc/nftables-1.0.7/nftables $CMZJ_PATCH_ROOT_PATH/nftables
           cp -r $DOWNLOAD_ROOT_PATH/openwrt/package/network/services/dnsmasq $CMZJ_PATCH_ROOT_PATH/dnsmasq
           cp -r $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/libubox
+      - name: 压缩
+        run: |
+        tar cvpzf $GITHUB_WORKSPACE/cmzj_package.tgz $CMZJ_PACKAGE_ROOT_PATH
+        tar cvpzf $GITHUB_WORKSPACE/cmzj_patch.tgz $CMZJ_PATCH_ROOT_PATH
       - name: 上传 cmzj_package
         uses: actions/upload-artifact@v3
         with:
           name: cmzj_package
-          path: ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
+          path: ${{ env.GITHUB_WORKSPACE }}/cmzj_package.tgz
 
       - name: 上传 cmzj_patch
         uses: actions/upload-artifact@v3
         with:
           name: cmzj_patch
-          path: ${{ env.CMZJ_PATCH_ROOT_PATH }}
+          path: ${{ env.GITHUB_WORKSPACE }}/cmzj_patch.tgz
   
   build:
     runs-on: ubuntu-22.04
@@ -272,14 +277,25 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: cmzj_package
-          path: ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
+          path: ${{ env.GITHUB_WORKSPACE }}
 
       - name: 下载cmzj_patch
         uses: actions/download-artifact@v3
         with:
           name: cmzj_patch
-          path: ${{ env.CMZJ_PATCH_ROOT_PATH }}
-          
+          path: ${{ env.GITHUB_WORKSPACE }}
+      - name: 解压
+        run:  |
+          tar xvpfz $GITHUB_WORKSPACE/cmzj_package.tgz -C $CMZJ_PACKAGE_ROOT_PATH
+          tar xvpfz $GITHUB_WORKSPACE/cmzj_patch.tgz -C $CMZJ_PATCH_ROOT_PATH
+          echo "cmzj_package"
+          ls $CMZJ_PACKAGE_ROOT_PATH
+          echo "cmzj_patch"
+          ls $CMZJ_PATCH_ROOT_PATH     
+
+      - name: 解压
+        run:  |      
+
       - name: 克隆源代码
         working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
@@ -603,7 +619,6 @@ jobs:
           cd upload
           export UPLOAD_ROOT_PATH="$(pwd)"
           echo "UPLOAD_ROOT_PATH=$UPLOAD_ROOT_PATH" >> $GITHUB_ENV
-
       - name: 初始化环境
         run: |
           sudo -E apt update
@@ -612,7 +627,6 @@ jobs:
           sudo mkdir -p update
           sudo chown $USER:$GROUPS update
           cd update
-
       - name: 生成 release tag
         id: tag
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
@@ -623,7 +637,6 @@ jobs:
           echo ${{ env.RELEASE_NAME }} >> $GITHUB_OUTPUT
           echo ${{ env.RELEASE_NAME }}
           echo ${{ steps.tag.outputs.release_tag }}
-
       - name: 下载固件
         uses: actions/download-artifact@v3
         with:
