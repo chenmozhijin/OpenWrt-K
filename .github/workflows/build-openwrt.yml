@@ -84,6 +84,7 @@ jobs:
           mkdir -p $CMZJ_PATCH_ROOT_PATH/hack-5.10
           mkdir -p $CMZJ_PATCH_ROOT_PATH/hack-5.15
           mkdir -p $CMZJ_PATCH_ROOT_PATH/dnsmasq
+          mkdir -p $CMZJ_PATCH_ROOT_PATH/libubox
       - name: 克隆源代码
         working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}
         run:  |
@@ -192,11 +193,11 @@ jobs:
           cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
           cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
           cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/982-add-bcm-fullconenat-support.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
-          cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc/firewall4-04a06bd70b9808b14444cae81a2faba4708ee231/firewall4 $CMZJ_PATCH_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc/libnftnl-1.2.5/libnftnl $CMZJ_PATCH_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc/nftables-1.0.7/nftables $CMZJ_PATCH_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/openwrt/package/network/services/dnsmasq $CMZJ_PATCH_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/
+          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/firewall4-04a06bd70b9808b14444cae81a2faba4708ee231/firewall4 $CMZJ_PATCH_ROOT_PATH/firewall4
+          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/libnftnl-1.2.5/libnftnl $CMZJ_PATCH_ROOT_PATH/libnftnl
+          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/nftables-1.0.7/nftables $CMZJ_PATCH_ROOT_PATH/nftables
+          cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/network/services/dnsmasq $CMZJ_PATCH_ROOT_PATH/dnsmasq
+          cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/libubox
       - name: 压缩
         run: |
           cd $CMZJ_PACKAGE_ROOT_PATH
