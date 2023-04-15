@@ -199,8 +199,8 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/libubox
       - name: 压缩
         run: |
-          tar cvpzf $GITHUB_WORKSPACE/cmzj_package.tgz $CMZJ_PACKAGE_ROOT_PATH
-          tar cvpzf $GITHUB_WORKSPACE/cmzj_patch.tgz $CMZJ_PATCH_ROOT_PATH
+          tar cvpzf $GITHUB_WORKSPACE/cmzj_package.tgz $CMZJ_PACKAGE_ROOT_PATH/*
+          tar cvpzf $GITHUB_WORKSPACE/cmzj_patch.tgz $CMZJ_PATCH_ROOT_PATH/*
       - name: 上传 cmzj_package
         uses: actions/upload-artifact@v3
         with:
@@ -277,7 +277,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: cmzj_package
-
 
       - name: 下载cmzj_patch
         uses: actions/download-artifact@v3
