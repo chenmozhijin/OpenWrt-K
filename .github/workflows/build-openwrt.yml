@@ -642,7 +642,7 @@ jobs:
           cp ./package/*transmission* ./package-upload/
           
       - name: 上传固件到 Release
-        id: release
+        id: firmware-release
         uses: softprops/action-gh-release@v0.1.15
         with:
           tag_name: ${{ env.RELEASE_NAME }}
@@ -650,7 +650,7 @@ jobs:
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
 
       - name: 上传包到 Release
-        id: release
+        id: package-release
         uses: softprops/action-gh-release@v0.1.15
         with:
           tag_name: ${{ env.RELEASE_NAME }}-package
