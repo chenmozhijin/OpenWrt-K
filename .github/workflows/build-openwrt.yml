@@ -275,6 +275,21 @@ jobs:
           cd cmzj_patch
           export CMZJ_PATCH_ROOT_PATH="$(pwd)"
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
+          
+      - name: test1
+        working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
+        run: |
+         echo "CMZJ_PATCH_ROOT_PATH"
+         echo $CMZJ_PATCH_ROOT_PATH
+         echo "CMZJ_PACKAGE_ROOT_PATH"
+         echo $CMZJ_PACKAGE_ROOT_PATH
+         echo "1"
+         echo $OPENWRT_ROOT_PATH
+         echo "1"
+         echo cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/
+         echo "1"
+         echo cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/
+   
       - name: 下载cmzj_package
         uses: actions/download-artifact@v3
         with:
@@ -304,6 +319,19 @@ jobs:
       - name: 切换到新的稳定版分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: git checkout v22.03.4
+      - name: test
+        working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
+        run: |
+         echo "CMZJ_PATCH_ROOT_PATH"
+         echo $CMZJ_PATCH_ROOT_PATH
+         echo "CMZJ_PACKAGE_ROOT_PATH"
+         echo $CMZJ_PACKAGE_ROOT_PATH
+         echo "1"
+         echo $OPENWRT_ROOT_PATH
+         echo "1"
+         echo cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/
+         echo "1"
+         echo cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/
 
       - name: 复制cmzj_package 打补丁 
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
