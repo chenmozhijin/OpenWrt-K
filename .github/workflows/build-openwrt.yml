@@ -308,18 +308,18 @@ jobs:
           cp -r $CMZJ_PATCH_ROOT_PATH/nftables/* $OPENWRT_ROOT_PATH/package/network/utils/nftables
           cp -r $CMZJ_PATCH_ROOT_PATH/libubox/* $OPENWRT_ROOT_PATH/package/libs/libubox
           cp -r $CMZJ_PATCH_ROOT_PATH/dnsmasq/* $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          echo "libnftnl-Makefile"
+          echo "libnftnl-file"
           ls $OPENWRT_ROOT_PATH/package/libs/libnftnl
-          echo "firewall4-Makefile"
+          echo "firewall4-file"
           ls $OPENWRT_ROOT_PATH/package/network/config/firewall4
-          echo "nftables-Makefile"
+          echo "nftables-file"
           ls $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          echo "libubox-Makefile"
+          echo "libubox-file"
           ls $OPENWRT_ROOT_PATH/package/libs/libubox
-          echo "dnsmasq-Makefile"
+          echo "dnsmasq-file"
           ls $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
           echo "firewall4-patches"
-          ls $OPENWRT_ROOT_PATH/package/network/config/firewall4
+          ls $OPENWRT_ROOT_PATH/package/network/config/firewall4/patches/
           echo "libnftnl-patches"
           ls $OPENWRT_ROOT_PATH/package/libs/libnftnl/patches/
           echo "nftables-patches"
@@ -332,7 +332,7 @@ jobs:
         run: |
           sed -i 's/-full//' ./include/target.mk 
           sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk 
-          sed -i 's/256/1024/' ./target/linux/x86/image/Makefile                
+          sed -i 's/256/1024/' ./target/linux/x86/image/Makefile
       
       - name: 更新 feeds 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -594,6 +594,7 @@ jobs:
           cd upload
           export UPLOAD_ROOT_PATH="$(pwd)"
           echo "UPLOAD_ROOT_PATH=$UPLOAD_ROOT_PATH" >> $GITHUB_ENV
+
       - name: 初始化环境
         run: |
           sudo -E apt update
@@ -602,6 +603,7 @@ jobs:
           sudo mkdir -p update
           sudo chown $USER:$GROUPS update
           cd update
+
       - name: 生成 release tag
         id: tag
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
@@ -612,24 +614,53 @@ jobs:
           echo ${{ env.RELEASE_NAME }} >> $GITHUB_OUTPUT
           echo ${{ env.RELEASE_NAME }}
           echo ${{ steps.tag.outputs.release_tag }}
+
       - name: 下载固件
         uses: actions/download-artifact@v3
         with:
           name: OpenWrt-firmware
           path: ${{ env.UPLOAD_ROOT_PATH }}
           
-      - name: 上传到 Release
+      - name: 下载包
+        uses: actions/download-artifact@v3
+        with:
+          name: OpenWrt-package
+          path: ${{ env.UPLOAD_ROOT_PATH }}/package
+
+      - name: 整理包
+        working-directory: ${{ env.UPLOAD_ROOT_PATH }}
+        run: |
+          mkdir package-upload
+          cp ./package/qBittorrent-static* ./package-upload/
+          cp ./package/*baidupcs-web* ./package-upload/
+          cp ./package/*syncdial* ./package-upload/
+          cp ./package/*qbittorrent* ./package-upload/
+          cp ./package/baidupcs-web* ./package-upload/
+          cp ./package/*mwan3* ./package-upload/
+          cp ./package/*passwall* ./package-upload/
+          cp ./package/transmission* ./package-upload/
+          cp ./package/*transmission* ./package-upload/
+          
+      - name: 上传固件到 Release
         id: release
         uses: softprops/action-gh-release@v0.1.15
         with:
           tag_name: ${{ env.RELEASE_NAME }}
           files: ${{ env.UPLOAD_ROOT_PATH }}/x86/64/*
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
-          
+
+      - name: 上传包到 Release
+        id: release
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          tag_name: ${{ env.RELEASE_NAME }}-package
+          files: ${{ env.UPLOAD_ROOT_PATH }}/package-upload/*
+          body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt   
+                 
       - name: 删除旧的Releases
         uses: dev-drprasad/delete-older-releases@v0.2.1
         with:
-          keep_latest: 3
+          keep_latest: 4
           delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
