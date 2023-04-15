@@ -21,7 +21,7 @@
 +    luci-app-fileassistant
 +    luci-app-firewall
 +    luci-app-mwan3
-+    [luci-app-netdata](https://github.com/jerrykuku/luci-theme-argon)
++    [luci-app-netdata](https://github.com/sirpdboy/luci-app-netdata)
 +    [luci-app-netspeedtest](https://github.com/sirpdboy/netspeedtest)
 +    luci-app-nlbwmon
 +    luci-app-opkg
