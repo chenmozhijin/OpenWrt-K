@@ -303,11 +303,18 @@ jobs:
           rm -rf $OPENWRT_ROOT_PATH/package/network/utils/nftables
           rm -rf $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
           rm -rf $OPENWRT_ROOT_PATH/package/libs/libubox
-          cp -r $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4
-          cp -r $CMZJ_PATCH_ROOT_PATH/libnftnl/* $OPENWRT_ROOT_PATH/package/libs/libnftnl
-          cp -r $CMZJ_PATCH_ROOT_PATH/nftables/* $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          cp -r $CMZJ_PATCH_ROOT_PATH/libubox/* $OPENWRT_ROOT_PATH/package/libs/libubox
-          cp -r $CMZJ_PATCH_ROOT_PATH/dnsmasq/* $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+          mkdir -p $OPENWRT_ROOT_PATH/package/network/config/firewall4
+          mkdir -p $OPENWRT_ROOT_PATH/package/libs/libnftnl
+          mkdir -p $OPENWRT_ROOT_PATH/package/network/utils/nftables
+          mkdir -p $OPENWRT_ROOT_PATH/package/libs/libubox
+          mkdir -p $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+          cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/ || cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/
+          cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl/* $OPENWRT_ROOT_PATH/package/libs/libnftnl/ || cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl/* $OPENWRT_ROOT_PATH/package/libs/libnftnl/
+          cp -RT $CMZJ_PATCH_ROOT_PATH/nftables/* $OPENWRT_ROOT_PATH/package/network/utils/nftables/ || cmzj_patch/nftables/* $OPENWRT_ROOT_PATH/package/network/utils/nftables/
+          cp -RT $CMZJ_PATCH_ROOT_PATH/libubox/* $OPENWRT_ROOT_PATH/package/libs/libubox/ || cp -R $CMZJ_PATCH_ROOT_PATH/libubox/* $OPENWRT_ROOT_PATH/package/libs/libubox/
+          cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq/* $OPENWRT_ROOT_PATH/package/network/services/dnsmasq/ || cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq/* $OPENWRT_ROOT_PATH/package/network/services/dnsmasq/
+          echo "cmzj_patch"
+          ls $CMZJ_PATCH_ROOT_PATH
           echo "cmzj_package"
           ls $OPENWRT_ROOT_PATH/package/cmzj_package
           echo "libnftnl-file"
