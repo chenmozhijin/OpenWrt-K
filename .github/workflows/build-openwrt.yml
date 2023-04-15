@@ -294,7 +294,7 @@ jobs:
       - name: 复制cmzj_package 打补丁 
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
-          cp -r $CMZJ_PATCH_ROOT_PATH $OPENWRT_ROOT_PATH/package/cmzj_package
+          cp -r $CMZJ_PACKAGE_ROOT_PATH $OPENWRT_ROOT_PATH/package/cmzj_package
           #cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
           #cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
           #cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/982-add-bcm-fullconenat-support.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
@@ -308,6 +308,8 @@ jobs:
           cp -r $CMZJ_PATCH_ROOT_PATH/nftables/* $OPENWRT_ROOT_PATH/package/network/utils/nftables
           cp -r $CMZJ_PATCH_ROOT_PATH/libubox/* $OPENWRT_ROOT_PATH/package/libs/libubox
           cp -r $CMZJ_PATCH_ROOT_PATH/dnsmasq/* $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+          echo "cmzj_package"
+          ls $OPENWRT_ROOT_PATH/package/cmzj_package
           echo "libnftnl-file"
           ls $OPENWRT_ROOT_PATH/package/libs/libnftnl
           echo "firewall4-file"
@@ -656,7 +658,7 @@ jobs:
           tag_name: ${{ env.RELEASE_NAME }}-package
           files: ${{ env.UPLOAD_ROOT_PATH }}/package-upload/*
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt   
-                 
+
       - name: 删除旧的Releases
         uses: dev-drprasad/delete-older-releases@v0.2.1
         with:
