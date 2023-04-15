@@ -295,9 +295,9 @@ jobs:
           echo "cmzj_patch"
           ls $CMZJ_PATCH_ROOT_PATH
           echo "cmzj_package-permissions"
-          ls -ld $CMZJ_PACKAGE_ROOT_PATH/*
+          ls -l $CMZJ_PACKAGE_ROOT_PATH/*
           echo "cmzj_patch-permissions"
-          ls -ld $CMZJ_PATCH_ROOT_PATH/*
+          ls -l $CMZJ_PATCH_ROOT_PATH/*
 
       - name: 克隆源代码
         working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
