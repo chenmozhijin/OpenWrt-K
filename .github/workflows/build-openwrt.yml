@@ -196,7 +196,7 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc/libnftnl-1.2.5/libnftnl $CMZJ_PATCH_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc/nftables-1.0.7/nftables $CMZJ_PATCH_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/openwrt/package/network/services/dnsmasq $CMZJ_PATCH_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/libubox
+          cp -r $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/
       - name: 压缩
         run: |
           cd $CMZJ_PACKAGE_ROOT_PATH
@@ -275,21 +275,6 @@ jobs:
           cd cmzj_patch
           export CMZJ_PATCH_ROOT_PATH="$(pwd)"
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
-          
-      - name: test1
-        working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
-        run: |
-         echo "CMZJ_PATCH_ROOT_PATH"
-         echo $CMZJ_PATCH_ROOT_PATH
-         echo "CMZJ_PACKAGE_ROOT_PATH"
-         echo $CMZJ_PACKAGE_ROOT_PATH
-         echo "1"
-         echo $OPENWRT_ROOT_PATH
-         echo "1"
-         echo cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/
-         echo "1"
-         echo cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/
-   
       - name: 下载cmzj_package
         uses: actions/download-artifact@v3
         with:
@@ -307,7 +292,11 @@ jobs:
           echo "cmzj_package"
           ls $CMZJ_PACKAGE_ROOT_PATH
           echo "cmzj_patch"
-          ls $CMZJ_PATCH_ROOT_PATH     
+          ls $CMZJ_PATCH_ROOT_PATH
+          echo "cmzj_package-permissions"
+          ls -ld $CMZJ_PACKAGE_ROOT_PATH/*
+          echo "cmzj_patch-permissions"
+          ls -ld $CMZJ_PATCH_ROOT_PATH/*
 
       - name: 克隆源代码
         working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
@@ -319,19 +308,6 @@ jobs:
       - name: 切换到新的稳定版分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: git checkout v22.03.4
-      - name: test
-        working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
-        run: |
-         echo "CMZJ_PATCH_ROOT_PATH"
-         echo $CMZJ_PATCH_ROOT_PATH
-         echo "CMZJ_PACKAGE_ROOT_PATH"
-         echo $CMZJ_PACKAGE_ROOT_PATH
-         echo "1"
-         echo $OPENWRT_ROOT_PATH
-         echo "1"
-         echo cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/
-         echo "1"
-         echo cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/
 
       - name: 复制cmzj_package 打补丁 
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
@@ -350,11 +326,11 @@ jobs:
           mkdir -p $OPENWRT_ROOT_PATH/package/network/utils/nftables
           mkdir -p $OPENWRT_ROOT_PATH/package/libs/libubox
           mkdir -p $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/ || cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4/* $OPENWRT_ROOT_PATH/package/network/config/firewall4/
-          cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl/* $OPENWRT_ROOT_PATH/package/libs/libnftnl/ || cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl/* $OPENWRT_ROOT_PATH/package/libs/libnftnl/
-          cp -RT $CMZJ_PATCH_ROOT_PATH/nftables/* $OPENWRT_ROOT_PATH/package/network/utils/nftables/ || cmzj_patch/nftables/* $OPENWRT_ROOT_PATH/package/network/utils/nftables/
-          cp -RT $CMZJ_PATCH_ROOT_PATH/libubox/* $OPENWRT_ROOT_PATH/package/libs/libubox/ || cp -R $CMZJ_PATCH_ROOT_PATH/libubox/* $OPENWRT_ROOT_PATH/package/libs/libubox/
-          cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq/* $OPENWRT_ROOT_PATH/package/network/services/dnsmasq/ || cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq/* $OPENWRT_ROOT_PATH/package/network/services/dnsmasq/
+          cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4 $OPENWRT_ROOT_PATH/package/network/config/firewall4
+          cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl $OPENWRT_ROOT_PATH/package/libs/libnftnl
+          cp -RT $CMZJ_PATCH_ROOT_PATH/nftables $OPENWRT_ROOT_PATH/package/network/utils/nftables
+          cp -RT $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
+          cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
           echo "cmzj_patch"
           ls $CMZJ_PATCH_ROOT_PATH
           echo "cmzj_package"
