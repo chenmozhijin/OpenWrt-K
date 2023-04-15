@@ -48,7 +48,7 @@ jobs:
       - name: 准备环境
         run:  |
           sudo -E apt update
-          sudo apt install -y curl git  rsync unzip wget sed
+          sudo apt install -y curl git  rsync unzip wget sed tar
       
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -205,13 +205,13 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: cmzj_package
-          path: ${{ env.GITHUB_WORKSPACE }}/cmzj_package.tgz
+          path: cmzj_package.tgz
 
       - name: 上传 cmzj_patch
         uses: actions/upload-artifact@v3
         with:
           name: cmzj_patch
-          path: ${{ env.GITHUB_WORKSPACE }}/cmzj_patch.tgz
+          path: cmzj_patch.tgz
   
   build:
     runs-on: ubuntu-22.04
@@ -277,13 +277,13 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: cmzj_package
-          path: ${{ env.GITHUB_WORKSPACE }}
+
 
       - name: 下载cmzj_patch
         uses: actions/download-artifact@v3
         with:
           name: cmzj_patch
-          path: ${{ env.GITHUB_WORKSPACE }}
+
       - name: 解压
         run:  |
           tar xvpfz $GITHUB_WORKSPACE/cmzj_package.tgz -C $CMZJ_PACKAGE_ROOT_PATH
