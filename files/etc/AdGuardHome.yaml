@@ -20,6 +20,7 @@ dns:
   blocking_ipv4: ""
   blocking_ipv6: ""
   blocked_response_ttl: 60
+  protection_disabled_until: null
   parental_block_host: family-block.dns.adguard.com
   safebrowsing_block_host: standard-block.dns.adguard.com
   ratelimit: 0
@@ -36,7 +37,7 @@ dns:
     - 119.29.29.29
     - 101.226.4.6
     - 180.76.76.76
-  all_servers: false
+  all_servers: true
   fastest_addr: false
   fastest_timeout: 1s
   allowed_clients: []
@@ -63,15 +64,23 @@ dns:
   handle_ddr: true
   ipset: []
   ipset_file: ""
+  bootstrap_prefer_ipv6: false
   filtering_enabled: true
   filters_update_interval: 24
   parental_enabled: false
-  safesearch_enabled: false
   safebrowsing_enabled: false
   safebrowsing_cache_size: 1048576
   safesearch_cache_size: 1048576
   parental_cache_size: 1048576
   cache_time: 30
+  safe_search:
+    enabled: false
+    bing: true
+    duckduckgo: true
+    google: true
+    pixabay: true
+    yandex: true
+    youtube: true
   rewrites: []
   blocked_services: []
   upstream_timeout: 10s
@@ -98,15 +107,15 @@ tls:
   private_key_path: ""
   strict_sni_check: false
 querylog:
-  enabled: true
-  file_enabled: true
+  ignored: []
   interval: 6h
   size_memory: 1000
-  ignored: []
-statistics:
   enabled: true
-  interval: 30
+  file_enabled: true
+statistics:
   ignored: []
+  interval: 720h
+  enabled: true
 filters:
   - enabled: true
     url: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
@@ -226,4 +235,4 @@ os:
   group: ""
   user: ""
   rlimit_nofile: 0
-schema_version: 17
+schema_version: 20
