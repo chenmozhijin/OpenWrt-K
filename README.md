@@ -32,7 +32,6 @@
 +    luci-app-samba4
 +    [luci-app-serverchan](https://github.com/tty228/luci-app-serverchan)
 +    [luci-app-smartdns](https://github.com/pymumu/luci-app-smartdns)
-+    luci-app-socat
 +    luci-app-syncdial
 +    luci-app-transmission
 +    luci-app-ttyd
