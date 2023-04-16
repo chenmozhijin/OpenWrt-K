@@ -181,8 +181,8 @@ jobs:
           ln -s zh-cn ./luci-app-zerotier/po/zh_Hans
           ln -s zh-cn ./luci-app-usb-printer/po/zh_Hans
           ln -s zh-cn ./luci-app-qbittorrent/po/zh_Hans
-          rm -rf ./netspeedtest/luci-app-netspeedtest/po/zh_Hans
-          ln -s zh-cn ./netspeedtest/luci-app-netspeedtest/po/zh_Hans
+          rm -rf ./NetSpeedTest/luci-app-netspeedtest/po/zh_Hans
+          ln -s zh-cn ./NetSpeedTest/luci-app-netspeedtest/po/zh_Hans
       - name: 修改luci-app-netdata
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
