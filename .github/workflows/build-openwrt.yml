@@ -315,7 +315,7 @@ jobs:
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
           cp -r $CMZJ_PACKAGE_ROOT_PATH $OPENWRT_ROOT_PATH/package/cmzj_package
-          #cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
+          cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
           #cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
           #cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/982-add-bcm-fullconenat-support.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
           rm -rf $OPENWRT_ROOT_PATH/package/libs/libnftnl
