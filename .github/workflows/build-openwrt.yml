@@ -502,9 +502,9 @@ jobs:
           sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' Loukky.txt>> gfwlist_chen
           sort gfwlist_chen | uniq > gfwlist
           sed -e 's/^/[\//g' -e 's/$/\/]127.0.0.1:5335/g' gfwlist >AdGuardHomednslist
-          cat ./AdGuardHomednslist >> $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist\(by cmzj\).yaml
-          echo "AdGuardHome-dnslist\(by cmzj\).yaml"
-          cat $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist\(by cmzj\).yaml
+          cat ./AdGuardHomednslist >> $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml
+          echo "AdGuardHome-dnslist(by cmzj).yaml"
+          cat $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml
           
       
       - name: 生成配置文件
