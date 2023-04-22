@@ -32,11 +32,13 @@ on:
       - 'config/**'
       - '.github/**'
       - 'files/**'
+      - '!README.md'
   pull_request:
             paths:
               - 'config/**'
               - '.github/**'
               - 'files/**'
+              - '!README.md'
   workflow_dispatch:
 permissions:
   contents: write
@@ -60,13 +62,7 @@ jobs:
           cd download
           export DOWNLOAD_ROOT_PATH="$(pwd)"
           echo "DOWNLOAD_ROOT_PATH=$DOWNLOAD_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p lede
-          mkdir -p Lienol
-          mkdir -p immortalwrt
-          mkdir -p wongsyrone
-          mkdir -p passwall
-          mkdir -p turboacc
-          mkdir -p other
+          mkdir -p lede Lienol immortalwrt wongsyrone passwall turboacc other
           cd $GITHUB_WORKSPACE
           mkdir -p cmzj_package
           cd cmzj_package
@@ -78,13 +74,8 @@ jobs:
           cd cmzj_patch
           export CMZJ_PATCH_ROOT_PATH="$(pwd)"
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/firewall4/patches/
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/libnftnl/patches/
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/nftables/patches/
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/hack-5.10
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/hack-5.15
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/dnsmasq
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/libubox
+          mkdir -p $CMZJ_PATCH_ROOT_PATH/firewall4/patches/ $CMZJ_PATCH_ROOT_PATH/libnftnl/patches/ $CMZJ_PATCH_ROOT_PATH/nftables/patches/ $CMZJ_PATCH_ROOT_PATH/hack-5.10 $CMZJ_PATCH_ROOT_PATH/hack-5.15 $CMZJ_PATCH_ROOT_PATH/dnsmasq $CMZJ_PATCH_ROOT_PATH/libubox
+
       - name: 克隆源代码
         working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}
         run:  |
@@ -296,9 +287,9 @@ jobs:
           echo "cmzj_patch"
           ls $CMZJ_PATCH_ROOT_PATH
           echo "cmzj_package-permissions"
-          ls -l $CMZJ_PACKAGE_ROOT_PATH/*
+          ls -l $CMZJ_PACKAGE_ROOT_PATH/**
           echo "cmzj_patch-permissions"
-          ls -l $CMZJ_PATCH_ROOT_PATH/*
+          ls -l $CMZJ_PATCH_ROOT_PATH/**
 
       - name: 克隆源代码
         working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
@@ -468,7 +459,7 @@ jobs:
           mv -f ./files/usr/bin/AdGuardHome/tmp/AdGuardHome/AdGuardHome ./files/usr/bin/AdGuardHome
           rm -rf ./files/usr/bin/AdGuardHome/tmp
           chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
-          echo "更新AdGuardHome DNS名单"
+          echo "更新AdGuardHome DNS黑白名单"
           mkdir -p ./files/usr/bin/AdGuardHome/data/filters
           cd $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/data/filters
           curl -o 1628750870.txt https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt -s
@@ -492,6 +483,29 @@ jobs:
           curl -o 1677875739.txt https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt -s
           curl -o 1677875740.txt https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt -s
           ls
+          echo "更新AdGuardHome上游 DNS 服务器"
+          cd  $WORKSPACE_ROOT_PATH
+          mkdir -p tmp
+          cd $WORKSPACE_ROOT_PATH/tmp
+          ls
+          rm -rf *
+          curl https://raw.githubusercontent.com/YW5vbnltb3Vz/domain-list-community/release/gfwlist.txt -o base64_YW5vbnltb3Vz.txt
+          curl https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/gfw.txt -o Loyalsoldier.txt
+          curl https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt -o base64_gfwlist.txt
+          curl https://raw.githubusercontent.com/Loukky/gfwlist-by-loukky/master/gfwlist.txt -o base64_Loukky.txt
+          base64 -d base64_YW5vbnltb3Vz.txt > YW5vbnltb3Vz.txt
+          base64 -d base64_gfwlist.txt > gfwlist.txt
+          base64 -d base64_Loukky.txt > Loukky.txt
+          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' YW5vbnltb3Vz.txt>> gfwlist_chen
+          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' Loyalsoldier.txt>> gfwlist_chen
+          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' gfwlist.txt>> gfwlist_chen
+          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' Loukky.txt>> gfwlist_chen
+          sort gfwlist_chen | uniq > gfwlist
+          sed -e 's/^/[\//g' -e 's/$/\/]127.0.0.1:5335/g' gfwlist >AdGuardHomednslist
+          cat ./AdGuardHomednslist >> $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist(by cmzj).yaml
+          echo "AdGuardHome-dnslist(by cmzj).yaml"
+          cat $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist(by cmzj).yaml
+          
       
       - name: 生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -666,14 +680,6 @@ jobs:
           cp ./package/*passwall* ./package-upload/
           cp ./package/transmission* ./package-upload/
           cp ./package/*transmission* ./package-upload/
-          
-      - name: 上传固件到 Release
-        id: firmware-release
-        uses: softprops/action-gh-release@v0.1.15
-        with:
-          tag_name: ${{ env.RELEASE_NAME }}
-          files: ${{ env.UPLOAD_ROOT_PATH }}/x86/64/*
-          body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
 
       - name: 上传包到 Release
         id: package-release
@@ -682,6 +688,14 @@ jobs:
           tag_name: ${{ env.RELEASE_NAME }}-package
           files: ${{ env.UPLOAD_ROOT_PATH }}/package-upload/*
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt   
+          
+      - name: 上传固件到 Release
+        id: firmware-release
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          tag_name: ${{ env.RELEASE_NAME }}
+          files: ${{ env.UPLOAD_ROOT_PATH }}/x86/64/*
+          body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
 
       - name: 删除旧的Releases
         uses: dev-drprasad/delete-older-releases@v0.2.1
