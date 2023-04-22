@@ -13,27 +13,22 @@
 +    [luci-app-adguardhome](https://github.com/rufengsuixing/luci-app-adguardhome)
 +    [luci-app-argon-config](https://github.com/jerrykuku/luci-app-argon-config)
 +    luci-app-aria2
-+    luci-app-baidupcs-web
 +    luci-app-cifs-mount
 +    luci-app-ddns
 +    luci-app-diag-core
 +    [luci-app-diskman](https://github.com/lisaac/luci-app-diskman)
 +    luci-app-fileassistant
 +    luci-app-firewall
-+    luci-app-mwan3
 +    [luci-app-netdata](https://github.com/sirpdboy/luci-app-netdata)
 +    [luci-app-netspeedtest](https://github.com/sirpdboy/netspeedtest)
 +    luci-app-nlbwmon
 +    luci-app-opkg
 +    [luci-app-passwall](https://github.com/xiaorouji/openwrt-passwall/tree/luci)
 +    [luci-app-passwall2](https://github.com/xiaorouji/openwrt-passwall2)
-+    luci-app-qbittorrent
 +    luci-app-rclone
 +    luci-app-samba4
 +    [luci-app-serverchan](https://github.com/tty228/luci-app-serverchan)
 +    [luci-app-smartdns](https://github.com/pymumu/luci-app-smartdns)
-+    luci-app-syncdial
-+    luci-app-transmission
 +    luci-app-ttyd
 +    [luci-app-turboacc](https://github.com/chenmozhijin/turboacc)
 +    luci-app-upnp
@@ -44,6 +39,11 @@
 +    luci-app-wol
 +    luci-app-zerotier
 +    内置的LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
+随固件编译的插件：
++    luci-app-baidupcs-web
++    luci-app-qbittorrent
++    luci-app-syncdial
++    luci-app-transmission
 ## 感谢
  感谢以下项目
  
