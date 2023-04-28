@@ -6,42 +6,7 @@ sed -i "/^DISTRIB_DESCRIPTION/s/DISTRIB_DESCRIPTION=CMZJO/DISTRIB_DESCRIPTION='O
 sed -i "/^DISTRIB_DESCRIPTION/s/CMZJ/ Compiled by 沉默の金'/g" /etc/openwrt_release
 chmod 755 /etc/init.d/netdata
 chmod 755 /usr/bin/AdGuardHome/AdGuardHome
-uci batch << EOI
-set passwall.@global[0].dns_mode='dns2tcp'
-set passwall.@global[0].tcp_proxy_mode='gfwlist'
-set passwall.@global[0].tcp_node_socks_port='1070'
-set passwall.@global[0].remote_dns='127.0.0.1:1745'
-set passwall.@global[0].when_chnroute_default_dns='chinadns_ng'
-set passwall.@global[0].udp_proxy_mode='chnroute'
-set passwall.@global_forwarding[0].use_nft='1'
-set passwall.@global_other[0].nodes_ping='auto_ping tcping info'
-set passwall.@global_rules[0].gfwlist_update='1'
-set passwall.@global_rules[0].auto_update='1'
-set passwall.@global_rules[0].week_update='7'
-del_list passwall.@global_rules[0].chnroute_url='https://ispip.clang.cn/all_cn_cidr.txt'
-del_list passwall.@global_rules[0].chnroute_url='https://fastly.jsdelivr.net/gh/soffchen/GeoIP2-CN@release/CN-ip-cidr.txt'
-del_list passwall.@global_rules[0].chnroute_url='https://fastly.jsdelivr.net/gh/Hackl0us/GeoIP2-CN@release/CN-ip-cidr.txt'
-del_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/YW5vbnltb3Vz/domain-list-community@release/gfwlist.txt'
-del_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
-del_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/Loukky/gfwlist-by-loukky/gfwlist.txt'
-add_list passwall.@global_rules[0].chnroute_url='https://ispip.clang.cn/all_cn_cidr.txt'
-add_list passwall.@global_rules[0].chnroute_url='https://fastly.jsdelivr.net/gh/soffchen/GeoIP2-CN@release/CN-ip-cidr.txt'
-add_list passwall.@global_rules[0].chnroute_url='https://fastly.jsdelivr.net/gh/Hackl0us/GeoIP2-CN@release/CN-ip-cidr.txt'
-add_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/YW5vbnltb3Vz/domain-list-community@release/gfwlist.txt'
-add_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
-add_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/Loukky/gfwlist-by-loukky/gfwlist.txt'
-set passwall.@global_rules[0].time_update='0'
-set passwall.@global_subscribe[0].filter_keyword_mode='1'
-set passwall.@global_subscribe[0].subscribe_proxy='1'
-add_list passwall.@global_subscribe[0].filter_discard_list='导航'
-set passwall.@auto_switch[0].retry_num='3'
-set passwall.@auto_switch[0].shunt_logic='1'
-set passwall.@auto_switch[0].connect_timeout='1'
-set passwall.@auto_switch[0].restore_switch='1'
-set passwall.@auto_switch[0].testing_time='1'
-set passwall.@auto_switch[0].enable='1'
-EOI
-uci commit passwall
+sleep 1
 uci set passwall.@global[0].dns_mode='dns2tcp'
 uci set passwall.@global[0].tcp_proxy_mode='gfwlist'
 uci set passwall.@global[0].tcp_node_socks_port='1070'
