@@ -300,7 +300,7 @@ jobs:
           echo "OPENWRT_ROOT_PATH=$OPENWRT_ROOT_PATH" >> $GITHUB_ENV
       - name: 切换到新的稳定版分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: git checkout v22.03.4
+        run: git checkout v22.03.5
 
       - name: 复制cmzj_package 打补丁 
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
