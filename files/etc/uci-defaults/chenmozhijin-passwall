@@ -1,0 +1,44 @@
+#!/bin/sh
+sleep 5
+[ ! -s "/etc/config/passwall" ] && sleep 5
+[ ! -s "/etc/config/passwall" ] && sleep 5
+[ ! -s "/etc/config/passwall" ] && sleep 5
+[ ! -s "/etc/config/passwall" ] && sleep 5
+[ ! -s "/etc/config/passwall" ] && sleep 5
+[ ! -s "/etc/config/passwall" ] && cp -f /usr/share/passwall/0_default_config /etc/config/passwall
+uci set passwall.@global[0].dns_mode='dns2tcp'
+uci set passwall.@global[0].tcp_proxy_mode='gfwlist'
+uci set passwall.@global[0].tcp_node_socks_port='1070'
+uci set passwall.@global[0].remote_dns='127.0.0.1:1745'
+uci set passwall.@global[0].when_chnroute_default_dns='chinadns_ng'
+uci set passwall.@global[0].udp_proxy_mode='chnroute'
+uci set passwall.@global_forwarding[0].use_nft='1'
+uci set passwall.@global_other[0].nodes_ping='auto_ping tcping info'
+uci set passwall.@global_rules[0].gfwlist_update='1'
+uci set passwall.@global_rules[0].auto_update='1'
+uci set passwall.@global_rules[0].week_update='7'
+uci del_list passwall.@global_rules[0].chnroute_url='https://ispip.clang.cn/all_cn_cidr.txt'
+uci del_list passwall.@global_rules[0].chnroute_url='https://fastly.jsdelivr.net/gh/soffchen/GeoIP2-CN@release/CN-ip-cidr.txt'
+uci del_list passwall.@global_rules[0].chnroute_url='https://fastly.jsdelivr.net/gh/Hackl0us/GeoIP2-CN@release/CN-ip-cidr.txt'
+uci del_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/YW5vbnltb3Vz/domain-list-community@release/gfwlist.txt'
+uci del_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
+uci del_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/Loukky/gfwlist-by-loukky/gfwlist.txt'
+uci add_list passwall.@global_rules[0].chnroute_url='https://ispip.clang.cn/all_cn_cidr.txt'
+uci add_list passwall.@global_rules[0].chnroute_url='https://fastly.jsdelivr.net/gh/soffchen/GeoIP2-CN@release/CN-ip-cidr.txt'
+uci add_list passwall.@global_rules[0].chnroute_url='https://fastly.jsdelivr.net/gh/Hackl0us/GeoIP2-CN@release/CN-ip-cidr.txt'
+uci add_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/YW5vbnltb3Vz/domain-list-community@release/gfwlist.txt'
+uci add_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/gfwlist/gfwlist/gfwlist.txt'
+uci add_list passwall.@global_rules[0].gfwlist_url='https://fastly.jsdelivr.net/gh/Loukky/gfwlist-by-loukky/gfwlist.txt'
+uci set passwall.@global_rules[0].time_update='0'
+uci set passwall.@global_subscribe[0].filter_keyword_mode='1'
+uci set passwall.@global_subscribe[0].subscribe_proxy='1'
+uci add_list passwall.@global_subscribe[0].filter_discard_list='导航'
+uci set passwall.@auto_switch[0].retry_num='3'
+uci set passwall.@auto_switch[0].shunt_logic='1'
+uci set passwall.@auto_switch[0].connect_timeout='1'
+uci set passwall.@auto_switch[0].restore_switch='1'
+uci set passwall.@auto_switch[0].testing_time='1'
+uci set passwall.@auto_switch[0].enable='1'
+uci commit passwall
+/etc/init.d/passwall restart
+exit 0
