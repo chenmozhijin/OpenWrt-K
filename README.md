@@ -45,6 +45,12 @@
 +    luci-app-qbittorrent
 +    luci-app-syncdial
 +    luci-app-transmission
+
+## 固件预览
+
+### 内置功能/turboacc:
+![内置功能/turboacc](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/1.png)
+
 ## 感谢
  感谢以下项目
  
