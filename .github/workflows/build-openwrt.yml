@@ -28,12 +28,16 @@ on:
   schedule:
     - cron: '0 4 * * *'
   push:
+    branches:
+      - main
     paths:
       - 'config/**'
       - '.github/**'
       - 'files/**'
       - '!README.md'
   pull_request:
+            branches:
+              - main
             paths:
               - 'config/**'
               - '.github/**'
@@ -268,6 +272,11 @@ jobs:
           cd cmzj_patch
           export CMZJ_PATCH_ROOT_PATH="$(pwd)"
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
+          cd $WORKSPACE_ROOT_PATH
+          mkdir -p log
+          cd log
+          export LOG_PATH="$(pwd)"
+          echo "LOG_PATH=$LOG_PATH" >> $GITHUB_ENV
       - name: 下载cmzj_package
         uses: actions/download-artifact@v3
         with:
@@ -282,14 +291,14 @@ jobs:
         run:  |
           tar xvpfz $GITHUB_WORKSPACE/cmzj_package.tgz -C $CMZJ_PACKAGE_ROOT_PATH
           tar xvpfz $GITHUB_WORKSPACE/cmzj_patch.tgz -C $CMZJ_PATCH_ROOT_PATH
-          echo "cmzj_package"
-          ls $CMZJ_PACKAGE_ROOT_PATH
-          echo "cmzj_patch"
-          ls $CMZJ_PATCH_ROOT_PATH
-          echo "cmzj_package-permissions"
-          ls -l $CMZJ_PACKAGE_ROOT_PATH/**
-          echo "cmzj_patch-permissions"
-          ls -l $CMZJ_PATCH_ROOT_PATH/**
+          echo "cmzj_package" >> $LOG_PATH/cmzj_package.log
+          ls $CMZJ_PACKAGE_ROOT_PATH >> $LOG_PATH/cmzj_package.log
+          echo "cmzj_patch"  >> $LOG_PATH/cmzj_patch.log
+          ls $CMZJ_PATCH_ROOT_PATH  >> $LOG_PATH/cmzj_patch.log
+          echo "cmzj_package-permissions" >> $LOG_PATH/cmzj_package.log
+          ls -l $CMZJ_PACKAGE_ROOT_PATH/** >> $LOG_PATH/cmzj_package.log
+          echo "cmzj_patch-permissions" >> $LOG_PATH/cmzj_patch.log
+          ls -l $CMZJ_PATCH_ROOT_PATH/**  >> $LOG_PATH/cmzj_patch.log
 
       - name: 克隆源代码
         working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
@@ -324,28 +333,28 @@ jobs:
           cp -RT $CMZJ_PATCH_ROOT_PATH/nftables $OPENWRT_ROOT_PATH/package/network/utils/nftables
           cp -RT $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
           cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          echo "cmzj_patch"
-          ls $CMZJ_PATCH_ROOT_PATH
-          echo "cmzj_package"
-          ls $OPENWRT_ROOT_PATH/package/cmzj_package
-          echo "libnftnl-file"
-          ls $OPENWRT_ROOT_PATH/package/libs/libnftnl
-          echo "firewall4-file"
-          ls $OPENWRT_ROOT_PATH/package/network/config/firewall4
-          echo "nftables-file"
-          ls $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          echo "libubox-file"
-          ls $OPENWRT_ROOT_PATH/package/libs/libubox
-          echo "dnsmasq-file"
-          ls $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          echo "firewall4-patches"
-          ls $OPENWRT_ROOT_PATH/package/network/config/firewall4/patches/
-          echo "libnftnl-patches"
-          ls $OPENWRT_ROOT_PATH/package/libs/libnftnl/patches/
-          echo "nftables-patches"
-          ls $OPENWRT_ROOT_PATH/package/network/utils/nftables/patches/
-          echo "hack-5.10" 
-          ls $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
+          echo "cmzj_patch" >> $LOG_PATH/cmzj_patch.log
+          ls $CMZJ_PATCH_ROOT_PATH >> $LOG_PATH/cmzj_patch.log
+          echo "cmzj_package" >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/package/cmzj_package >> $LOG_PATH/cmzj_patch.log
+          echo "libnftnl-file" >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/package/libs/libnftnl >> $LOG_PATH/cmzj_patch.log
+          echo "firewall4-file" >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/package/network/config/firewall4 >> $LOG_PATH/cmzj_patch.log
+          echo "nftables-file" >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/package/network/utils/nftables >> $LOG_PATH/cmzj_patch.log
+          echo "libubox-file" >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/package/libs/libubox >> $LOG_PATH/cmzj_patch.log
+          echo "dnsmasq-file" >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/package/network/services/dnsmasq >> $LOG_PATH/cmzj_patch.log
+          echo "firewall4-patches" >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/package/network/config/firewall4/patches/ >> $LOG_PATH/cmzj_patch.log
+          echo "libnftnl-patches" >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/package/libs/libnftnl/patches/ >> $LOG_PATH/cmzj_patch.log
+          echo "nftables-patches" >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/package/network/utils/nftables/patches/ >> $LOG_PATH/cmzj_patch.log
+          echo "hack-5.10"  >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10 >> $LOG_PATH/cmzj_patch.log
       
       - name: 修复问题
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -390,6 +399,7 @@ jobs:
           cp -r files $OPENWRT_ROOT_PATH/files
           chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
+          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/chenmozhijin-passwall
           cat ./config/target.config >> $OPENWRT_ROOT_PATH/.config
           cat ./config/luci.config >> $OPENWRT_ROOT_PATH/.config
           cat ./config/utilities.config >> $OPENWRT_ROOT_PATH/.config
@@ -483,7 +493,7 @@ jobs:
           curl -o 1677875739.txt https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt -s
           curl -o 1677875740.txt https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt -s
           ls
-          echo "更新AdGuardHome上游 DNS 服务器"
+          echo "更新AdGuardHome上游 DNS 服务器" 
           cd  $WORKSPACE_ROOT_PATH
           mkdir -p tmp
           cd $WORKSPACE_ROOT_PATH/tmp
@@ -503,15 +513,16 @@ jobs:
           sort gfwlist_chen | uniq > gfwlist
           sed -e 's/^/[\//g' -e 's/$/\/]127.0.0.1:5335/g' gfwlist >AdGuardHomednslist
           cat ./AdGuardHomednslist >> $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml
-          echo "AdGuardHome-dnslist(by cmzj).yaml"
-          cat $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml
+          echo "AdGuardHome-dnslist(by cmzj).yaml" >> $LOG_PATH/AdGuardHome.log
+          cat $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml >> $LOG_PATH/AdGuardHome.log
           
       
       - name: 生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           make defconfig
-          ./scripts/diffconfig.sh          
+          ./scripts/diffconfig.sh
+          ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
       
       - name: 检查剩余空间
         run:  |
@@ -581,19 +592,15 @@ jobs:
           du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
           du -h --max-depth=1 ./build_dir
           du -h --max-depth=1 ./bin
-      
-      - name: 上传日志
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: x86-64-logs
-          path: "${{ env.OPENWRT_ROOT_PATH }}/logs"
 
       - name: 准备 artifact
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           mkdir -p ./artifact/package
           mkdir -p ./artifact/buildinfo
+          echo "artifact-/bin" >> $LOG_PATH/cmzj_package.log
+          ls -l ./bin/** >> $LOG_PATH/cmzj_package.log
+          cp -rf $(find ./bin/targets/ -type f -name "*.ipk") ./artifact/package/
           rm -rf $(find ./bin/targets/ -type d -name "packages")
           cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
           cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
@@ -621,6 +628,20 @@ jobs:
         with:
           name: OpenWrt-firmware
           path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/
+          
+      - name: 收集日志
+        if: success() || failure()
+        run: |
+          mkdir -p openwrt-logs
+          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs
+          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config
+        
+      - name: 上传日志
+        if: success() || failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: x86-64-logs
+          path: "${{ env.LOG_PATH }}/logs"
   upload:
     needs: build
     runs-on: ubuntu-22.04
@@ -649,7 +670,7 @@ jobs:
         id: tag
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
         run: |
-          echo 编译于$(date +"%Y-%m-%d %H:%M") >> release.txt
+          echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> release.txt
           export RELEASE_NAME="OpenWrt-K_V$(date +"%y.%m.%d-%H")"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
           echo ${{ env.RELEASE_NAME }} >> $GITHUB_OUTPUT
