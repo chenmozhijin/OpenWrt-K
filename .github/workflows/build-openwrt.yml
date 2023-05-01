@@ -523,8 +523,7 @@ jobs:
          
       - name: 设置时区与主机名
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: sed -i -e "s/set system.@system\[-1].hostname='OpenWrt'/set system.@system\[-1].hostname='OpenWrt-k'/g" -e "s/set system.@system\[-1].timezone='UTC'/set system.@system\[-1].timezone='CST-8'/g" -e "/set system.@system\[-1].timezone='CST-8'/i\		set system.@system\[-1].zonename='Asia/Shanghai'" $OPENWRT_ROOT_PATH/package/base-files/files/bin
-/config_generate
+        run: sed -i -e "s/set system.@system\[-1].hostname='OpenWrt'/set system.@system\[-1].hostname='OpenWrt-k'/g" -e "s/set system.@system\[-1].timezone='UTC'/set system.@system\[-1].timezone='CST-8'/g" -e "/set system.@system\[-1].timezone='CST-8'/i\		set system.@system\[-1].zonename='Asia/Shanghai'" $OPENWRT_ROOT_PATH/package/base-files/files/bin/config_generate
 
       - name: 生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
