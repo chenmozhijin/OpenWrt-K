@@ -125,12 +125,9 @@ jobs:
       - name: 复制到cmzj_package
         run: |
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-baidupcs-web $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-rclone $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-syncdial $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-usb-printer $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-qbittorrent $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-vlmcsd $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-zerotier $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-webadmin $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-cifs-mount $CMZJ_PACKAGE_ROOT_PATH/         
           cp -r $DOWNLOAD_ROOT_PATH/lede/packages/net/vlmcsd $CMZJ_PACKAGE_ROOT_PATH/
@@ -145,7 +142,10 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ddns-scripts_dnspod $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/r8168 $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/shortcut-fe $CMZJ_PACKAGE_ROOT_PATH/turboacc/
+          cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-syncdial $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-rclone $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-transmission $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-zerotier $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/Lienol/openwrt-package/luci-app-fileassistant $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/passwall/luci-app-passwall $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/passwall/openwrt-passwall $CMZJ_PACKAGE_ROOT_PATH/
@@ -173,7 +173,6 @@ jobs:
           ln -s zh-cn ./luci-app-webadmin/po/zh_Hans
           ln -s zh-cn ./luci-app-netdata/po/zh_Hans
           ln -s zh-cn ./luci-app-vlmcsd/po/zh_Hans
-          ln -s zh-cn ./luci-app-zerotier/po/zh_Hans
           ln -s zh-cn ./luci-app-usb-printer/po/zh_Hans
           ln -s zh-cn ./luci-app-qbittorrent/po/zh_Hans
           rm -rf ./NetSpeedTest/luci-app-netspeedtest/po/zh_Hans
@@ -633,8 +632,8 @@ jobs:
         if: success() || failure()
         run: |
           mkdir -p openwrt-logs
-          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs
-          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config
+          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs  >/dev/null 2>&1
+          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config >/dev/null 2>&1
         
       - name: 上传日志
         if: success() || failure()
@@ -663,9 +662,7 @@ jobs:
           sudo -E apt update
           sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget
           sudo timedatectl set-timezone "Asia/Shanghai"
-          sudo mkdir -p update
-          sudo chown $USER:$GROUPS update
-          cd update
+
       - name: 生成 release tag
         id: tag
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
@@ -701,6 +698,7 @@ jobs:
           cp ./package/*passwall* ./package-upload/
           cp ./package/transmission* ./package-upload/
           cp ./package/*transmission* ./package-upload/
+          zip -r ./package-upload/allpackage.zip package
 
       - name: 上传包到 Release
         id: package-release

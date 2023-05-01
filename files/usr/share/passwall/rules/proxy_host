@@ -19,7 +19,10 @@ www.googletagmanager.com
 #google end
 
 #github
+githubusercontent.com 
 github-releases.githubusercontent.com 
+actions.githubusercontent.com
+pipelines.actions.githubusercontent.com
 objects.githubusercontent.com 
 github-production-release-asset-2e65be.s3.amazonaws.com 
 github-production-user-asset-6210df.s3.amazonaws.com 
