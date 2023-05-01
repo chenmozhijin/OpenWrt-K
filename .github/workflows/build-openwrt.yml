@@ -515,7 +515,12 @@ jobs:
           echo "AdGuardHome-dnslist(by cmzj).yaml" >> $LOG_PATH/AdGuardHome.log
           cat $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml >> $LOG_PATH/AdGuardHome.log
           
-      
+      - name: 更新BT Tracker
+        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        run: |
+         export bt_tracker="$(curl -s https://cf.trackerslist.com/all_aria2.txt)"
+         sed "s#^uci set aria2.main.bt_tracker=.*#uci set aria2.main.bt_tracker=\'$bt_tracker\'#g"  $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
+
       - name: 生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
