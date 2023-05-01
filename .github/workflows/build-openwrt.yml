@@ -633,8 +633,8 @@ jobs:
         if: success() || failure()
         run: |
           mkdir -p openwrt-logs
-          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs
-          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config
+          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs  >/dev/null 2>&1
+          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config >/dev/null 2>&1
         
       - name: 上传日志
         if: success() || failure()
@@ -663,9 +663,7 @@ jobs:
           sudo -E apt update
           sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget
           sudo timedatectl set-timezone "Asia/Shanghai"
-          sudo mkdir -p update
-          sudo chown $USER:$GROUPS update
-          cd update
+
       - name: 生成 release tag
         id: tag
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
@@ -701,6 +699,7 @@ jobs:
           cp ./package/*passwall* ./package-upload/
           cp ./package/transmission* ./package-upload/
           cp ./package/*transmission* ./package-upload/
+          zip -r ./package-upload/allpackage.zip package
 
       - name: 上传包到 Release
         id: package-release
