@@ -632,8 +632,8 @@ jobs:
         if: success() || failure()
         run: |
           mkdir -p openwrt-logs
-          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs  >/dev/null 2>&1
-          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config >/dev/null 2>&1
+          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
+          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
         
       - name: 上传日志
         if: success() || failure()
