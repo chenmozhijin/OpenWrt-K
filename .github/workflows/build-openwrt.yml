@@ -125,8 +125,6 @@ jobs:
       - name: 复制到cmzj_package
         run: |
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-baidupcs-web $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-rclone $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-syncdial $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-usb-printer $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-qbittorrent $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-vlmcsd $CMZJ_PACKAGE_ROOT_PATH/
@@ -144,6 +142,8 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ddns-scripts_dnspod $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/r8168 $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/shortcut-fe $CMZJ_PACKAGE_ROOT_PATH/turboacc/
+          cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-syncdial $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-rclone $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-transmission $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-zerotier $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/Lienol/openwrt-package/luci-app-fileassistant $CMZJ_PACKAGE_ROOT_PATH/
