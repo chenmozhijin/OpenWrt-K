@@ -720,7 +720,7 @@ jobs:
         uses: softprops/action-gh-release@v0.1.15
         with:
           name: ${{ env.RELEASE_NAME }}-package
-          tag_name: ${{ env.RELEASE_TAG_NAME }}
+          tag_name: ${{ env.RELEASE_TAG_NAME }}-package
           files: ${{ env.UPLOAD_ROOT_PATH }}/package-upload/*
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt   
           
