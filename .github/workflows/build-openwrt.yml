@@ -649,7 +649,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: x86-64-logs
-          path: "${{ env.LOG_PATH }}/logs"
+          path: "${{ env.LOG_PATH }}"
   upload:
     needs: build
     runs-on: ubuntu-22.04
@@ -680,8 +680,14 @@ jobs:
           export RELEASE_NAME="OpenWrt-K_V$(date +"%y.%m.%d-%H")"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
           echo ${{ env.RELEASE_NAME }} >> $GITHUB_OUTPUT
+          export RELEASE_TAG_NAME="v$(date +"%y.%m.%d-%H")"
+          echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
+          echo ${{ env.RELEASE_TAG_NAME }} >> $GITHUB_OUTPUT
+          echo ${{ env.RELEASE_TAG_NAME }}
+          echo ${{ steps.tag.outputs.release_tag }}
           echo ${{ env.RELEASE_NAME }}
           echo ${{ steps.tag.outputs.release_tag }}
+          
       - name: 下载固件
         uses: actions/download-artifact@v3
         with:
@@ -713,7 +719,8 @@ jobs:
         id: package-release
         uses: softprops/action-gh-release@v0.1.15
         with:
-          tag_name: ${{ env.RELEASE_NAME }}-package
+          name: ${{ env.RELEASE_NAME }}-package
+          tag_name: ${{ env.RELEASE_TAG_NAME }}
           files: ${{ env.UPLOAD_ROOT_PATH }}/package-upload/*
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt   
           
@@ -721,7 +728,8 @@ jobs:
         id: firmware-release
         uses: softprops/action-gh-release@v0.1.15
         with:
-          tag_name: ${{ env.RELEASE_NAME }}
+          name: ${{ env.RELEASE_NAME }}
+          tag_name: ${{ env.RELEASE_TAG_NAME }}
           files: ${{ env.UPLOAD_ROOT_PATH }}/x86/64/*
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
 
