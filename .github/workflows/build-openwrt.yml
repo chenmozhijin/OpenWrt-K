@@ -666,6 +666,11 @@ jobs:
           cd upload
           export UPLOAD_ROOT_PATH="$(pwd)"
           echo "UPLOAD_ROOT_PATH=$UPLOAD_ROOT_PATH" >> $GITHUB_ENV
+          cd $GITHUB_WORKSPACE
+          mkdir -p packagecompare
+          cd packagecompare
+          export PACKAGECOMPARE_ROOT_PATH="$(pwd)"
+          echo "PACKAGECOMPARE_ROOT_PATH=$PACKAGECOMPARE_ROOT_PATH" >> $GITHUB_ENV
       - name: 初始化环境
         run: |
           sudo -E apt update
@@ -714,6 +719,25 @@ jobs:
           cp ./package/transmission* ./package-upload/
           cp ./package/*transmission* ./package-upload/
           zip -r ./package-upload/allpackage.zip package
+      
+      - name: 整理包生成 release body
+        run: |
+          latest_ver="$(echo $(curl https://api.github.com/repos/chenmozhijin/OpenWrt-K/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.-]+' -o 2>/dev/null)-package)"
+          rm -rf $PACKAGECOMPARE_ROOT_PATH/*
+          wget https://github.com/chenmozhijin/OpenWrt-K/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip
+          cd $PACKAGECOMPARE_ROOT_PATH
+          unzip allpackage.zip
+          mv package oldpackage
+          ls $PACKAGECOMPARE_ROOT_PATH/oldpackage/|sort| uniq >oldpackage.list
+          sed -i -e "s/_x86_64.ipk//g" -e "s/_all.ipk//g" oldpackage.list
+          rm -rf $PACKAGECOMPARE_ROOT_PATH/allpackage.zip
+          cp -f $UPLOAD_ROOT_PATH/allpackage.zip $PACKAGECOMPARE_ROOT_PATH/allpackage.zip
+          unzip allpackage.zip
+          mv package newpackage
+          ls $PACKAGECOMPARE_ROOT_PATH/newpackage/|sort| uniq >newpackage.list
+          sed -i -e "s/_x86_64.ipk//g" -e "s/_all.ipk//g" newpackage.list
+          diff oldpackage.list newpackage.list -y -W 80 -B -b |grep -E '[\|><]' >diff.temp
+          sed -e "/</s/^/delete:/g" -e "/|/s/^/update:/g" -e "/>/s/^/Add:/g" -e 's/[[:space:]]//g' -e 's/<//g' -e 's/>//g' -e 's/|/ > /g' -e 's/> [a-zA-Z0-9\-]*_/> /g' -e 's/_/ /g' diff.temp >> $UPLOAD_ROOT_PATH/release.txt  
 
       - name: 上传包到 Release
         id: package-release
@@ -736,7 +760,7 @@ jobs:
       - name: 删除旧的Releases
         uses: dev-drprasad/delete-older-releases@v0.2.1
         with:
-          keep_latest: 4
+          keep_latest: 10
           delete_tags: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
