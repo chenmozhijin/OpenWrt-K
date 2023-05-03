@@ -731,7 +731,7 @@ jobs:
           ls $PACKAGECOMPARE_ROOT_PATH/oldpackage/|sort| uniq >oldpackage.list
           sed -i -e "s/_x86_64.ipk//g" -e "s/_all.ipk//g" oldpackage.list
           rm -rf $PACKAGECOMPARE_ROOT_PATH/allpackage.zip
-          cp -f $UPLOAD_ROOT_PATH/allpackage.zip $PACKAGECOMPARE_ROOT_PATH/allpackage.zip
+          cp -f $UPLOAD_ROOT_PATH/package-upload/allpackage.zip $PACKAGECOMPARE_ROOT_PATH/allpackage.zip
           unzip allpackage.zip
           mv package newpackage
           ls $PACKAGECOMPARE_ROOT_PATH/newpackage/|sort| uniq >newpackage.list
