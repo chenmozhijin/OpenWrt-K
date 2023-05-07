@@ -122,6 +122,7 @@ jobs:
           git clone https://github.com/jerrykuku/luci-theme-argon
           cd $DOWNLOAD_ROOT_PATH
           git clone https://git.openwrt.org/openwrt/openwrt.git
+          
       - name: 复制到cmzj_package
         run: |
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-baidupcs-web $CMZJ_PACKAGE_ROOT_PATH/
@@ -154,6 +155,7 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/turboacc/nft-fullcone $CMZJ_PACKAGE_ROOT_PATH/turboacc/
           cp -r $DOWNLOAD_ROOT_PATH/other/* $CMZJ_PACKAGE_ROOT_PATH/
           cd $CMZJ_PACKAGE_ROOT_PATH && ls
+          
       - name: 修改Makefile文件
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
@@ -167,6 +169,7 @@ jobs:
           sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-usb-printer/Makefile
           sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-transmission/Makefile
           sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-qbittorrent/Makefile
+          
       - name: 创建软连接以修复中文支持
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
@@ -177,12 +180,14 @@ jobs:
           ln -s zh-cn ./luci-app-qbittorrent/po/zh_Hans
           rm -rf ./NetSpeedTest/luci-app-netspeedtest/po/zh_Hans
           ln -s zh-cn ./NetSpeedTest/luci-app-netspeedtest/po/zh_Hans
+          
       - name: 修改luci-app-netdata
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
           sed -i 's/setting")/netdata")/' ./luci-app-netdata/luasrc/controller/netdata.lua
           sed -i 's/("Base Setting"), 20/("Base Setting"), 30/' ./luci-app-netdata/luasrc/controller/netdata.lua
           sed -i 's/("NetData"), 30/("NetData"), 20/' ./luci-app-netdata/luasrc/controller/netdata.lua
+          
       - name: 复制到cmzj_patch
         run: |
           cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
@@ -193,12 +198,14 @@ jobs:
           cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/nftables-1.0.7/nftables $CMZJ_PATCH_ROOT_PATH/nftables
           cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/network/services/dnsmasq $CMZJ_PATCH_ROOT_PATH/dnsmasq
           cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/libubox
+          
       - name: 压缩
         run: |
           cd $CMZJ_PACKAGE_ROOT_PATH
           tar cvpzf $GITHUB_WORKSPACE/cmzj_package.tgz *
           cd $CMZJ_PATCH_ROOT_PATH
           tar cvpzf $GITHUB_WORKSPACE/cmzj_patch.tgz *
+          
       - name: 上传 cmzj_package
         uses: actions/upload-artifact@v3
         with:
@@ -276,6 +283,7 @@ jobs:
           cd log
           export LOG_PATH="$(pwd)"
           echo "LOG_PATH=$LOG_PATH" >> $GITHUB_ENV
+          
       - name: 下载cmzj_package
         uses: actions/download-artifact@v3
         with:
@@ -306,7 +314,8 @@ jobs:
           cd openwrt
           export OPENWRT_ROOT_PATH="$(pwd)"
           echo "OPENWRT_ROOT_PATH=$OPENWRT_ROOT_PATH" >> $GITHUB_ENV
-      - name: 切换到新的稳定版分支
+          
+      - name: 检出到稳定版标签
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: git checkout v22.03.5
 
@@ -653,7 +662,6 @@ jobs:
   upload:
     needs: build
     runs-on: ubuntu-22.04
-
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
