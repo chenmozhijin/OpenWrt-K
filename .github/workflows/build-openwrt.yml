@@ -166,7 +166,7 @@ jobs:
           sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-syncdial/Makefile
           sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-usb-printer/Makefile
           sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-transmission/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-qbittorrent/Makefile         
+          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-qbittorrent/Makefile
       - name: 创建软连接以修复中文支持
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
@@ -724,7 +724,7 @@ jobs:
         run: |
           latest_ver="$(echo $(curl https://api.github.com/repos/chenmozhijin/OpenWrt-K/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.-]+' -o 2>/dev/null)-package)"
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
-          wget https://github.com/chenmozhijin/OpenWrt-K/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip
+          wget https://github.com/chenmozhijin/OpenWrt-K/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv
           cd $PACKAGECOMPARE_ROOT_PATH
           unzip allpackage.zip
           mv package oldpackage
@@ -735,9 +735,9 @@ jobs:
           unzip allpackage.zip
           mv package newpackage
           ls $PACKAGECOMPARE_ROOT_PATH/newpackage/|sort| uniq >newpackage.list
-          sed -i -e "s/_x86_64.ipk//g" -e "s/_all.ipk//g" newpackage.list
-          diff oldpackage.list newpackage.list -y -W 80 -B -b |grep -E '[\|><]' >diff.temp
-          sed -e "/</s/^/delete:/g" -e "/|/s/^/update:/g" -e "/>/s/^/Add:/g" -e 's/[[:space:]]//g' -e 's/<//g' -e 's/>//g' -e 's/|/ > /g' -e 's/> [a-zA-Z0-9\-]*_/> /g' -e 's/_/ /g' diff.temp >> $UPLOAD_ROOT_PATH/release.txt ||echo "no update"
+          sed -i -e "s/_x86_64.ipk//g" -e "s/_all.ipk//g" newpackage.list && echo "list complete"
+          diff oldpackage.list newpackage.list -y -W 80 -B -b |grep -E '[\|><]' >diff.temp && echo "Compare complete" ||echo "no package update"
+          sed -e "/</s/^/delete:/g" -e "/|/s/^/update:/g" -e "/>/s/^/Add:/g" -e 's/[[:space:]]//g' -e 's/<//g' -e 's/>//g' -e 's/|/ > /g' -e 's/> [a-zA-Z0-9\-]*_/> /g' -e 's/_/ /g' diff.temp >> $UPLOAD_ROOT_PATH/release.txt ||echo "no package update"
 
       - name: 上传包到 Release
         id: package-release
