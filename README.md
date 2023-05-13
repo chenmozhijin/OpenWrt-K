@@ -17,6 +17,7 @@
 +    luci-app-ddns
 +    luci-app-diag-core
 +    [luci-app-diskman](https://github.com/lisaac/luci-app-diskman)
++    luci-app-dockerman
 +    luci-app-fileassistant
 +    luci-app-firewall
 +    [luci-app-netdata](https://github.com/sirpdboy/luci-app-netdata)
@@ -44,7 +45,6 @@
 随固件编译的插件：
 +    luci-app-baidupcs-web
 +    luci-app-qbittorrent
-+    luci-app-syncdial
 +    luci-app-transmission
 
 ## 固件预览
