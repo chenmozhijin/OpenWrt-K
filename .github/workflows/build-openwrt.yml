@@ -721,10 +721,8 @@ jobs:
           mkdir package-upload
           cp ./package/qBittorrent-static* ./package-upload/
           cp ./package/*baidupcs-web* ./package-upload/
-          #cp ./package/*syncdial* ./package-upload/
           cp ./package/*qbittorrent* ./package-upload/
           cp ./package/baidupcs-web* ./package-upload/
-          #cp ./package/*mwan3* ./package-upload/
           cp ./package/*passwall* ./package-upload/
           cp ./package/transmission* ./package-upload/
           cp ./package/*transmission* ./package-upload/
