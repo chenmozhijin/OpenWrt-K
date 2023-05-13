@@ -224,6 +224,9 @@ uci batch << EOI
 set netdata.netdata.enabled='1'
 EOI
 uci commit netdata
+uci set dockerd.globals.iptables='0'
+uci commit dockerd
+/etc/init.d/dockerd restart
 uci commit
 /etc/init.d/smartdns restart
 /etc/init.d/AdGuardHome restart
