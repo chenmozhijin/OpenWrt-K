@@ -423,7 +423,9 @@ jobs:
           chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/chenmozhijin-passwall
-          cat ./config/target.config >> $OPENWRT_ROOT_PATH/.config
+          echo "CONFIG_TARGET_x86=y" >> $OPENWRT_ROOT_PATH/.config
+          echo "CONFIG_TARGET_x86_64=y" >> $OPENWRT_ROOT_PATH/.config
+          echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> $OPENWRT_ROOT_PATH/.config
           cat ./config/luci.config >> $OPENWRT_ROOT_PATH/.config
           cat ./config/utilities.config >> $OPENWRT_ROOT_PATH/.config
           cat ./config/network.config >> $OPENWRT_ROOT_PATH/.config
