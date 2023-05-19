@@ -110,9 +110,9 @@ jobs:
           mv ./turboacc/luci-app-turboacc ./luci-app-turboacc
           rm -rf ./turboacc
           git clone https://github.com/chenmozhijin/turboacc -b package
+          git clone https://github.com/fullcone-nat-nftables/nft-fullcone
           cd $DOWNLOAD_ROOT_PATH
           cd other
-          git clone https://github.com/fullcone-nat-nftables/nft-fullcone
           git clone https://github.com/rufengsuixing/luci-app-adguardhome
           git clone https://github.com/jerrykuku/luci-app-argon-config
           git clone https://github.com/csrutil/OpenWrt-NIC-Drivers
@@ -153,6 +153,8 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/passwall/luci-app-passwall $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/passwall/openwrt-passwall/* $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/passwall/openwrt-passwall2/luci-app-passwall2 $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/turboacc/nft-fullcone $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/turboacc/turboacc/luci-app-turboacc $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-adguardhome $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-argon-config $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/OpenWrt-NIC-Drivers/drivers/* $CMZJ_PACKAGE_ROOT_PATH/
@@ -160,8 +162,6 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/other/NetSpeedTest/luci-app-netspeedtest $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-serverchan $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-theme-argon $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/nft-fullcone $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/turboacc/luci-app-turboacc $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-socat/luci-app-socat $CMZJ_PACKAGE_ROOT_PATH/
           cd $CMZJ_PACKAGE_ROOT_PATH && ls
           
