@@ -110,9 +110,9 @@ jobs:
           mv ./turboacc/luci-app-turboacc ./luci-app-turboacc
           rm -rf ./turboacc
           git clone https://github.com/chenmozhijin/turboacc -b package
-          git clone https://github.com/fullcone-nat-nftables/nft-fullcone
           cd $DOWNLOAD_ROOT_PATH
-          cd other
+          cd other\
+          git clone https://github.com/fullcone-nat-nftables/nft-fullcone
           git clone https://github.com/rufengsuixing/luci-app-adguardhome
           git clone https://github.com/jerrykuku/luci-app-argon-config
           git clone https://github.com/csrutil/OpenWrt-NIC-Drivers
