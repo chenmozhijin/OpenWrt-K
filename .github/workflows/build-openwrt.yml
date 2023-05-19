@@ -160,6 +160,7 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/other/OpenWrt-NIC-Drivers/drivers/* $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-diskman $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/NetSpeedTest/luci-app-netspeedtest $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/other/NetSpeedTest/homebox $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-serverchan $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-theme-argon $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-socat/luci-app-socat $CMZJ_PACKAGE_ROOT_PATH/
