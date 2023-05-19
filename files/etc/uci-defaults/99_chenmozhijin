@@ -220,13 +220,6 @@ set AdGuardHome.AdGuardHome.old_port='1745'
 set AdGuardHome.AdGuardHome.old_enabled='1'
 EOI
 uci commit AdGuardHome
-uci batch << EOI
-set netdata.netdata.enabled='1'
-EOI
-uci commit netdata
-uci set dockerd.globals.iptables='0'
-uci commit dockerd
-/etc/init.d/dockerd restart
 uci commit
 /etc/init.d/smartdns restart
 /etc/init.d/AdGuardHome restart
