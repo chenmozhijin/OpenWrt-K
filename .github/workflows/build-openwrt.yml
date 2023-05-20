@@ -427,14 +427,14 @@ jobs:
           echo "CONFIG_TARGET_x86=y" >> $OPENWRT_ROOT_PATH/.config
           echo "CONFIG_TARGET_x86_64=y" >> $OPENWRT_ROOT_PATH/.config
           echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/luci.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/utilities.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/network.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/other.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/kmod.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/image.config >> $OPENWRT_ROOT_PATH/.config
-          #cat ./config/linux/config-5.10 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.10
-          #cat ./config/linux/config-5.15 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.15
+          cat $GITHUB_WORKSPACE/config/luci.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/utilities.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/network.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/other.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/kmod.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
+          #cat $GITHUB_WORKSPACE/config/linux/config-5.10 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.10
+          #cat $GITHUB_WORKSPACE/config/linux/config-5.15 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.15
       
       - name: 更新AdGuardHome核心与DNS名单
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -876,14 +876,14 @@ jobs:
           echo "CONFIG_TARGET_x86=y" >> $OPENWRT_ROOT_PATH/.config
           echo "CONFIG_TARGET_x86_64=y" >> $OPENWRT_ROOT_PATH/.config
           echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/luci.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/utilities.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/network.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/other.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/kmod.config >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/image.config >> $OPENWRT_ROOT_PATH/.config
-          #cat ./config/linux/config-5.10 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.10
-          #cat ./config/linux/config-5.15 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.15
+          cat $GITHUB_WORKSPACE/config/luci.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/utilities.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/network.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/other.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/kmod.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
+          #cat $GITHUB_WORKSPACE/config/linux/config-5.10 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.10
+          #cat $GITHUB_WORKSPACE/config/linux/config-5.15 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.15
       
       - name: 更新AdGuardHome核心与DNS名单
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -1012,7 +1012,7 @@ jobs:
           echo "CONFIG_TARGET_x86=y" >> $OPENWRT_ROOT_PATH/.config
           echo "CONFIG_TARGET_x86_64=y" >> $OPENWRT_ROOT_PATH/.config
           echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> $OPENWRT_ROOT_PATH/.config
-          cat ./config/image.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
           make defconfig
       
       - name: 检查剩余空间
