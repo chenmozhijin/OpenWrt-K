@@ -1005,8 +1005,6 @@ jobs:
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           make defconfig
-          ./scripts/diffconfig.sh
-          ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
           sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' >> .config && make defconfig
           sed -i -n  '/^CONFIG_PACKAGE_kmod/p' .config
           echo "CONFIG_TARGET_x86=y" >> $OPENWRT_ROOT_PATH/.config
@@ -1014,6 +1012,8 @@ jobs:
           echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> $OPENWRT_ROOT_PATH/.config
           cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
           make defconfig
+          ./scripts/diffconfig.sh
+          ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
       
       - name: 检查剩余空间
         run:  |
