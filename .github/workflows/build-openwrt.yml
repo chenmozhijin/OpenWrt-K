@@ -416,24 +416,13 @@ jobs:
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: ./scripts/feeds install -a
 
-      - name: 复制自定义文件并加载自定义配置
+      - name: 复制自定义文件
         run: |
           cp -r files $OPENWRT_ROOT_PATH/files
           chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin-passwall
-          echo "CONFIG_TARGET_x86=y" >> $OPENWRT_ROOT_PATH/.config
-          echo "CONFIG_TARGET_x86_64=y" >> $OPENWRT_ROOT_PATH/.config
-          echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/luci.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/utilities.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/network.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/other.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/kmod.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
-          #cat $GITHUB_WORKSPACE/config/linux/config-5.10 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.10
-          #cat $GITHUB_WORKSPACE/config/linux/config-5.15 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.15
-      
+
       - name: 更新AdGuardHome核心与DNS名单
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -550,327 +539,9 @@ jobs:
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: sed -i -e "s/set system.@system\[-1].hostname='OpenWrt'/set system.@system\[-1].hostname='OpenWrt-k'/g" -e "s/set system.@system\[-1].timezone='UTC'/set system.@system\[-1].timezone='CST-8'/g" -e "/set system.@system\[-1].timezone='CST-8'/i\		set system.@system\[-1].zonename='Asia/Shanghai'" $OPENWRT_ROOT_PATH/package/base-files/files/bin/config_generate
 
-      - name: 生成配置文件
+      - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          make defconfig
-          ./scripts/diffconfig.sh
-          ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
-      
-      - name: 检查剩余空间
-        run:  |
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-      
-      - name: 下载 dl 库
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make download -j16
-          find dl -size -1024c -exec ls -l {} \;
-          find dl -size -1024c -exec rm -f {} \;
-          make download -j16 || make download -j1 V=s
-      
-      - name: 构建工具
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make tools/install -j$(nproc) || make tools/install -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-  
-      - name: 构建工具链
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make toolchain/install -j$(nproc) || make toolchain/install -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-      
-      - name: 构建内核
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make target/compile -j$(nproc) || make target/compile -j$(nproc) || make target/compile -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-      
-      - name: 构建内核模块
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make package/linux/compile -j$(nproc) || make package/linux/compile -j$(nproc) V=s || make package/linux/compile -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-      
-      - name: 编译固件 
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make -j$(nproc) || make -j$(nproc) V=s || make -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df -h
-          echo "======================="
-          du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
-          du -h --max-depth=1 ./build_dir
-          du -h --max-depth=1 ./bin
-
-      - name: 准备 artifact
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          mkdir -p ./artifact/package
-          mkdir -p ./artifact/buildinfo
-          echo "artifact-/bin" >> $LOG_PATH/cmzj_package.log
-          ls -l ./bin/** >> $LOG_PATH/cmzj_package.log
-          cp -rf $(find ./bin/targets/ -type f -name "*.ipk") ./artifact/package/
-          rm -rf $(find ./bin/targets/ -type d -name "packages")
-          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
-          cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
-      
-      - name: 删除packages
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          cd ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64
-          rm -rf packages
-      
-      - name: 上传 buildinfo
-        uses: actions/upload-artifact@v3
-        with:
-          name: OpenWrt-buildinfo
-          path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/buildinfo/
-
-      - name: 上传 package
-        uses: actions/upload-artifact@v3
-        with:
-          name: OpenWrt-package
-          path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/package/
-
-      - name: 上传 firmware
-        uses: actions/upload-artifact@v3
-        with:
-          name: OpenWrt-firmware
-          path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/
-          
-      - name: 收集日志
-        if: success() || failure()
-        run: |
-          mkdir -p openwrt-logs
-          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
-          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
-        
-      - name: 上传日志
-        if: success() || failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: x86-64-logs
-          path: "${{ env.LOG_PATH }}"
-          
-          
-  build-kmod:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: 清理空间
-        run:  |
-          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /etc/mysql /etc/php
-          sudo -E apt-mark hold grub-efi-amd64-signed
-          sudo -E apt update
-          sudo -E apt -y purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell* openjdk* mysql* php* mongodb* dotnet* moby* snap*
-          
-      - name: 安装编译依赖
-        run: |
-          sudo -E apt-mark hold grub-efi-amd64-signed
-          sudo -E apt update
-          sudo -E apt -y full-upgrade
-          sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils rsync unzip zlib1g-dev wget
-          sudo -E systemctl daemon-reload 
-          sudo -E apt -y autoremove --purge
-          sudo -E apt clean
-          sudo timedatectl set-timezone "Asia/Shanghai"
-          
-      - name: 合并磁盘
-        run: |
-          sudo swapoff -a && sudo rm -f /mnt/swapfile
-          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail / | tail -1 ) - 1048576) \* 1024) /root.img
-          export ROOT_LOOP_DEVNAME=$(sudo losetup -Pf --show /root.img)
-          sudo pvcreate -f $ROOT_LOOP_DEVNAME
-          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail /mnt | tail -1) - 102400) \* 1024) /mnt/mnt.img
-          export MNT_LOOP_DEVNAME=$(sudo losetup -Pf --show /mnt/mnt.img)
-          sudo pvcreate -f $MNT_LOOP_DEVNAME
-          sudo vgcreate vgstorage $ROOT_LOOP_DEVNAME $MNT_LOOP_DEVNAME
-          sudo lvcreate -n lvstorage -l 100%FREE vgstorage
-          export LV_DEVNAME=$(sudo lvscan | awk -F "'" '{print $2}')
-          sudo mkfs.btrfs -L combinedisk $LV_DEVNAME
-          sudo mount -o compress=zstd $LV_DEVNAME $GITHUB_WORKSPACE
-          sudo chown -R runner:runner $GITHUB_WORKSPACE
-          df -hT $GITHUB_WORKSPACE
-          sudo btrfs filesystem usage $GITHUB_WORKSPACE
-          
-      - name: 将存储库签出到运行器
-        uses: actions/checkout@v3
-      
-      - name: 建立工作文件夹
-        run:  |
-          cd $GITHUB_WORKSPACE
-          sudo mkdir -p workspace
-          sudo chown $USER:$GROUPS workspace
-          cd workspace
-          export WORKSPACE_ROOT_PATH="$(pwd)"
-          echo "WORKSPACE_ROOT_PATH=$WORKSPACE_ROOT_PATH" >> $GITHUB_ENV
-          cd $WORKSPACE_ROOT_PATH
-          mkdir -p cmzj_package
-          cd cmzj_package
-          export CMZJ_PACKAGE_ROOT_PATH="$(pwd)"
-          echo "CMZJ_PACKAGE_ROOT_PATH=$CMZJ_PACKAGE_ROOT_PATH" >> $GITHUB_ENV
-          cd $WORKSPACE_ROOT_PATH
-          mkdir -p cmzj_patch
-          cd cmzj_patch
-          export CMZJ_PATCH_ROOT_PATH="$(pwd)"
-          echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
-          cd $WORKSPACE_ROOT_PATH
-          mkdir -p log
-          cd log
-          export LOG_PATH="$(pwd)"
-          echo "LOG_PATH=$LOG_PATH" >> $GITHUB_ENV
-          
-      - name: 下载cmzj_package
-        uses: actions/download-artifact@v3
-        with:
-          name: cmzj_package
-
-      - name: 下载cmzj_patch
-        uses: actions/download-artifact@v3
-        with:
-          name: cmzj_patch
-
-      - name: 解压
-        run:  |
-          tar xvpfz $GITHUB_WORKSPACE/cmzj_package.tgz -C $CMZJ_PACKAGE_ROOT_PATH
-          tar xvpfz $GITHUB_WORKSPACE/cmzj_patch.tgz -C $CMZJ_PATCH_ROOT_PATH
-          echo "cmzj_package" >> $LOG_PATH/cmzj_package.log
-          ls $CMZJ_PACKAGE_ROOT_PATH >> $LOG_PATH/cmzj_package.log
-          echo "cmzj_patch"  >> $LOG_PATH/cmzj_patch.log
-          ls $CMZJ_PATCH_ROOT_PATH  >> $LOG_PATH/cmzj_patch.log
-          echo "cmzj_package-permissions" >> $LOG_PATH/cmzj_package.log
-          ls -l $CMZJ_PACKAGE_ROOT_PATH/** >> $LOG_PATH/cmzj_package.log
-          echo "cmzj_patch-permissions" >> $LOG_PATH/cmzj_patch.log
-          ls -l $CMZJ_PATCH_ROOT_PATH/**  >> $LOG_PATH/cmzj_patch.log
-
-      - name: 克隆源代码
-        working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
-        run: |
-          git clone https://git.openwrt.org/openwrt/openwrt.git
-          cd openwrt
-          export OPENWRT_ROOT_PATH="$(pwd)"
-          echo "OPENWRT_ROOT_PATH=$OPENWRT_ROOT_PATH" >> $GITHUB_ENV
-          
-      - name: 检出到稳定版标签
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: git checkout v22.03.5
-
-      - name: 复制cmzj_package 打补丁 
-        working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
-        run: |
-          cp -r $CMZJ_PACKAGE_ROOT_PATH $OPENWRT_ROOT_PATH/package/cmzj_package
-          cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
-          #cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
-          #cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/982-add-bcm-fullconenat-support.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
-          rm -rf $OPENWRT_ROOT_PATH/package/libs/libnftnl
-          rm -rf $OPENWRT_ROOT_PATH/package/network/config/firewall4
-          rm -rf $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          rm -rf $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          rm -rf $OPENWRT_ROOT_PATH/package/libs/libubox
-          mkdir -p $OPENWRT_ROOT_PATH/package/network/config/firewall4
-          mkdir -p $OPENWRT_ROOT_PATH/package/libs/libnftnl
-          mkdir -p $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          mkdir -p $OPENWRT_ROOT_PATH/package/libs/libubox
-          mkdir -p $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4 $OPENWRT_ROOT_PATH/package/network/config/firewall4
-          cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl $OPENWRT_ROOT_PATH/package/libs/libnftnl
-          cp -RT $CMZJ_PATCH_ROOT_PATH/nftables $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          cp -RT $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
-          cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          echo "cmzj_patch" >> $LOG_PATH/cmzj_patch.log
-          ls $CMZJ_PATCH_ROOT_PATH >> $LOG_PATH/cmzj_patch.log
-          echo "cmzj_package" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/cmzj_package >> $LOG_PATH/cmzj_patch.log
-          echo "libnftnl-file" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/libs/libnftnl >> $LOG_PATH/cmzj_patch.log
-          echo "firewall4-file" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/network/config/firewall4 >> $LOG_PATH/cmzj_patch.log
-          echo "nftables-file" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/network/utils/nftables >> $LOG_PATH/cmzj_patch.log
-          echo "libubox-file" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/libs/libubox >> $LOG_PATH/cmzj_patch.log
-          echo "dnsmasq-file" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/network/services/dnsmasq >> $LOG_PATH/cmzj_patch.log
-          echo "firewall4-patches" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/network/config/firewall4/patches/ >> $LOG_PATH/cmzj_patch.log
-          echo "libnftnl-patches" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/libs/libnftnl/patches/ >> $LOG_PATH/cmzj_patch.log
-          echo "nftables-patches" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/network/utils/nftables/patches/ >> $LOG_PATH/cmzj_patch.log
-          echo "hack-5.10"  >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10 >> $LOG_PATH/cmzj_patch.log
-      
-      - name: 修复问题
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          sed -i 's/-full//' ./include/target.mk 
-          sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk 
-          sed -i 's/256/1024/' ./target/linux/x86/image/Makefile
-      
-      - name: 更新 feeds 
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-      
-      - name: 更新smartdns、netdata
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          WORKINGDIR="`pwd`/feeds/packages/net/smartdns"
-          mkdir $WORKINGDIR -p
-          rm $WORKINGDIR/* -fr
-          wget https://github.com/pymumu/openwrt-smartdns/archive/master.zip -O $WORKINGDIR/master.zip
-          unzip $WORKINGDIR/master.zip -d $WORKINGDIR
-          mv $WORKINGDIR/openwrt-smartdns-master/* $WORKINGDIR/
-          rmdir $WORKINGDIR/openwrt-smartdns-master
-          rm $WORKINGDIR/master.zip
-          LUCIBRANCH="master" #更换此变量
-          WORKINGDIR="`pwd`/feeds/luci/applications/luci-app-smartdns"
-          mkdir $WORKINGDIR -p
-          rm $WORKINGDIR/* -fr
-          wget https://github.com/pymumu/luci-app-smartdns/archive/${LUCIBRANCH}.zip -O $WORKINGDIR/${LUCIBRANCH}.zip
-          unzip $WORKINGDIR/${LUCIBRANCH}.zip -d $WORKINGDIR
-          mv $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}/* $WORKINGDIR/
-          rmdir $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}
-          rm $WORKINGDIR/${LUCIBRANCH}.zip
-          WORKINGDIR="`pwd`/feeds/packages/admin/netdata"
-          mkdir $WORKINGDIR -p
-          rm $WORKINGDIR/* -fr
-          cp -RT $CMZJ_PATCH_ROOT_PATH/netdata $WORKINGDIR
-      
-      - name: 安装 feeds 
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: ./scripts/feeds install -a
-
-      - name: 复制自定义文件并加载自定义配置
-        run: |
-          cp -r files $OPENWRT_ROOT_PATH/files
-          chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
-          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
-          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin-passwall
           echo "CONFIG_TARGET_x86=y" >> $OPENWRT_ROOT_PATH/.config
           echo "CONFIG_TARGET_x86_64=y" >> $OPENWRT_ROOT_PATH/.config
           echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> $OPENWRT_ROOT_PATH/.config
@@ -882,133 +553,13 @@ jobs:
           cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
           #cat $GITHUB_WORKSPACE/config/linux/config-5.10 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.10
           #cat $GITHUB_WORKSPACE/config/linux/config-5.15 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.15
-      
-      - name: 更新AdGuardHome核心与DNS名单
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          mkdir -p ./files/usr/bin/AdGuardHome/tmp
-          rm ./files/usr/bin/AdGuardHome/tmp/* -fr        
-          latest_ver="$(curl https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
-          Archt="$(rm -rf Archt && sed -n '/^CONFIG_TARGET_.*=y/p' .config > Archt0 && sed -n '/^CONFIG_TARGET_.*_.*=y/!p' Archt0 > Archt && rm Archt0 && sed -i 's/CONFIG_TARGET_//' Archt && sed -i 's/=y//' Archt && cat Archt)"
-          case $Archt in
-          "i386")
-          Arch="386"
-          ;;
-          "i686")
-          Arch="386"
-          ;;
-          "x86")
-          Arch="amd64"
-          ;;
-          "mipsel")
-          Arch="mipsle"
-          ;;
-          "mips64el")
-          Arch="mips64le"
-          Arch="mipsle"
-          echo -e "mips64el use $Arch may have bug" 
-          ;;
-          "mips")
-          Arch="mips"
-          ;;
-          "mips64")
-          Arch="mips64"
-          Arch="mips"
-          echo -e "mips64 use $Arch may have bug" 
-          ;;
-          "arm")
-          Arch="arm"
-          ;;
-          "aarch64")
-          Arch="arm64"
-          ;;
-          "powerpc")
-          Arch="ppc"
-          echo -e "error not support $Archt" 
-          EXIT 1
-          ;;
-          "powerpc64")
-          Arch="ppc64"
-          echo -e "error not support $Archt" 
-          EXIT 1
-          ;;
-          *)
-          echo -e "error not support $Archt if you can use offical release please issue a bug" 
-          EXIT 1
-          ;;
-          esac
-          wget https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_ver}/AdGuardHome_linux_${Arch}.tar.gz -O ./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz
-          tar -zxf "./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz" -C "./files/usr/bin/AdGuardHome/tmp/"
-          mv -f ./files/usr/bin/AdGuardHome/tmp/AdGuardHome/AdGuardHome ./files/usr/bin/AdGuardHome
-          rm -rf ./files/usr/bin/AdGuardHome/tmp
-          chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
-          echo "更新AdGuardHome DNS黑白名单"
-          mkdir -p ./files/usr/bin/AdGuardHome/data/filters
-          cd $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/data/filters
-          curl -o 1628750870.txt https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt -s
-          curl -o 1628750871.txt https://anti-ad.net/easylist.txt -s
-          curl -o 1677875715.txt https://easylist-downloads.adblockplus.org/easylist.txt -s
-          curl -o 1677875716.txt https://easylist-downloads.adblockplus.org/easylistchina.txt -s
-          curl -o 1677875717.txt https://cdn.jsdelivr.net/gh/cjx82630/cjxlist@master/cjx-annoyance.txt -s
-          curl -o 1677875718.txt https://cdn.jsdelivr.net/gh/zsakvo/AdGuard-Custom-Rule@master/rule/zhihu-strict.txt -s
-          curl -o 1677875720.txt https://gist.githubusercontent.com/Ewpratten/a25ae63a7200c02c850fede2f32453cf/raw/b9318009399b99e822515d388b8458557d828c37/hosts-yt-ads -s
-          curl -o 1677875721.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt -s
-          curl -o 1677875722.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/v -s
-          curl -o 1677875724.txt https://raw.githubusercontent.com/banbendalao/ADgk/master/ADgk.txt -s
-          curl -o 1677875725.txt https://www.i-dont-care-about-cookies.eu/abp/ -s
-          curl -o 1677875726.txt https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts -s
-          curl -o 1677875727.txt https://raw.githubusercontent.com/Goooler/1024_hosts/master/hosts -s
-          curl -o 1677875728.txt https://winhelp2002.mvps.org/hosts.txt -s
-          curl -o 1677875733.txt https://cdn.jsdelivr.net/gh/hl2gu -s
-          curl -o 1677875734.txt https://cdn.jsdelivr.net/gh/hg1978/AdGuard-Home-Whitelist@master/whitelist.txt -s
-          curl -o 1677875735.txt https://cdn.jsdelivr.net/gh/mmotti/adguard-home-filters@master/whitelist.txt -s
-          curl -o 1677875737.txt https://cdn.jsdelivr.net/gh/liwenjie119/adg-rules@master/white.txt -s
-          curl -o 1677875739.txt https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt -s
-          curl -o 1677875740.txt https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt -s
-          ls
-          echo "更新AdGuardHome上游 DNS 服务器" 
-          cd  $WORKSPACE_ROOT_PATH
-          mkdir -p tmp
-          cd $WORKSPACE_ROOT_PATH/tmp
-          ls
-          rm -rf *
-          curl https://raw.githubusercontent.com/YW5vbnltb3Vz/domain-list-community/release/gfwlist.txt -o base64_YW5vbnltb3Vz.txt
-          curl https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/gfw.txt -o Loyalsoldier.txt
-          curl https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt -o base64_gfwlist.txt
-          curl https://raw.githubusercontent.com/Loukky/gfwlist-by-loukky/master/gfwlist.txt -o base64_Loukky.txt
-          base64 -d base64_YW5vbnltb3Vz.txt > YW5vbnltb3Vz.txt
-          base64 -d base64_gfwlist.txt > gfwlist.txt
-          base64 -d base64_Loukky.txt > Loukky.txt
-          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' YW5vbnltb3Vz.txt>> gfwlist_chen
-          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' Loyalsoldier.txt>> gfwlist_chen
-          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' gfwlist.txt>> gfwlist_chen
-          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' Loukky.txt>> gfwlist_chen
-          sort gfwlist_chen | uniq > gfwlist
-          sed -e 's/^/[\//g' -e 's/$/\/]127.0.0.1:5335/g' gfwlist >AdGuardHomednslist
-          cat ./AdGuardHomednslist >> $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml
-          echo "AdGuardHome-dnslist(by cmzj).yaml" >> $LOG_PATH/AdGuardHome.log
-          cat $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml >> $LOG_PATH/AdGuardHome.log
-          
-      - name: 更新BT Tracker 
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-         export bt_tracker="$(curl -s https://cf.trackerslist.com/all_aria2.txt)"
-         sed -i "s#^uci set aria2.main.bt_tracker=.*#uci set aria2.main.bt_tracker=\'$bt_tracker\'#g"  $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
-         
-      - name: 设置时区与主机名
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: sed -i -e "s/set system.@system\[-1].hostname='OpenWrt'/set system.@system\[-1].hostname='OpenWrt-k'/g" -e "s/set system.@system\[-1].timezone='UTC'/set system.@system\[-1].timezone='CST-8'/g" -e "/set system.@system\[-1].timezone='CST-8'/i\		set system.@system\[-1].zonename='Asia/Shanghai'" $OPENWRT_ROOT_PATH/package/base-files/files/bin/config_generate
-
-      - name: 生成配置文件
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
           make defconfig
-          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' >> .config && make defconfig
-          sed -i -n  '/^CONFIG_PACKAGE_kmod/p' .config
-          echo "CONFIG_TARGET_x86=y" >> $OPENWRT_ROOT_PATH/.config
-          echo "CONFIG_TARGET_x86_64=y" >> $OPENWRT_ROOT_PATH/.config
-          echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
+          sed 's/# CONFIG_PACKAGE_kmod/CONFIG_PACKAGE_kmod/g' .config
+          sed '/^CONFIG_PACKAGE_kmod/s/ is not set/=m/g' .config
+          sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g' .config
+          sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' .config
+          sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' .config
+          sed 's/kmod=m/kmod=n/g' .config
           make defconfig
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
@@ -1096,6 +647,30 @@ jobs:
           cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
           cp -rf $(find ./artifact/package/ -type f -name "kmod*") ./artifact/kmod/
       
+      - name: 删除packages
+        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        run: |
+          cd ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64
+          rm -rf packages
+      
+      - name: 上传 buildinfo
+        uses: actions/upload-artifact@v3
+        with:
+          name: OpenWrt-buildinfo
+          path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/buildinfo/
+
+      - name: 上传 package
+        uses: actions/upload-artifact@v3
+        with:
+          name: OpenWrt-package
+          path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/package/
+
+      - name: 上传 firmware
+        uses: actions/upload-artifact@v3
+        with:
+          name: OpenWrt-firmware
+          path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/
+
       - name: 上传 kmod
         uses: actions/upload-artifact@v3
         with:
@@ -1113,11 +688,11 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
-          name: x86-64-kmod-logs
+          name: x86-64-logs
           path: "${{ env.LOG_PATH }}"
           
   upload:
-    needs:  [build, build-kmod]
+    needs:  build
     runs-on: ubuntu-22.04
     steps:
       - name: 将存储库签出到运行器
