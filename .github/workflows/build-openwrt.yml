@@ -440,10 +440,10 @@ jobs:
           make defconfig
           sed 's/# CONFIG_PACKAGE_kmod/CONFIG_PACKAGE_kmod/g' .config
           sed '/^CONFIG_PACKAGE_kmod/s/ is not set/=m/g' .config
-          sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g' .config
-          sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' .config
-          sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' .config
-          sed 's/kmod=m/kmod=n/g' .config
+          sed 's/CONFIG_PACKAGE_kmod-shortcut-fe-cm=m/CONFIG_PACKAGE_kmod-shortcut-fe-cm=n/g' .config
+          sed 's/CONFIG_PACKAGE_kmod-shortcut-fe=m/CONFIG_PACKAGE_kmod-shortcut-fe=n/g' .config
+          sed 's/CONFIG_PACKAGE_kmod-fast-classifier=m/CONFIG_PACKAGE_kmod-fast-classifier=n/g' .config
+          sed 's/CONFIG_PACKAGE_kmod=m/CONFIG_PACKAGE_kmod=n/g' .config
           make defconfig
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
