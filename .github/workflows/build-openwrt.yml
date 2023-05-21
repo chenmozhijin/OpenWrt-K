@@ -422,6 +422,31 @@ jobs:
           chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin-passwall
+          
+      - name: 加载自定义配置并生成配置文件
+        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        run: |
+          echo "CONFIG_TARGET_x86=y" >> $OPENWRT_ROOT_PATH/.config
+          echo "CONFIG_TARGET_x86_64=y" >> $OPENWRT_ROOT_PATH/.config
+          echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/luci.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/utilities.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/network.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/other.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/kmod.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
+          #cat $GITHUB_WORKSPACE/config/linux/config-5.10 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.10
+          #cat $GITHUB_WORKSPACE/config/linux/config-5.15 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.15
+          make defconfig
+          sed 's/# CONFIG_PACKAGE_kmod/CONFIG_PACKAGE_kmod/g' .config
+          sed '/^CONFIG_PACKAGE_kmod/s/ is not set/=m/g' .config
+          sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g' .config
+          sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' .config
+          sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' .config
+          sed 's/kmod=m/kmod=n/g' .config
+          make defconfig
+          ./scripts/diffconfig.sh
+          ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
 
       - name: 更新AdGuardHome核心与DNS名单
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -539,30 +564,7 @@ jobs:
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: sed -i -e "s/set system.@system\[-1].hostname='OpenWrt'/set system.@system\[-1].hostname='OpenWrt-k'/g" -e "s/set system.@system\[-1].timezone='UTC'/set system.@system\[-1].timezone='CST-8'/g" -e "/set system.@system\[-1].timezone='CST-8'/i\		set system.@system\[-1].zonename='Asia/Shanghai'" $OPENWRT_ROOT_PATH/package/base-files/files/bin/config_generate
 
-      - name: 加载自定义配置并生成配置文件
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          echo "CONFIG_TARGET_x86=y" >> $OPENWRT_ROOT_PATH/.config
-          echo "CONFIG_TARGET_x86_64=y" >> $OPENWRT_ROOT_PATH/.config
-          echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/luci.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/utilities.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/network.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/other.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/kmod.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
-          #cat $GITHUB_WORKSPACE/config/linux/config-5.10 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.10
-          #cat $GITHUB_WORKSPACE/config/linux/config-5.15 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.15
-          make defconfig
-          sed 's/# CONFIG_PACKAGE_kmod/CONFIG_PACKAGE_kmod/g' .config
-          sed '/^CONFIG_PACKAGE_kmod/s/ is not set/=m/g' .config
-          sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g' .config
-          sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' .config
-          sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' .config
-          sed 's/kmod=m/kmod=n/g' .config
-          make defconfig
-          ./scripts/diffconfig.sh
-          ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
+
       
       - name: 检查剩余空间
         run:  |
