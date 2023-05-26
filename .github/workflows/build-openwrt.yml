@@ -78,7 +78,7 @@ jobs:
           cd cmzj_patch
           export CMZJ_PATCH_ROOT_PATH="$(pwd)"
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/firewall4/patches/ $CMZJ_PATCH_ROOT_PATH/libnftnl/patches/ $CMZJ_PATCH_ROOT_PATH/nftables/patches/ $CMZJ_PATCH_ROOT_PATH/hack-5.10 $CMZJ_PATCH_ROOT_PATH/hack-5.15 $CMZJ_PATCH_ROOT_PATH/dnsmasq $CMZJ_PATCH_ROOT_PATH/libubox $CMZJ_PATCH_ROOT_PATH/netdata
+          mkdir -p $CMZJ_PATCH_ROOT_PATH/firewall4/patches/ $CMZJ_PATCH_ROOT_PATH/libnftnl/patches/ $CMZJ_PATCH_ROOT_PATH/nftables/patches/ $CMZJ_PATCH_ROOT_PATH/hack-5.10 $CMZJ_PATCH_ROOT_PATH/hack-5.15 $CMZJ_PATCH_ROOT_PATH/hack-6.1 $CMZJ_PATCH_ROOT_PATH/dnsmasq $CMZJ_PATCH_ROOT_PATH/libubox $CMZJ_PATCH_ROOT_PATH/netdata
 
       - name: 克隆源代码
         working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}
