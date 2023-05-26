@@ -438,12 +438,7 @@ jobs:
           #cat $GITHUB_WORKSPACE/config/linux/config-5.10 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.10
           #cat $GITHUB_WORKSPACE/config/linux/config-5.15 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.15
           make defconfig
-          sed 's/# CONFIG_PACKAGE_kmod/CONFIG_PACKAGE_kmod/g' .config
-          sed '/^CONFIG_PACKAGE_kmod/s/ is not set/=m/g' .config
-          sed 's/CONFIG_PACKAGE_kmod-shortcut-fe-cm=m/CONFIG_PACKAGE_kmod-shortcut-fe-cm=n/g' .config
-          sed 's/CONFIG_PACKAGE_kmod-shortcut-fe=m/CONFIG_PACKAGE_kmod-shortcut-fe=n/g' .config
-          sed 's/CONFIG_PACKAGE_kmod-fast-classifier=m/CONFIG_PACKAGE_kmod-fast-classifier=n/g' .config
-          sed 's/CONFIG_PACKAGE_kmod=m/CONFIG_PACKAGE_kmod=n/g' .config
+          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' >> .config
           make defconfig
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
