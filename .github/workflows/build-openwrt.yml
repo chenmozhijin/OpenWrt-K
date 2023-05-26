@@ -769,7 +769,7 @@ jobs:
         run: |
           latest_ver="$(echo $(curl https://api.github.com/repos/chenmozhijin/OpenWrt-K/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.-]+' -o 2>/dev/null)-package)"
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
-          wget https://github.com/chenmozhijin/OpenWrt-K/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv
+          wget https://github.com/chenmozhijin/OpenWrt-K/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
           unzip allpackage.zip
           mv package oldpackage
