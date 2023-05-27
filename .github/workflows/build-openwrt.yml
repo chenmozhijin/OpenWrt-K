@@ -232,7 +232,7 @@ jobs:
           name: cmzj_patch
           path: cmzj_patch.tgz
   
-  build:
+  build1:
     runs-on: ubuntu-22.04
     steps:
       - name: 清理空间
@@ -297,6 +297,7 @@ jobs:
           cd log
           export LOG_PATH="$(pwd)"
           echo "LOG_PATH=$LOG_PATH" >> $GITHUB_ENV
+          cd $GITHUB_WORKSPACE && cat $GITHUB_ENV >> build1_ENV
           
       - name: 下载cmzj_package
         uses: actions/download-artifact@v3
@@ -328,6 +329,7 @@ jobs:
           cd openwrt
           export OPENWRT_ROOT_PATH="$(pwd)"
           echo "OPENWRT_ROOT_PATH=$OPENWRT_ROOT_PATH" >> $GITHUB_ENV
+          cd $GITHUB_WORKSPACE && cat $GITHUB_ENV >> build1_ENV
           
       - name: 检出到稳定版标签
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -619,7 +621,72 @@ jobs:
           echo "======================="
           df -h
           echo "======================="
-      
+
+      - name: 准备上传
+        run:  |
+          cd $GITHUB_WORKSPACE
+          sudo tar cvpzf /build1_WORKSPACE.tgz *
+          ls
+
+      - name: 上传 build1_WORKSPACE
+        uses: actions/upload-artifact@v3
+        with:
+          name: build1_WORKSPACE
+          path: /build1_WORKSPACE.tgz
+
+  build2:
+    runs-on: ubuntu-latest
+    needs:  build1
+    steps:
+      - name: 清理空间
+        run:  |
+          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /etc/mysql /etc/php
+          sudo -E apt-mark hold grub-efi-amd64-signed
+          sudo -E apt update
+          sudo -E apt -y purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell* openjdk* mysql* php* mongodb* dotnet* moby* snap*
+          
+      - name: 安装编译依赖
+        run: |
+          sudo -E apt-mark hold grub-efi-amd64-signed
+          sudo -E apt update
+          sudo -E apt -y full-upgrade
+          sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils rsync unzip zlib1g-dev wget
+          sudo -E systemctl daemon-reload 
+          sudo -E apt -y autoremove --purge
+          sudo -E apt clean
+          sudo timedatectl set-timezone "Asia/Shanghai"
+          
+      - name: 合并磁盘
+        run: |
+          sudo swapoff -a && sudo rm -f /mnt/swapfile
+          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail / | tail -1 ) - 1048576) \* 1024) /root.img
+          export ROOT_LOOP_DEVNAME=$(sudo losetup -Pf --show /root.img)
+          sudo pvcreate -f $ROOT_LOOP_DEVNAME
+          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail /mnt | tail -1) - 102400) \* 1024) /mnt/mnt.img
+          export MNT_LOOP_DEVNAME=$(sudo losetup -Pf --show /mnt/mnt.img)
+          sudo pvcreate -f $MNT_LOOP_DEVNAME
+          sudo vgcreate vgstorage $ROOT_LOOP_DEVNAME $MNT_LOOP_DEVNAME
+          sudo lvcreate -n lvstorage -l 100%FREE vgstorage
+          export LV_DEVNAME=$(sudo lvscan | awk -F "'" '{print $2}')
+          sudo mkfs.btrfs -L combinedisk $LV_DEVNAME
+          sudo mount -o compress=zstd $LV_DEVNAME $GITHUB_WORKSPACE
+          sudo chown -R runner:runner $GITHUB_WORKSPACE
+          df -hT $GITHUB_WORKSPACE
+          sudo btrfs filesystem usage $GITHUB_WORKSPACE
+
+      - name: 下载build1_WORKSPACE
+        uses: actions/download-artifact@v3
+        with:
+          name: build1_WORKSPACE
+          
+      - name: 解压
+        run:  |
+          sudo mv $GITHUB_WORKSPACE/build1_WORKSPACE.tgz /build1_WORKSPACE.tgz 
+          tar xvpfz /build1_WORKSPACE.tgz  -C $GITHUB_WORKSPACE
+          sudo rm -rf /build1_WORKSPACE.tgz
+          cat build1_ENV
+          cat build1_ENV >> $GITHUB_ENV
+
       - name: 编译固件 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -692,7 +759,7 @@ jobs:
           path: "${{ env.LOG_PATH }}"
           
   upload:
-    needs:  build
+    needs:  build2
     runs-on: ubuntu-22.04
     steps:
       - name: 将存储库签出到运行器
