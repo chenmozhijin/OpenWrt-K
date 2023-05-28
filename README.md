@@ -7,6 +7,8 @@
 3. 提供多种格式固件应对安装到不同虚拟机/实体机的需求
 4. 自带SmartDNS+AdGuard Home配置无需额外配置（AdGuard Home 默认密码：password）
 5. 使用清华镜像源加快软件包下载
+6. 随固件编译几乎全部kmod（无sfe），拒绝kernel 版本不兼容（kmod在OpenWrt-K_Vxx.xx.xx-xx-package allkmod.zip中需要时安装即可)
+
 
 ## 内置功能
 已内置以下LuCI插件：
@@ -20,7 +22,7 @@
 +    luci-app-dockerman
 +    luci-app-fileassistant
 +    luci-app-firewall
-+    [luci-app-netdata](https://github.com/sirpdboy/luci-app-netdata)
++    luci-app-netdata
 +    [luci-app-netspeedtest](https://github.com/sirpdboy/netspeedtest)
 +    luci-app-nlbwmon
 +    luci-app-opkg
