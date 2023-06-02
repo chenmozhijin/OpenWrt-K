@@ -118,7 +118,7 @@ jobs:
           git clone https://github.com/csrutil/OpenWrt-NIC-Drivers
           git clone https://github.com/lisaac/luci-app-diskman
           git clone https://github.com/sirpdboy/NetSpeedTest
-          git clone https://github.com/tty228/luci-app-serverchan
+          git clone https://github.com/tty228/luci-app-wechatpush
           git clone https://github.com/jerrykuku/luci-theme-argon
           git clone https://github.com/chenmozhijin/luci-app-socat
           cd $DOWNLOAD_ROOT_PATH
