@@ -426,7 +426,7 @@ jobs:
           cp -r files $OPENWRT_ROOT_PATH/files
           compiler=$(curl https://api.github.com/users/$(echo ${{ github.repository }} | sed "s/\/.*//g") 2>/dev/null  |grep '"name":\ "'|sed 's/  "name":\ "//'|sed 's/",//' 2>/dev/null)
           echo  'Compiled by' $compiler
-          sed -i "s/沉默の金/$compiler/g" $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
+          sed -i "s/Compiled by 沉默の金/Compiled by $compiler/g" $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
           cat $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin | grep 'Compiled by'
           chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
