@@ -30,7 +30,7 @@
 +    [luci-app-passwall2](https://github.com/xiaorouji/openwrt-passwall2)
 +    luci-app-rclone
 +    luci-app-samba4
-+    [luci-app-serverchan](https://github.com/tty228/luci-app-serverchan)
++    [luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush)
 +    [luci-app-smartdns](https://github.com/pymumu/luci-app-smartdns)
 +    luci-app-socat
 +    luci-app-ttyd
