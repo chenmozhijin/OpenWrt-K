@@ -118,7 +118,7 @@ jobs:
           git clone https://github.com/csrutil/OpenWrt-NIC-Drivers
           git clone https://github.com/lisaac/luci-app-diskman
           git clone https://github.com/sirpdboy/NetSpeedTest
-          git clone https://github.com/tty228/luci-app-serverchan
+          git clone https://github.com/tty228/luci-app-wechatpush
           git clone https://github.com/jerrykuku/luci-theme-argon
           git clone https://github.com/chenmozhijin/luci-app-socat
           cd $DOWNLOAD_ROOT_PATH
@@ -160,7 +160,7 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-diskman $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/NetSpeedTest/luci-app-netspeedtest $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/NetSpeedTest/homebox $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-serverchan $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-wechatpush $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-theme-argon $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-socat/luci-app-socat $CMZJ_PACKAGE_ROOT_PATH/
           cd $CMZJ_PACKAGE_ROOT_PATH && ls
