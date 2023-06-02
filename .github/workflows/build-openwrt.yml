@@ -424,6 +424,9 @@ jobs:
       - name: 复制自定义文件
         run: |
           cp -r files $OPENWRT_ROOT_PATH/files
+          compiler=$(curl https://api.github.com/users/$(echo ${{ github.repository }} | sed "s/\/.*//g") 2>/dev/null  |grep '"name":\ "'|sed 's/  "name":\ "//'|sed 's/",//' 2>/dev/null)
+          echo  'Compiled by' $compiler
+          sed 's/沉默の金/$compiler/g' $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
           chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin-passwall
@@ -834,9 +837,9 @@ jobs:
       
       - name: 整理包生成 release body
         run: |
-          latest_ver="$(echo $(curl https://api.github.com/repos/chenmozhijin/OpenWrt-K/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.-]+' -o 2>/dev/null)-package)"
+          latest_ver="$(echo $(curl https://api.github.com/repos/${{ github.repository }}/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.-]+' -o 2>/dev/null)-package)"
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
-          wget https://github.com/chenmozhijin/OpenWrt-K/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv || exit 0
+          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
           unzip allpackage.zip
           mv package oldpackage
