@@ -30,7 +30,6 @@
 +    [luci-app-passwall2](https://github.com/xiaorouji/openwrt-passwall2)
 +    luci-app-rclone
 +    luci-app-samba4
-+    [luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush)
 +    [luci-app-smartdns](https://github.com/pymumu/luci-app-smartdns)
 +    luci-app-socat
 +    luci-app-ttyd
@@ -39,6 +38,7 @@
 +    luci-app-usb-printer
 +    luci-app-vlmcsd
 +    luci-app-webadmin
++    [luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush)
 +    luci-app-wireguard
 +    luci-app-wol
 +    luci-app-zerotier
