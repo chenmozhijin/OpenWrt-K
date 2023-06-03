@@ -54,7 +54,7 @@ jobs:
       - name: 准备环境
         run:  |
           sudo -E apt update
-          sudo apt install -y curl git  rsync unzip wget sed tar
+          sudo apt install -y curl git  rsync unzip wget sed tar || sudo apt install -y curl git  rsync unzip wget sed tar
       
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -235,6 +235,33 @@ jobs:
   build1:
     runs-on: ubuntu-22.04
     steps:
+      - name: 输出运行器硬件信息
+        run:  |
+          echo -e "-----------------------------------------------------------------------------\n"
+          echo -e "温馨提示："
+          echo -e "GitHub Actions运行器使用CPU的型号不一定相同,运行器性能不同将会影响编译速度。\n"
+          echo -e "-----------------------------------------------------------------------------\n"
+          echo -e "运行器硬件信息\n"
+          echo -e "-----------------------------------CPU信息-----------------------------------\n"
+          echo "物理CPU数量:$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)"
+          echo "CPU核心数量:$(cat /proc/cpuinfo |grep "cores"|uniq|awk '{print $4}')"
+          echo "CPU线程数量:$(cat /proc/cpuinfo |grep "processor"|wc -l)"
+          echo -e "CPU型号:$(cat /proc/cpuinfo | grep 'model name' | sort | uniq |sed 's/.*://') \n"
+          echo -e "-----------------------------------内存信息-----------------------------------\n"
+          echo "内存总量:$(grep MemTotal /proc/meminfo|sed 's/.*://')"
+          echo "空闲内存量:$(grep MemFree /proc/meminfo|sed 's/.*://')"
+          echo "内存详细信息："
+          free -m
+          echo -e ""
+          echo -e "-----------------------------------硬盘信息-----------------------------------\n"
+          df --total  -Th
+          echo -e ""
+          echo -e "注：合并磁盘后可用空间将大幅度增加\n"
+          echo -e "-----------------------------------------------------------------------------\n"
+          echo -e "运行器详细信息:\n"
+          sudo lshw
+          echo -e "-----------------------------------------------------------------------------\n"
+          
       - name: 清理空间
         run:  |
           sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /etc/mysql /etc/php
@@ -247,7 +274,13 @@ jobs:
           sudo -E apt-mark hold grub-efi-amd64-signed
           sudo -E apt update
           sudo -E apt -y full-upgrade
-          sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils rsync unzip zlib1g-dev wget
+          sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext \
+          gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev \
+          libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils \
+          rsync unzip zlib1g-dev wget || sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar \
+          flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev \
+          libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ \
+          python3-distutils rsync unzip zlib1g-dev wget
           sudo -E systemctl daemon-reload 
           sudo -E apt -y autoremove --purge
           sudo -E apt clean
@@ -637,11 +670,45 @@ jobs:
         with:
           name: build1_WORKSPACE
           path: /build1_WORKSPACE.tgz
+          
+      - name: 上传日志
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: x86-64-logs-
+          path: "${{ env.LOG_PATH }}"
 
   build2:
     runs-on: ubuntu-latest
     needs:  build1
     steps:
+      - name: 输出运行器硬件信息
+        run:  |
+          echo -e "-----------------------------------------------------------------------------\n"
+          echo -e "温馨提示："
+          echo -e "GitHub Actions运行器使用CPU的型号不一定相同,运行器性能不同将会影响编译速度。\n"
+          echo -e "-----------------------------------------------------------------------------\n"
+          echo -e "运行器硬件信息\n"
+          echo -e "-----------------------------------CPU信息-----------------------------------\n"
+          echo "物理CPU数量:$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)"
+          echo "CPU核心数量:$(cat /proc/cpuinfo |grep "cores"|uniq|awk '{print $4}')"
+          echo "CPU线程数量:$(cat /proc/cpuinfo |grep "processor"|wc -l)"
+          echo -e "CPU型号:$(cat /proc/cpuinfo | grep 'model name' | sort | uniq |sed 's/.*://') \n"
+          echo -e "-----------------------------------内存信息-----------------------------------\n"
+          echo "内存总量:$(grep MemTotal /proc/meminfo|sed 's/.*://')"
+          echo "空闲内存量:$(grep MemFree /proc/meminfo|sed 's/.*://')"
+          echo "内存详细信息："
+          free -m
+          echo -e ""
+          echo -e "-----------------------------------硬盘信息-----------------------------------\n"
+          df --total  -Th
+          echo -e ""
+          echo -e "注：合并磁盘后可用空间将大幅度增加\n"
+          echo -e "-----------------------------------------------------------------------------\n"
+          echo -e "运行器详细信息:\n"
+          sudo lshw
+          echo -e "-----------------------------------------------------------------------------\n"
+          
       - name: 清理空间
         run:  |
           sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /etc/mysql /etc/php
@@ -654,7 +721,13 @@ jobs:
           sudo -E apt-mark hold grub-efi-amd64-signed
           sudo -E apt update
           sudo -E apt -y full-upgrade
-          sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils rsync unzip zlib1g-dev wget
+          sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext \
+          gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev \
+          libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils \
+          rsync unzip zlib1g-dev wget || sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar \
+          flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev \
+          libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ \
+          python3-distutils rsync unzip zlib1g-dev wget
           sudo -E systemctl daemon-reload 
           sudo -E apt -y autoremove --purge
           sudo -E apt clean
@@ -785,7 +858,7 @@ jobs:
       - name: 初始化环境
         run: |
           sudo -E apt update
-          sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget
+          sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget || sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget
           sudo timedatectl set-timezone "Asia/Shanghai"
 
       - name: 生成 release tag
