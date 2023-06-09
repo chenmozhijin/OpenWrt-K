@@ -55,11 +55,12 @@
 ![内置功能/turboacc](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/1.png)
 
 ## 感谢
- 感谢以下项目
+ 感谢以下项目与各位大佬的付出
  
 +    [openwrt/openwrt](https://github.com/openwrt/openwrt/)
 +    [coolsnowwolf/lede](https://github.com/coolsnowwolf/lede)
 +    [Lienol/openwrt](https://github.com/Lienol/openwrt) 
++    [immortalwrt/immortalwrt](https://github.com/immortalwrt/immortalwrt/)
 +    [wongsyrone/lede-1](https://github.com/wongsyrone/lede-1)
 +    [Github Actions](https://github.com/features/actions)
 +    [softprops/action-gh-release](https://github.com/ncipollo/release-action)
