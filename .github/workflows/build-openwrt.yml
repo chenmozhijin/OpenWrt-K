@@ -72,7 +72,7 @@ jobs:
           cd cmzj_package
           export CMZJ_PACKAGE_ROOT_PATH="$(pwd)"
           echo "CMZJ_PACKAGE_ROOT_PATH=$CMZJ_PACKAGE_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p turboacc
+          mkdir -p turboacc r8125
           cd $GITHUB_WORKSPACE
           mkdir -p cmzj_patch
           cd cmzj_patch
@@ -116,6 +116,7 @@ jobs:
           git clone https://github.com/rufengsuixing/luci-app-adguardhome
           git clone https://github.com/jerrykuku/luci-app-argon-config
           git clone https://github.com/csrutil/OpenWrt-NIC-Drivers
+          git clone https://github.com/sbwml/package_kernel_r8125
           git clone https://github.com/lisaac/luci-app-diskman
           git clone https://github.com/sirpdboy/NetSpeedTest
           git clone https://github.com/tty228/luci-app-wechatpush
@@ -156,13 +157,15 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/turboacc/luci-app-turboacc $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-adguardhome $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-argon-config $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/OpenWrt-NIC-Drivers/drivers/* $CMZJ_PACKAGE_ROOT_PATH/
+          #cp -r $DOWNLOAD_ROOT_PATH/other/OpenWrt-NIC-Drivers/drivers/* $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-diskman $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/NetSpeedTest/luci-app-netspeedtest $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/NetSpeedTest/homebox $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-wechatpush $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-theme-argon $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-socat/luci-app-socat $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/other/OpenWrt-NIC-Drivers/drivers/r8152 $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/other/package_kernel_r8125/* $CMZJ_PACKAGE_ROOT_PATH/r8125
           cd $CMZJ_PACKAGE_ROOT_PATH && ls
           
       - name: 修改Makefile文件
@@ -209,8 +212,8 @@ jobs:
           cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/firewall4-04a06bd70b9808b14444cae81a2faba4708ee231/firewall4 $CMZJ_PATCH_ROOT_PATH/firewall4
           cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/libnftnl-1.2.5/libnftnl $CMZJ_PATCH_ROOT_PATH/libnftnl
           cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/nftables-1.0.7/nftables $CMZJ_PATCH_ROOT_PATH/nftables
-          cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/network/services/dnsmasq $CMZJ_PATCH_ROOT_PATH/dnsmasq
-          cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/libubox
+          #cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/network/services/dnsmasq $CMZJ_PATCH_ROOT_PATH/dnsmasq
+          #cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/libubox
           cp -RT $DOWNLOAD_ROOT_PATH/immortalwrt/packages/admin/netdata $CMZJ_PATCH_ROOT_PATH/netdata
           
       - name: 压缩
@@ -366,29 +369,29 @@ jobs:
           
       - name: 检出到稳定版标签
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: git checkout v22.03.5
+        run: git checkout v23.05.0-rc1
 
       - name: 复制cmzj_package 打补丁 
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
           cp -r $CMZJ_PACKAGE_ROOT_PATH $OPENWRT_ROOT_PATH/package/cmzj_package
-          cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
+          cp $CMZJ_PATCH_ROOT_PATH/hack-5.15/952-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.15
           #cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
           rm -rf $OPENWRT_ROOT_PATH/package/libs/libnftnl
           rm -rf $OPENWRT_ROOT_PATH/package/network/config/firewall4
           rm -rf $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          rm -rf $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          rm -rf $OPENWRT_ROOT_PATH/package/libs/libubox
+          #rm -rf $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+          #rm -rf $OPENWRT_ROOT_PATH/package/libs/libubox
           mkdir -p $OPENWRT_ROOT_PATH/package/network/config/firewall4
           mkdir -p $OPENWRT_ROOT_PATH/package/libs/libnftnl
           mkdir -p $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          mkdir -p $OPENWRT_ROOT_PATH/package/libs/libubox
-          mkdir -p $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+          #mkdir -p $OPENWRT_ROOT_PATH/package/libs/libubox
+          #mkdir -p $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
           cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4 $OPENWRT_ROOT_PATH/package/network/config/firewall4
           cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl $OPENWRT_ROOT_PATH/package/libs/libnftnl
           cp -RT $CMZJ_PATCH_ROOT_PATH/nftables $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          cp -RT $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
-          cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+          #cp -RT $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
+          #cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
           echo "cmzj_patch" >> $LOG_PATH/cmzj_patch.log
           ls $CMZJ_PATCH_ROOT_PATH >> $LOG_PATH/cmzj_patch.log
           echo "cmzj_package" >> $LOG_PATH/cmzj_patch.log
@@ -399,18 +402,18 @@ jobs:
           ls $OPENWRT_ROOT_PATH/package/network/config/firewall4 >> $LOG_PATH/cmzj_patch.log
           echo "nftables-file" >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/package/network/utils/nftables >> $LOG_PATH/cmzj_patch.log
-          echo "libubox-file" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/libs/libubox >> $LOG_PATH/cmzj_patch.log
-          echo "dnsmasq-file" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/network/services/dnsmasq >> $LOG_PATH/cmzj_patch.log
+          #echo "libubox-file" >> $LOG_PATH/cmzj_patch.log
+          #ls $OPENWRT_ROOT_PATH/package/libs/libubox >> $LOG_PATH/cmzj_patch.log
+          #echo "dnsmasq-file" >> $LOG_PATH/cmzj_patch.log
+          #ls $OPENWRT_ROOT_PATH/package/network/services/dnsmasq >> $LOG_PATH/cmzj_patch.log
           echo "firewall4-patches" >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/package/network/config/firewall4/patches/ >> $LOG_PATH/cmzj_patch.log
           echo "libnftnl-patches" >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/package/libs/libnftnl/patches/ >> $LOG_PATH/cmzj_patch.log
           echo "nftables-patches" >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/package/network/utils/nftables/patches/ >> $LOG_PATH/cmzj_patch.log
-          echo "hack-5.10"  >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10 >> $LOG_PATH/cmzj_patch.log
+          echo "hack-5.15"  >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.15 >> $LOG_PATH/cmzj_patch.log
       
       - name: 修复问题
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
