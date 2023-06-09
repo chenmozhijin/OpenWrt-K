@@ -72,7 +72,7 @@ jobs:
           cd cmzj_package
           export CMZJ_PACKAGE_ROOT_PATH="$(pwd)"
           echo "CMZJ_PACKAGE_ROOT_PATH=$CMZJ_PACKAGE_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p turboacc
+          mkdir -p turboacc r8125
           cd $GITHUB_WORKSPACE
           mkdir -p cmzj_patch
           cd cmzj_patch
@@ -116,6 +116,7 @@ jobs:
           git clone https://github.com/rufengsuixing/luci-app-adguardhome
           git clone https://github.com/jerrykuku/luci-app-argon-config
           git clone https://github.com/csrutil/OpenWrt-NIC-Drivers
+          git clone https://github.com/sbwml/package_kernel_r8125
           git clone https://github.com/lisaac/luci-app-diskman
           git clone https://github.com/sirpdboy/NetSpeedTest
           git clone https://github.com/tty228/luci-app-wechatpush
@@ -156,13 +157,15 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/turboacc/luci-app-turboacc $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-adguardhome $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-argon-config $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/OpenWrt-NIC-Drivers/drivers/* $CMZJ_PACKAGE_ROOT_PATH/
+          #cp -r $DOWNLOAD_ROOT_PATH/other/OpenWrt-NIC-Drivers/drivers/* $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-diskman $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/NetSpeedTest/luci-app-netspeedtest $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/NetSpeedTest/homebox $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-wechatpush $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-theme-argon $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-socat/luci-app-socat $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/other/OpenWrt-NIC-Drivers/drivers/r8152 $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/other/package_kernel_r8125/* $CMZJ_PACKAGE_ROOT_PATH/r8125
           cd $CMZJ_PACKAGE_ROOT_PATH && ls
           
       - name: 修改Makefile文件
