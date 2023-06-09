@@ -418,6 +418,7 @@ jobs:
       - name: 修复问题
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
+          sed -i 's/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk
           sed -i 's/-full//' ./include/target.mk 
           sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk 
           sed -i 's/256/1024/' ./target/linux/x86/image/Makefile
