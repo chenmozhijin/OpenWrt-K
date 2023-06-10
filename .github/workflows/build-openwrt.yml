@@ -657,23 +657,12 @@ jobs:
           df --total  -Th
           echo "======================="
           
-      - name: 编译部分耗时软件包
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make package/feeds/packages/aria2/compile -j $(($(nproc)+1))  || make package/feeds/packages/aria2/compile -j1 V=s
-          make package/libs/openssl/compile -j $(($(nproc)+1))  || make package/libs/openssl/compile -j1 V=s
-          make package/system/opkg/compile -j $(($(nproc)+1))  || make package/system/opkg/compile -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-          
       - name: 准备上传
         run:  |
           cd $GITHUB_WORKSPACE
           sudo tar cvpzf /build1_WORKSPACE.tgz *
           ls
+          
       - name: 上传 build1_WORKSPACE
         uses: actions/upload-artifact@v3
         with:
