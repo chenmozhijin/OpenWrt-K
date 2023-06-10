@@ -1,4 +1,3 @@
-
 #=============================================================================#
 #MIT License
 
@@ -79,7 +78,6 @@ jobs:
           export CMZJ_PATCH_ROOT_PATH="$(pwd)"
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
           mkdir -p $CMZJ_PATCH_ROOT_PATH/firewall4/patches/ $CMZJ_PATCH_ROOT_PATH/libnftnl/patches/ $CMZJ_PATCH_ROOT_PATH/nftables/patches/ $CMZJ_PATCH_ROOT_PATH/hack-5.10 $CMZJ_PATCH_ROOT_PATH/hack-5.15 $CMZJ_PATCH_ROOT_PATH/hack-6.1 $CMZJ_PATCH_ROOT_PATH/dnsmasq $CMZJ_PATCH_ROOT_PATH/libubox $CMZJ_PATCH_ROOT_PATH/netdata
-
       - name: 克隆源代码
         working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}
         run:  |
@@ -275,7 +273,6 @@ jobs:
       - name: 安装编译依赖
         run: |
           sudo -E apt-mark hold grub-efi-amd64-signed
-          sudo -E apt update
           sudo -E apt -y full-upgrade
           sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext \
           gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev \
@@ -357,7 +354,6 @@ jobs:
           ls -l $CMZJ_PACKAGE_ROOT_PATH/** >> $LOG_PATH/cmzj_package.log
           echo "cmzj_patch-permissions" >> $LOG_PATH/cmzj_patch.log
           ls -l $CMZJ_PATCH_ROOT_PATH/**  >> $LOG_PATH/cmzj_patch.log
-
       - name: 克隆源代码
         working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
@@ -418,7 +414,7 @@ jobs:
       - name: 修复问题
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          sed -i 's/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk
+          sed -i 's/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk #https://github.com/openwrt/openwrt/commit/ecc53240945c95bc77663b79ccae6e2bd046c9c8
           sed -i 's/-full//' ./include/target.mk 
           sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk 
           sed -i 's/256/1024/' ./target/linux/x86/image/Makefile
@@ -488,7 +484,6 @@ jobs:
           make defconfig
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
-
       - name: 更新AdGuardHome核心与DNS名单
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -626,7 +621,7 @@ jobs:
       - name: 构建工具
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          make tools/install -j$(nproc) || make tools/install -j1 V=s
+          make tools/install -j $(($(nproc)+1)) || make tools/install -j1 V=s
           echo "======================="
           echo "空间使用情况:"
           echo "======================="
@@ -636,7 +631,7 @@ jobs:
       - name: 构建工具链
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          make toolchain/install -j$(nproc) || make toolchain/install -j1 V=s
+          make toolchain/install -j $(($(nproc)+1)) || make toolchain/install -j1 V=s
           echo "======================="
           echo "空间使用情况:"
           echo "======================="
@@ -646,7 +641,7 @@ jobs:
       - name: 构建内核
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          make target/compile -j$(nproc) || make target/compile -j$(nproc) || make target/compile -j1 V=s
+          make target/compile -j $(($(nproc)+1)) || make target/compile -j$(nproc) V=s || make target/compile -j1 V=s
           echo "======================="
           echo "空间使用情况:"
           echo "======================="
@@ -656,25 +651,31 @@ jobs:
       - name: 构建内核模块
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          make package/linux/compile -j$(nproc) || make package/linux/compile -j$(nproc) V=s || make package/linux/compile -j1 V=s
+          make package/linux/compile -j $(($(nproc)+1)) || make package/linux/compile -j$(nproc) V=s || make package/linux/compile -j1 V=s
           echo "======================="
           echo "空间使用情况:"
           echo "======================="
           df -h
           echo "======================="
-
+          
       - name: 准备上传
         run:  |
           cd $GITHUB_WORKSPACE
           sudo tar cvpzf /build1_WORKSPACE.tgz *
           ls
-
       - name: 上传 build1_WORKSPACE
         uses: actions/upload-artifact@v3
         with:
           name: build1_WORKSPACE
           path: /build1_WORKSPACE.tgz
-          
+
+      - name: 收集日志
+        if: failure()
+        run: |
+          mkdir -p openwrt-logs
+          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
+          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
+
       - name: 上传日志
         if: failure()
         uses: actions/upload-artifact@v3
@@ -723,7 +724,6 @@ jobs:
       - name: 安装编译依赖
         run: |
           sudo -E apt-mark hold grub-efi-amd64-signed
-          sudo -E apt update
           sudo -E apt -y full-upgrade
           sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext \
           gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev \
@@ -767,11 +767,10 @@ jobs:
           sudo rm -rf /build1_WORKSPACE.tgz
           cat build1_ENV
           cat build1_ENV >> $GITHUB_ENV
-
       - name: 编译固件 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          make -j$(nproc) || make -j$(nproc) V=s || make -j1 V=s
+          make -j $(($(nproc)+1)) || make -j$(nproc) V=s || make -j1 V=s
           echo "======================="
           echo "空间使用情况:"
           echo "======================="
@@ -780,7 +779,6 @@ jobs:
           du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
           du -h --max-depth=1 ./build_dir
           du -h --max-depth=1 ./bin
-
       - name: 准备 artifact
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -864,7 +862,6 @@ jobs:
           sudo -E apt update
           sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget || sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget
           sudo timedatectl set-timezone "Asia/Shanghai"
-
       - name: 生成 release tag
         id: tag
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
@@ -931,7 +928,6 @@ jobs:
           sed -i -e "s/_x86_64.ipk//g" -e "s/_all.ipk//g" newpackage.list && echo "list complete"
           diff oldpackage.list newpackage.list -y -W 80 -B -b |grep -E '[\|><]' >diff.temp && echo "Compare complete" ||echo "no package update"
           sed -e "/</s/^/delete:/g" -e "/|/s/^/update:/g" -e "/>/s/^/Add:/g" -e 's/[[:space:]]//g' -e 's/<//g' -e 's/>//g' -e 's/|/ > /g' -e 's/> [a-zA-Z0-9\-]*_/> /g' -e 's/_/ /g' diff.temp >> $UPLOAD_ROOT_PATH/release.txt ||echo "no package update"
-
       - name: 上传包到 Release
         id: package-release
         uses: softprops/action-gh-release@v0.1.15
