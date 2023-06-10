@@ -31,7 +31,7 @@
 +    luci-app-rclone
 +    luci-app-samba4
 +    [luci-app-smartdns](https://github.com/pymumu/luci-app-smartdns)
-+    luci-app-socat
++    [luci-app-socat](https://github.com/chenmozhijin/luci-app-socat)
 +    luci-app-ttyd
 +    [luci-app-turboacc](https://github.com/chenmozhijin/turboacc)
 +    luci-app-upnp
