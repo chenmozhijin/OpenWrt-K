@@ -250,6 +250,9 @@ jobs:
     runs-on: ubuntu-22.04
     needs: prepare
     steps:
+      - name: 将存储库签出到运行器
+        uses: actions/checkout@v3
+
       - name: 输出运行器硬件信息
         run:  |
           bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
@@ -648,6 +651,9 @@ jobs:
     runs-on: ubuntu-latest
     needs:  build1
     steps:
+      - name: 将存储库签出到运行器
+        uses: actions/checkout@v3
+        
       - name: 输出运行器硬件信息
         run:  |
           bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
