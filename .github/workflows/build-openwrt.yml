@@ -48,6 +48,9 @@ permissions:
   discussions: write
 jobs:
   prepare:
+    outputs:
+      target: ${{ steps.target.outputs.target }}
+      subtarget: ${{ steps.target.outputs.subtarget }}
     runs-on: ubuntu-22.04
     steps:
       - name: 准备环境
@@ -78,6 +81,7 @@ jobs:
           export CMZJ_PATCH_ROOT_PATH="$(pwd)"
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
           mkdir -p $CMZJ_PATCH_ROOT_PATH/firewall4/patches/ $CMZJ_PATCH_ROOT_PATH/libnftnl/patches/ $CMZJ_PATCH_ROOT_PATH/nftables/patches/ $CMZJ_PATCH_ROOT_PATH/hack-5.10 $CMZJ_PATCH_ROOT_PATH/hack-5.15 $CMZJ_PATCH_ROOT_PATH/hack-6.1 $CMZJ_PATCH_ROOT_PATH/dnsmasq $CMZJ_PATCH_ROOT_PATH/libubox $CMZJ_PATCH_ROOT_PATH/netdata
+
       - name: 克隆源代码
         working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}
         run:  |
@@ -232,6 +236,15 @@ jobs:
         with:
           name: cmzj_patch
           path: cmzj_patch.tgz
+
+      - name: 读取架构信息
+        id: target
+        working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}/openwrt
+        run:  |
+          cat $GITHUB_WORKSPACE/config/target.config >> $DOWNLOAD_ROOT_PATH/openwrt/.config
+          make defconfig
+          echo target=$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//') >> "$GITHUB_OUTPUT"
+          echo subtarget=$(sed -n '/CONFIG_TARGET_SUBTARGET/p' .config | sed -e 's/CONFIG_TARGET_SUBTARGET\=\"//' -e 's/\"//') >> "$GITHUB_OUTPUT"
   
   build1:
     runs-on: ubuntu-22.04
@@ -354,6 +367,7 @@ jobs:
           ls -l $CMZJ_PACKAGE_ROOT_PATH/** >> $LOG_PATH/cmzj_package.log
           echo "cmzj_patch-permissions" >> $LOG_PATH/cmzj_patch.log
           ls -l $CMZJ_PATCH_ROOT_PATH/**  >> $LOG_PATH/cmzj_patch.log
+
       - name: 克隆源代码
         working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
@@ -417,7 +431,7 @@ jobs:
           sed -i 's/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk #https://github.com/openwrt/openwrt/commit/ecc53240945c95bc77663b79ccae6e2bd046c9c8
           sed -i 's/-full//' ./include/target.mk 
           sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk 
-          sed -i 's/256/1024/' ./target/linux/x86/image/Makefile
+          sed -i 's/256/1024/' ./target/linux/${{needs.prepare.outputs.target}}/image/Makefile
       
       - name: 更新 feeds 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -468,9 +482,7 @@ jobs:
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          echo "CONFIG_TARGET_x86=y" >> $OPENWRT_ROOT_PATH/.config
-          echo "CONFIG_TARGET_x86_64=y" >> $OPENWRT_ROOT_PATH/.config
-          echo "CONFIG_TARGET_x86_64_DEVICE_generic=y" >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/target.config >> $OPENWRT_ROOT_PATH/.config
           cat $GITHUB_WORKSPACE/config/luci.config >> $OPENWRT_ROOT_PATH/.config
           cat $GITHUB_WORKSPACE/config/utilities.config >> $OPENWRT_ROOT_PATH/.config
           cat $GITHUB_WORKSPACE/config/network.config >> $OPENWRT_ROOT_PATH/.config
@@ -680,7 +692,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v3
         with:
-          name: x86-64-logs-
+          name: ${{needs.prepare.outputs.target}}-${{needs.prepare.outputs.subtarget}}-logs-
           path: "${{ env.LOG_PATH }}"
 
   build2:
@@ -827,7 +839,7 @@ jobs:
       - name: 删除packages
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          cd ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/x86/64
+          cd ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{needs.prepare.outputs.target}}/${{needs.prepare.outputs.subtarget}}
           rm -rf packages
       
       - name: 上传 buildinfo
@@ -865,7 +877,7 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
-          name: x86-64-logs
+          name: ${{needs.prepare.outputs.target}}-${{needs.prepare.outputs.subtarget}}-logs
           path: "${{ env.LOG_PATH }}"
           
   upload:
@@ -950,13 +962,13 @@ jobs:
           unzip allpackage.zip
           mv package oldpackage
           ls $PACKAGECOMPARE_ROOT_PATH/oldpackage/|sort| uniq >oldpackage.list
-          sed -i -e "s/_x86_64.ipk//g" -e "s/_all.ipk//g" oldpackage.list
+          sed -i -e "s/_${{needs.prepare.outputs.target}}_${{needs.prepare.outputs.subtarget}}.ipk//g" -e "s/_all.ipk//g" oldpackage.list
           rm -rf $PACKAGECOMPARE_ROOT_PATH/allpackage.zip
           cp -f $UPLOAD_ROOT_PATH/package-upload/allpackage.zip $PACKAGECOMPARE_ROOT_PATH/allpackage.zip
           unzip allpackage.zip
           mv package newpackage
           ls $PACKAGECOMPARE_ROOT_PATH/newpackage/|sort| uniq >newpackage.list
-          sed -i -e "s/_x86_64.ipk//g" -e "s/_all.ipk//g" newpackage.list && echo "list complete"
+          sed -i -e "s/_${{needs.prepare.outputs.target}}_${{needs.prepare.outputs.subtarget}}.ipk//g" -e "s/_all.ipk//g" newpackage.list && echo "list complete"
           diff oldpackage.list newpackage.list -y -W 80 -B -b |grep -E '[\|><]' >diff.temp && echo "Compare complete" ||echo "no package update"
           sed -e "/</s/^/delete:/g" -e "/|/s/^/update:/g" -e "/>/s/^/Add:/g" -e 's/[[:space:]]//g' -e 's/<//g' -e 's/>//g' -e 's/|/ > /g' -e 's/> [a-zA-Z0-9\-]*_/> /g' -e 's/_/ /g' diff.temp >> $UPLOAD_ROOT_PATH/release.txt ||echo "no package update"
           
@@ -975,7 +987,7 @@ jobs:
         with:
           name: ${{ env.RELEASE_NAME }}
           tag_name: ${{ env.RELEASE_TAG_NAME }}
-          files: ${{ env.UPLOAD_ROOT_PATH }}/x86/64/*
+          files: ${{ env.UPLOAD_ROOT_PATH }}/${{needs.prepare.outputs.target}}/${{needs.prepare.outputs.subtarget}}/*
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
 
       - name: 删除旧的Releases
