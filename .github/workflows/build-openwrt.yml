@@ -252,71 +252,19 @@ jobs:
     steps:
       - name: 输出运行器硬件信息
         run:  |
-          echo -e "-----------------------------------------------------------------------------\n"
-          echo -e "温馨提示："
-          echo -e "GitHub Actions运行器使用CPU的型号不一定相同,运行器性能不同将会影响编译速度。\n"
-          echo -e "-----------------------------------------------------------------------------\n"
-          echo -e "运行器硬件信息\n"
-          echo -e "-----------------------------------CPU信息-----------------------------------\n"
-          echo "物理CPU数量:$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)"
-          echo "CPU核心数量:$(cat /proc/cpuinfo |grep "cores"|uniq|awk '{print $4}')"
-          echo "CPU线程数量:$(cat /proc/cpuinfo |grep "processor"|wc -l)"
-          echo -e "CPU型号:$(cat /proc/cpuinfo | grep 'model name' | sort | uniq |sed 's/.*://') \n"
-          echo -e "-----------------------------------内存信息-----------------------------------\n"
-          echo "内存总量:$(grep MemTotal /proc/meminfo|sed 's/.*://')"
-          echo "空闲内存量:$(grep MemFree /proc/meminfo|sed 's/.*://')"
-          echo "内存详细信息："
-          free -m
-          echo -e ""
-          echo -e "-----------------------------------硬盘信息-----------------------------------\n"
-          df --total  -Th
-          echo -e ""
-          echo -e "注：合并磁盘后可用空间将大幅度增加\n"
-          echo -e "-----------------------------------------------------------------------------\n"
-          echo -e "运行器详细信息:\n"
-          sudo lshw
-          echo -e "-----------------------------------------------------------------------------\n"
+          bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
           
       - name: 清理空间
         run:  |
-          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /etc/mysql /etc/php
-          sudo -E apt-mark hold grub-efi-amd64-signed
-          sudo -E apt update
-          sudo -E apt -y purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell* openjdk* mysql* php* mongodb* dotnet* moby* snap*
+          bash $GITHUB_WORKSPACE/scripts/clear_space.sh
           
       - name: 安装编译依赖
         run: |
-          sudo -E apt-mark hold grub-efi-amd64-signed
-          sudo -E apt -y full-upgrade
-          sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext \
-          gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev \
-          libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils \
-          rsync unzip zlib1g-dev wget || sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar \
-          flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev \
-          libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ \
-          python3-distutils rsync unzip zlib1g-dev wget
-          sudo -E systemctl daemon-reload 
-          sudo -E apt -y autoremove --purge
-          sudo -E apt clean
-          sudo timedatectl set-timezone "Asia/Shanghai"
+          bash $GITHUB_WORKSPACE/scripts/install_compilation_dependencies.sh
           
       - name: 合并磁盘
         run: |
-          sudo swapoff -a && sudo rm -f /mnt/swapfile
-          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail / | tail -1 ) - 1048576) \* 1024) /root.img
-          export ROOT_LOOP_DEVNAME=$(sudo losetup -Pf --show /root.img)
-          sudo pvcreate -f $ROOT_LOOP_DEVNAME
-          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail /mnt | tail -1) - 102400) \* 1024) /mnt/mnt.img
-          export MNT_LOOP_DEVNAME=$(sudo losetup -Pf --show /mnt/mnt.img)
-          sudo pvcreate -f $MNT_LOOP_DEVNAME
-          sudo vgcreate vgstorage $ROOT_LOOP_DEVNAME $MNT_LOOP_DEVNAME
-          sudo lvcreate -n lvstorage -l 100%FREE vgstorage
-          export LV_DEVNAME=$(sudo lvscan | awk -F "'" '{print $2}')
-          sudo mkfs.btrfs -L combinedisk $LV_DEVNAME
-          sudo mount -o compress=zstd $LV_DEVNAME $GITHUB_WORKSPACE
-          sudo chown -R runner:runner $GITHUB_WORKSPACE
-          df -hT $GITHUB_WORKSPACE
-          sudo btrfs filesystem usage $GITHUB_WORKSPACE
+          bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
           
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -702,71 +650,19 @@ jobs:
     steps:
       - name: 输出运行器硬件信息
         run:  |
-          echo -e "-----------------------------------------------------------------------------\n"
-          echo -e "温馨提示："
-          echo -e "GitHub Actions运行器使用CPU的型号不一定相同,运行器性能不同将会影响编译速度。\n"
-          echo -e "-----------------------------------------------------------------------------\n"
-          echo -e "运行器硬件信息\n"
-          echo -e "-----------------------------------CPU信息-----------------------------------\n"
-          echo "物理CPU数量:$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)"
-          echo "CPU核心数量:$(cat /proc/cpuinfo |grep "cores"|uniq|awk '{print $4}')"
-          echo "CPU线程数量:$(cat /proc/cpuinfo |grep "processor"|wc -l)"
-          echo -e "CPU型号:$(cat /proc/cpuinfo | grep 'model name' | sort | uniq |sed 's/.*://') \n"
-          echo -e "-----------------------------------内存信息-----------------------------------\n"
-          echo "内存总量:$(grep MemTotal /proc/meminfo|sed 's/.*://')"
-          echo "空闲内存量:$(grep MemFree /proc/meminfo|sed 's/.*://')"
-          echo "内存详细信息："
-          free -m
-          echo -e ""
-          echo -e "-----------------------------------硬盘信息-----------------------------------\n"
-          df --total  -Th
-          echo -e ""
-          echo -e "注：合并磁盘后可用空间将大幅度增加\n"
-          echo -e "-----------------------------------------------------------------------------\n"
-          echo -e "运行器详细信息:\n"
-          sudo lshw
-          echo -e "-----------------------------------------------------------------------------\n"
+          bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
           
       - name: 清理空间
         run:  |
-          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /etc/mysql /etc/php
-          sudo -E apt-mark hold grub-efi-amd64-signed
-          sudo -E apt update
-          sudo -E apt -y purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell* openjdk* mysql* php* mongodb* dotnet* moby* snap*
+          bash $GITHUB_WORKSPACE/scripts/clear_space.sh
           
       - name: 安装编译依赖
         run: |
-          sudo -E apt-mark hold grub-efi-amd64-signed
-          sudo -E apt -y full-upgrade
-          sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext \
-          gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev \
-          libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ python3-distutils \
-          rsync unzip zlib1g-dev wget || sudo apt install -y ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar \
-          flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev \
-          libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 python3-pip libpython3-dev qemu-utils clang g++ \
-          python3-distutils rsync unzip zlib1g-dev wget
-          sudo -E systemctl daemon-reload 
-          sudo -E apt -y autoremove --purge
-          sudo -E apt clean
-          sudo timedatectl set-timezone "Asia/Shanghai"
+          bash $GITHUB_WORKSPACE/scripts/install_compilation_dependencies.sh
           
       - name: 合并磁盘
         run: |
-          sudo swapoff -a && sudo rm -f /mnt/swapfile
-          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail / | tail -1 ) - 1048576) \* 1024) /root.img
-          export ROOT_LOOP_DEVNAME=$(sudo losetup -Pf --show /root.img)
-          sudo pvcreate -f $ROOT_LOOP_DEVNAME
-          sudo fallocate -l $(expr $(expr $(df --block-size=1024 --output=avail /mnt | tail -1) - 102400) \* 1024) /mnt/mnt.img
-          export MNT_LOOP_DEVNAME=$(sudo losetup -Pf --show /mnt/mnt.img)
-          sudo pvcreate -f $MNT_LOOP_DEVNAME
-          sudo vgcreate vgstorage $ROOT_LOOP_DEVNAME $MNT_LOOP_DEVNAME
-          sudo lvcreate -n lvstorage -l 100%FREE vgstorage
-          export LV_DEVNAME=$(sudo lvscan | awk -F "'" '{print $2}')
-          sudo mkfs.btrfs -L combinedisk $LV_DEVNAME
-          sudo mount -o compress=zstd $LV_DEVNAME $GITHUB_WORKSPACE
-          sudo chown -R runner:runner $GITHUB_WORKSPACE
-          df -hT $GITHUB_WORKSPACE
-          sudo btrfs filesystem usage $GITHUB_WORKSPACE
+          bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
 
       - name: 下载build1_WORKSPACE
         uses: actions/download-artifact@v3
