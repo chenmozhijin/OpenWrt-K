@@ -248,6 +248,7 @@ jobs:
   
   build1:
     runs-on: ubuntu-22.04
+    needs: prepare
     steps:
       - name: 输出运行器硬件信息
         run:  |
