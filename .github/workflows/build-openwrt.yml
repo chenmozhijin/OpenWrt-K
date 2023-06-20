@@ -803,26 +803,20 @@ jobs:
           cd packagecompare
           export PACKAGECOMPARE_ROOT_PATH="$(pwd)"
           echo "PACKAGECOMPARE_ROOT_PATH=$PACKAGECOMPARE_ROOT_PATH" >> $GITHUB_ENV
+
       - name: 初始化环境
         run: |
           sudo -E apt update
           sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget || sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget
           sudo timedatectl set-timezone "Asia/Shanghai"
+
       - name: 生成 release tag
-        id: tag
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
         run: |
-          echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> release.txt
-          export RELEASE_NAME="OpenWrt-K_V$(date +"%y.%m.%d-%H")"
+          export RELEASE_NAME="OpenWrt-K_V$(date +"%y.%m.%d-%H") (${{needs.prepare.outputs.target}}-${{needs.prepare.outputs.subtarget}})"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          echo ${{ env.RELEASE_NAME }} >> $GITHUB_OUTPUT
-          export RELEASE_TAG_NAME="v$(date +"%y.%m.%d-%H")"
+          export RELEASE_TAG_NAME="v$(date +"%y.%m.%d-%H")(${{needs.prepare.outputs.target}}-${{needs.prepare.outputs.subtarget}})"
           echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
-          echo ${{ env.RELEASE_TAG_NAME }} >> $GITHUB_OUTPUT
-          echo ${{ env.RELEASE_TAG_NAME }}
-          echo ${{ steps.tag.outputs.release_tag }}
-          echo ${{ env.RELEASE_NAME }}
-          echo ${{ steps.tag.outputs.release_tag }}
           
       - name: 下载固件
         uses: actions/download-artifact@v3
@@ -846,19 +840,14 @@ jobs:
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
         run: |
           mkdir package-upload
-          cp ./package/qBittorrent-static* ./package-upload/
-          cp ./package/*baidupcs-web* ./package-upload/
-          cp ./package/*qbittorrent* ./package-upload/
-          cp ./package/baidupcs-web* ./package-upload/
-          cp ./package/*passwall* ./package-upload/
-          cp ./package/transmission* ./package-upload/
-          cp ./package/*transmission* ./package-upload/
           zip -r ./package-upload/allpackage.zip package
           zip -r ./package-upload/allkmod.zip kmod
       
       - name: 整理包生成 release body
         run: |
-          latest_ver="$(echo $(curl https://api.github.com/repos/${{ github.repository }}/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.-]+' -o 2>/dev/null)-package)"
+          echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
+          echo "包更改/版本升级列表" >> $UPLOAD_ROOT_PATH/release.txt
+          latest_ver="$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{needs.prepare.outputs.target}}-${{needs.prepare.outputs.subtarget}})' |sed -e 's/      "tag_name": "//' -e 's/",//' | sed -n '1p')"
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
           wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
@@ -872,17 +861,8 @@ jobs:
           mv package newpackage
           ls $PACKAGECOMPARE_ROOT_PATH/newpackage/|sort| uniq >newpackage.list
           sed -i -e "s/_${{needs.prepare.outputs.target}}_${{needs.prepare.outputs.subtarget}}.ipk//g" -e "s/_all.ipk//g" newpackage.list && echo "list complete"
-          diff oldpackage.list newpackage.list -y -W 80 -B -b |grep -E '[\|><]' >diff.temp && echo "Compare complete" ||echo "no package update"
-          sed -e "/</s/^/delete:/g" -e "/|/s/^/update:/g" -e "/>/s/^/Add:/g" -e 's/[[:space:]]//g' -e 's/<//g' -e 's/>//g' -e 's/|/ > /g' -e 's/> [a-zA-Z0-9\-]*_/> /g' -e 's/_/ /g' diff.temp >> $UPLOAD_ROOT_PATH/release.txt ||echo "no package update"
-          
-      - name: 上传包到 Release
-        id: package-release
-        uses: softprops/action-gh-release@v0.1.15
-        with:
-          name: ${{ env.RELEASE_NAME }}-package
-          tag_name: ${{ env.RELEASE_TAG_NAME }}-package
-          files: ${{ env.UPLOAD_ROOT_PATH }}/package-upload/*
-          body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt   
+          diff oldpackage.list newpackage.list -y -W 80 -B -b |grep -E '[\|><]' >diff.temp && echo "Compare complete" || echo "没有包新增删除或版本升级" >> $UPLOAD_ROOT_PATH/release.txt
+          sed -e "/</s/^/delete:/g" -e "/|/s/^/update:/g" -e "/>/s/^/Add:/g" -e 's/[[:space:]]//g' -e 's/<//g' -e 's/>//g' -e 's/|/ > /g' -e 's/> [a-zA-Z0-9\-]*_/> /g' -e 's/_/ /g' diff.temp >> $UPLOAD_ROOT_PATH/release.txt || echo "没有包新增删除或版本升级"
           
       - name: 上传固件到 Release
         id: firmware-release
@@ -890,7 +870,9 @@ jobs:
         with:
           name: ${{ env.RELEASE_NAME }}
           tag_name: ${{ env.RELEASE_TAG_NAME }}
-          files: ${{ env.UPLOAD_ROOT_PATH }}/${{needs.prepare.outputs.target}}/${{needs.prepare.outputs.subtarget}}/*
+          files: |
+            ${{ env.UPLOAD_ROOT_PATH }}/${{needs.prepare.outputs.target}}/${{needs.prepare.outputs.subtarget}}/*
+            ${{ env.UPLOAD_ROOT_PATH }}/package-upload/*
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
 
       - name: 删除旧的Releases
