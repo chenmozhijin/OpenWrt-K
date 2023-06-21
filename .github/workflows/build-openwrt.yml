@@ -383,7 +383,7 @@ jobs:
           sed -i 's/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk #https://github.com/openwrt/openwrt/commit/ecc53240945c95bc77663b79ccae6e2bd046c9c8
           sed -i 's/-full//' ./include/target.mk 
           sed -i 's/dnsmasq/dnsmasq-full/g' ./include/target.mk 
-          sed -i 's/256/1024/' ./target/linux/${{needs.prepare.outputs.target}}/image/Makefile
+          sed -i 's/256/1024/' ./target/linux/${{ needs.prepare.outputs.target }}/image/Makefile
       
       - name: 更新 feeds 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -620,7 +620,17 @@ jobs:
           echo "======================="
           df --total  -Th
           echo "======================="
-          
+
+      - name: 构建linux内核默认安装配置
+        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        run: |
+          make package/kernel/linux/compile -j$(nproc) || make package/kernel/linux/compile -j1 V=sc
+          echo "======================="
+          echo "空间使用情况:"
+          echo "======================="
+          df --total  -Th
+          echo "======================="  
+            
       - name: 准备上传
         run:  |
           cd $GITHUB_WORKSPACE
@@ -644,12 +654,12 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v3
         with:
-          name: ${{needs.prepare.outputs.target}}-${{needs.prepare.outputs.subtarget}}-logs-
+          name: ${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}-logs-
           path: "${{ env.LOG_PATH }}"
 
   build2:
     runs-on: ubuntu-latest
-    needs:  build1
+    needs:  [build1,prepare]
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -749,7 +759,7 @@ jobs:
       - name: 删除packages
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          cd ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{needs.prepare.outputs.target}}/${{needs.prepare.outputs.subtarget}}
+          cd ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{ needs.prepare.outputs.target }}/${{ needs.prepare.outputs.subtarget }}
           rm -rf packages
       
       - name: 上传 buildinfo
@@ -781,12 +791,12 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
-          name: ${{needs.prepare.outputs.target}}-${{needs.prepare.outputs.subtarget}}-logs
+          name: ${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}-logs
           path: "${{ env.LOG_PATH }}"
 
   build-kmod:
     runs-on: ubuntu-latest
-    needs:  build1
+    needs:  [build1,prepare]
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -903,11 +913,11 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
-          name: ${{needs.prepare.outputs.target}}-${{needs.prepare.outputs.subtarget}}-logs-kmod
+          name: ${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}-logs-kmod
           path: "${{ env.LOG_PATH }}"
 
   upload:
-    needs:  [build2,build-kmod]
+    needs:  [build2,build-kmod,prepare]
     runs-on: ubuntu-22.04
     steps:
       - name: 将存储库签出到运行器
@@ -936,9 +946,9 @@ jobs:
       - name: 生成 release tag
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
         run: |
-          export RELEASE_NAME="OpenWrt-K_V$(date +"%y.%m.%d-%H") (${{needs.prepare.outputs.target}}-${{needs.prepare.outputs.subtarget}})"
+          export RELEASE_NAME="OpenWrt-K_V$(date +"%y.%m.%d-%H") (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          export RELEASE_TAG_NAME="v$(date +"%y.%m.%d-%H")(${{needs.prepare.outputs.target}}-${{needs.prepare.outputs.subtarget}})"
+          export RELEASE_TAG_NAME="v$(date +"%y.%m.%d-%H")(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})"
           echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
           
       - name: 下载固件
@@ -970,20 +980,20 @@ jobs:
         run: |
           echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
           echo "包更改/版本升级列表" >> $UPLOAD_ROOT_PATH/release.txt
-          latest_ver="$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{needs.prepare.outputs.target}}-${{needs.prepare.outputs.subtarget}})' |sed -e 's/      "tag_name": "//' -e 's/",//' | sed -n '1p')"
+          latest_ver="$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' |sed -e 's/      "tag_name": "//' -e 's/",//' | sed -n '1p')"
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
           wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
           unzip allpackage.zip
           mv package oldpackage
           ls $PACKAGECOMPARE_ROOT_PATH/oldpackage/|sort| uniq >oldpackage.list
-          sed -i -e "s/_${{needs.prepare.outputs.target}}_${{needs.prepare.outputs.subtarget}}.ipk//g" -e "s/_all.ipk//g" oldpackage.list
+          sed -i -e "s/_${{ needs.prepare.outputs.target }}_${{ needs.prepare.outputs.subtarget }}.ipk//g" -e "s/_all.ipk//g" oldpackage.list
           rm -rf $PACKAGECOMPARE_ROOT_PATH/allpackage.zip
           cp -f $UPLOAD_ROOT_PATH/package-upload/allpackage.zip $PACKAGECOMPARE_ROOT_PATH/allpackage.zip
           unzip allpackage.zip
           mv package newpackage
           ls $PACKAGECOMPARE_ROOT_PATH/newpackage/|sort| uniq >newpackage.list
-          sed -i -e "s/_${{needs.prepare.outputs.target}}_${{needs.prepare.outputs.subtarget}}.ipk//g" -e "s/_all.ipk//g" newpackage.list && echo "list complete"
+          sed -i -e "s/_${{ needs.prepare.outputs.target }}_${{ needs.prepare.outputs.subtarget }}.ipk//g" -e "s/_all.ipk//g" newpackage.list && echo "list complete"
           diff oldpackage.list newpackage.list -y -W 80 -B -b |grep -E '[\|><]' >diff.temp && echo "Compare complete" || echo "没有包新增删除或版本升级" >> $UPLOAD_ROOT_PATH/release.txt
           sed -e "/</s/^/delete:/g" -e "/|/s/^/update:/g" -e "/>/s/^/Add:/g" -e 's/[[:space:]]//g' -e 's/<//g' -e 's/>//g' -e 's/|/ > /g' -e 's/> [a-zA-Z0-9\-]*_/> /g' -e 's/_/ /g' diff.temp >> $UPLOAD_ROOT_PATH/release.txt || echo "没有包新增删除或版本升级"
           
@@ -994,7 +1004,7 @@ jobs:
           name: ${{ env.RELEASE_NAME }}
           tag_name: ${{ env.RELEASE_TAG_NAME }}
           files: |
-            ${{ env.UPLOAD_ROOT_PATH }}/${{needs.prepare.outputs.target}}/${{needs.prepare.outputs.subtarget}}/*
+            ${{ env.UPLOAD_ROOT_PATH }}/${{ needs.prepare.outputs.target }}/${{ needs.prepare.outputs.subtarget }}/*
             ${{ env.UPLOAD_ROOT_PATH }}/package-upload/*
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
 
