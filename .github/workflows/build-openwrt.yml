@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: 准备环境
-        run:  |
+        run: |
           sudo -E apt update
           sudo apt install -y curl git  rsync unzip wget sed tar || sudo apt install -y curl git  rsync unzip wget sed tar
       
@@ -62,7 +62,7 @@ jobs:
         uses: actions/checkout@v3
               
       - name: 建立工作文件夹
-        run:  |
+        run: |
           cd $GITHUB_WORKSPACE
           mkdir -p download
           cd download
@@ -84,7 +84,7 @@ jobs:
 
       - name: 克隆源代码
         working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}
-        run:  |
+        run: |
           cd lede
           git clone https://github.com/coolsnowwolf/lede
           git clone https://github.com/coolsnowwolf/luci
@@ -234,7 +234,7 @@ jobs:
       - name: 读取架构信息
         id: target
         working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}/openwrt
-        run:  |
+        run: |
           cat $GITHUB_WORKSPACE/config/target.config >> $DOWNLOAD_ROOT_PATH/openwrt/.config
           make defconfig
           echo target=$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//') >> "$GITHUB_OUTPUT"
@@ -248,11 +248,11 @@ jobs:
         uses: actions/checkout@v3
 
       - name: 输出运行器硬件信息
-        run:  |
+        run: |
           bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
           
       - name: 清理空间
-        run:  |
+        run: |
           bash $GITHUB_WORKSPACE/scripts/clear_space.sh
           
       - name: 安装编译依赖
@@ -267,7 +267,7 @@ jobs:
         uses: actions/checkout@v3
       
       - name: 建立工作文件夹
-        run:  |
+        run: |
           cd $GITHUB_WORKSPACE
           sudo mkdir -p workspace
           sudo chown $USER:$GROUPS workspace
@@ -302,7 +302,7 @@ jobs:
           name: cmzj_patch
 
       - name: 解压
-        run:  |
+        run: |
           tar xvpfz $GITHUB_WORKSPACE/cmzj_package.tgz -C $CMZJ_PACKAGE_ROOT_PATH
           tar xvpfz $GITHUB_WORKSPACE/cmzj_patch.tgz -C $CMZJ_PATCH_ROOT_PATH
           echo "cmzj_package" >> $LOG_PATH/cmzj_package.log
@@ -323,9 +323,9 @@ jobs:
           echo "OPENWRT_ROOT_PATH=$OPENWRT_ROOT_PATH" >> $GITHUB_ENV
           cd $GITHUB_WORKSPACE && cat $GITHUB_ENV >> build1_ENV
           
-      - name: 检出到稳定版标签
+      - name: 切换标签/分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: git checkout v23.05.0-rc1
+        run: git checkout $(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
 
       - name: 复制cmzj_package 打补丁 
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
@@ -563,7 +563,7 @@ jobs:
         run: sed -i -e "s/set system.@system\[-1].hostname='OpenWrt'/set system.@system\[-1].hostname='OpenWrt-k'/g" -e "s/set system.@system\[-1].timezone='UTC'/set system.@system\[-1].timezone='CST-8'/g" -e "/set system.@system\[-1].timezone='CST-8'/i\		set system.@system\[-1].zonename='Asia/Shanghai'" $OPENWRT_ROOT_PATH/package/base-files/files/bin/config_generate
 
       - name: 检查剩余空间
-        run:  |
+        run: |
           echo "======================="
           echo "空间使用情况:"
           echo "======================="
@@ -629,7 +629,7 @@ jobs:
           echo "======================="  
             
       - name: 准备上传
-        run:  |
+        run: |
           cd $GITHUB_WORKSPACE
           sudo tar cvpzf /build1_WORKSPACE.tgz *
           ls
@@ -662,11 +662,11 @@ jobs:
         uses: actions/checkout@v3
         
       - name: 输出运行器硬件信息
-        run:  |
+        run: |
           bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
           
       - name: 清理空间
-        run:  |
+        run: |
           bash $GITHUB_WORKSPACE/scripts/clear_space.sh
           
       - name: 安装编译依赖
@@ -683,7 +683,7 @@ jobs:
           name: build1_WORKSPACE
           
       - name: 解压
-        run:  |
+        run: |
           sudo mv $GITHUB_WORKSPACE/build1_WORKSPACE.tgz /build1_WORKSPACE.tgz 
           tar xvpfz /build1_WORKSPACE.tgz  -C $GITHUB_WORKSPACE
           sudo rm -rf /build1_WORKSPACE.tgz
@@ -692,7 +692,7 @@ jobs:
           
       - name: 删除附加kmod
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run:  |
+        run: |
           sed -i "/^CONFIG_PACKAGE_kmod/s/=m/=n/g" .config
           make defconfig
           ./scripts/diffconfig.sh
@@ -800,11 +800,11 @@ jobs:
         uses: actions/checkout@v3
         
       - name: 输出运行器硬件信息
-        run:  |
+        run: |
           bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
           
       - name: 清理空间
-        run:  |
+        run: |
           bash $GITHUB_WORKSPACE/scripts/clear_space.sh
           
       - name: 安装编译依赖
@@ -821,7 +821,7 @@ jobs:
           name: build1_WORKSPACE
           
       - name: 解压
-        run:  |
+        run: |
           sudo mv $GITHUB_WORKSPACE/build1_WORKSPACE.tgz /build1_WORKSPACE.tgz 
           tar xvpfz /build1_WORKSPACE.tgz  -C $GITHUB_WORKSPACE
           sudo rm -rf /build1_WORKSPACE.tgz
@@ -923,7 +923,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: 建立工作文件夹
-        run:  |
+        run: |
           cd $GITHUB_WORKSPACE
           sudo mkdir -p upload
           sudo chown $USER:$GROUPS upload
