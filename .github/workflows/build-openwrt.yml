@@ -136,12 +136,6 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-webadmin $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-cifs-mount $CMZJ_PACKAGE_ROOT_PATH/  
           cp -r $DOWNLOAD_ROOT_PATH/lede/packages/net/vlmcsd $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/net/baidupcs-web $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/net/qBittorrent $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/net/qBittorrent-static $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/libs/rblibtorrent $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/libs/qtbase $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/libs/qttools $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ipv6-helper $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ddns-scripts_aliyun $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ddns-scripts_dnspod $CMZJ_PACKAGE_ROOT_PATH/
@@ -447,7 +441,7 @@ jobs:
           sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' >> .config
           make defconfig
           ./scripts/diffconfig.sh
-          ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
+          ./scripts/diffconfig.sh >> $LOG_PATH/build1-diffconfig.log
           
       - name: 更新AdGuardHome核心与DNS名单
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -657,7 +651,7 @@ jobs:
           name: ${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}-logs-
           path: "${{ env.LOG_PATH }}"
 
-  build2:
+  build-firmware:
     runs-on: ubuntu-latest
     needs:  [build1,prepare]
     steps:
@@ -699,6 +693,7 @@ jobs:
           sed -i "/^CONFIG_PACKAGE_kmod/s/=m/=n/g" .config
           make defconfig
           ./scripts/diffconfig.sh
+          ./scripts/diffconfig.sh >> $LOG_PATH/build-firmware-diffconfig.log
 
       - name: 编译并安装包
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -838,7 +833,8 @@ jobs:
           cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
           make defconfig
           ./scripts/diffconfig.sh
-          ./scripts/diffconfig.sh >> $LOG_PATH/diffconfig.log
+          ./scripts/diffconfig.sh >> $LOG_PATH/build-kmod-diffconfig.log
+          
           
       - name: 编译并安装包
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -917,7 +913,7 @@ jobs:
           path: "${{ env.LOG_PATH }}"
 
   upload:
-    needs:  [build2,build-kmod,prepare]
+    needs:  [build-firmware,build-kmod,prepare]
     runs-on: ubuntu-22.04
     steps:
       - name: 将存储库签出到运行器
