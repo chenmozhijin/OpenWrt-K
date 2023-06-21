@@ -331,8 +331,6 @@ jobs:
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
           cp -r $CMZJ_PACKAGE_ROOT_PATH $OPENWRT_ROOT_PATH/package/cmzj_package
-          cp $CMZJ_PATCH_ROOT_PATH/hack-5.15/952-add-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.15
-          #cp $CMZJ_PATCH_ROOT_PATH/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.10
           rm -rf $OPENWRT_ROOT_PATH/package/libs/libnftnl
           rm -rf $OPENWRT_ROOT_PATH/package/network/config/firewall4
           rm -rf $OPENWRT_ROOT_PATH/package/network/utils/nftables
@@ -358,18 +356,12 @@ jobs:
           ls $OPENWRT_ROOT_PATH/package/network/config/firewall4 >> $LOG_PATH/cmzj_patch.log
           echo "nftables-file" >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/package/network/utils/nftables >> $LOG_PATH/cmzj_patch.log
-          #echo "libubox-file" >> $LOG_PATH/cmzj_patch.log
-          #ls $OPENWRT_ROOT_PATH/package/libs/libubox >> $LOG_PATH/cmzj_patch.log
-          #echo "dnsmasq-file" >> $LOG_PATH/cmzj_patch.log
-          #ls $OPENWRT_ROOT_PATH/package/network/services/dnsmasq >> $LOG_PATH/cmzj_patch.log
           echo "firewall4-patches" >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/package/network/config/firewall4/patches/ >> $LOG_PATH/cmzj_patch.log
           echo "libnftnl-patches" >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/package/libs/libnftnl/patches/ >> $LOG_PATH/cmzj_patch.log
           echo "nftables-patches" >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/package/network/utils/nftables/patches/ >> $LOG_PATH/cmzj_patch.log
-          echo "hack-5.15"  >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/target/linux/generic/hack-5.15 >> $LOG_PATH/cmzj_patch.log
       
       - name: 修复问题
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -442,7 +434,17 @@ jobs:
           make defconfig
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/build1-diffconfig.log
-          
+
+      - name: 打内核补丁 
+        working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
+        run: |
+          kernel_version="$(sed -n '/CONFIG_LINUX_/p' .config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g')"
+          sed -n '/CONFIG_LINUX_/p' .config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g'
+          cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/952-add-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version
+          #cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version
+          echo "hack-$kernel_version"  >> $LOG_PATH/cmzj_patch.log
+          ls $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version >> $LOG_PATH/cmzj_patch.log
+
       - name: 更新AdGuardHome核心与DNS名单
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
