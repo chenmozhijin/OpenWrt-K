@@ -44,11 +44,6 @@
 +    luci-app-zerotier
 +    内置的LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
 
-随固件编译的插件：
-+    luci-app-baidupcs-web
-+    luci-app-qbittorrent
-+    luci-app-transmission
-
 ## 固件预览
 
 ### 内置功能/turboacc:
