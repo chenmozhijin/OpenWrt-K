@@ -439,7 +439,7 @@ jobs:
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
           kernel_version="$(sed -n '/CONFIG_LINUX_/p' $OPENWRT_ROOT_PATH/.config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g')"
-          sed -n '/CONFIG_LINUX_/p' .config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g'
+          echo kernel_version=$kernel_version
           cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/952-add-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version
           #cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version
           echo "hack-$kernel_version"  >> $LOG_PATH/cmzj_patch.log
