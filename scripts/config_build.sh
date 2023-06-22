@@ -114,7 +114,7 @@ function clearconfig () {
 function prepare() {
     mkbuilddir
     clone
-    load_chenmozhijin
+    load_chenmozhijin-package
     debug
     feeds
     Import_config
