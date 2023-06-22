@@ -20,7 +20,7 @@
 ## 内置功能
 已内置以下软件包：
 <details>
- <summary>LuCI插件： </summary>
+ <summary>LuCI插件</summary>
 
 +    [luci-app-adguardhome](https://github.com/rufengsuixing/luci-app-adguardhome) :AdGuardHome广告屏蔽工具的luci设置界面
 +    [luci-app-argon-config](https://github.com/jerrykuku/luci-app-argon-config):Argon 主题设置
@@ -53,7 +53,7 @@
 
 </details>
 <details>
- <summary>其他部分软件包 </summary>
+ <summary>其他部分软件包</summary>
 
 +    ethtool-full：网卡工具用于查询及设置网卡参数
 +    sudo：sudo命令支持
