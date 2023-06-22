@@ -980,8 +980,9 @@ jobs:
           echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
           echo "编译的openwrt版本/分支: " $(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//') >> $UPLOAD_ROOT_PATH/release.txt
           latest_ver="$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
+          echo latest_ver=$latest_ver
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
-          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv || exit 0
+          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(x86-64)' | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
           unzip allpackage.zip
           mv package oldpackage
