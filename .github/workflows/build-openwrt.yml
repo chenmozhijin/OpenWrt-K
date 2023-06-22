@@ -979,7 +979,7 @@ jobs:
         run: |
           echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
           echo "包更改/版本升级列表" >> $UPLOAD_ROOT_PATH/release.txt
-          latest_ver="$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' |sed -e 's/      "tag_name": "//' -e 's/",//' | sed -n '1p')"
+          latest_ver="$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
           wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
