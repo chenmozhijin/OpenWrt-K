@@ -18,7 +18,10 @@
 
 
 ## 内置功能
-已内置以下LuCI插件：
+已内置以下软件包：
+<details>
+ <summary>LuCI插件： </summary>
+
 +    [luci-app-adguardhome](https://github.com/rufengsuixing/luci-app-adguardhome)
 +    [luci-app-argon-config](https://github.com/jerrykuku/luci-app-argon-config)
 +    luci-app-aria2
@@ -49,12 +52,34 @@
 +    luci-app-wireguard
 +    luci-app-wol
 +    luci-app-zerotier
-+    内置的LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
+
+</details>
+<details>
+ <summary>其他部分软件包 </summary>
+
++    ethtool-full
++    sudo
++    htop
++    ipv6helper
++    cfdisk
++    bc
++    coremark
++    pciutils
++    qmi-utils
++    usbutils
+</details>
+
++    LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
 
 ## 固件预览
 
 ### 内置功能/turboacc:
+<details>
+ <summary> </summary>
+
 ![内置功能/turboacc](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/1.png)
+
+</details>
 
 ## 感谢
  感谢以下项目与各位大佬的付出
