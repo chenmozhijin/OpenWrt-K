@@ -978,7 +978,7 @@ jobs:
       - name: 整理包生成 release body
         run: |
           echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
-          echo "包更改/版本升级列表" >> $UPLOAD_ROOT_PATH/release.txt
+          echo "编译的openwrt版本/分支: " $(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//') >> $UPLOAD_ROOT_PATH/release.txt
           latest_ver="$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
           wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allpackage.zip -O $PACKAGECOMPARE_ROOT_PATH/allpackage.zip -nv || exit 0
@@ -993,6 +993,8 @@ jobs:
           mv package newpackage
           ls $PACKAGECOMPARE_ROOT_PATH/newpackage/|sort| uniq >newpackage.list
           sed -i -e "s/_${{ needs.prepare.outputs.target }}_${{ needs.prepare.outputs.subtarget }}.ipk//g" -e "s/_all.ipk//g" newpackage.list && echo "list complete"
+          echo "内核版本: "$(sed -n '/kernel_/p' newpackage.list | sed -e 's/kernel_//') >> $UPLOAD_ROOT_PATH/release.txt
+          echo "包更改/版本升级列表" >> $UPLOAD_ROOT_PATH/release.txt
           diff oldpackage.list newpackage.list -y -W 80 -B -b |grep -E '[\|><]' >diff.temp && echo "Compare complete" || echo "没有包新增删除或版本升级" >> $UPLOAD_ROOT_PATH/release.txt
           sed -e "/</s/^/delete:/g" -e "/|/s/^/update:/g" -e "/>/s/^/Add:/g" -e 's/[[:space:]]//g' -e 's/<//g' -e 's/>//g' -e 's/|/ > /g' -e 's/> [a-zA-Z0-9\-]*_/> /g' -e 's/_/ /g' diff.temp >> $UPLOAD_ROOT_PATH/release.txt || echo "没有包新增删除或版本升级"
           
