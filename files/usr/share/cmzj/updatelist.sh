@@ -1,6 +1,6 @@
 #!/bin/sh
-curl https://cf.trackerslist.com/all_aria2.txt||exit 1
-export bt_tracker="$(curl -s https://cf.trackerslist.com/all_aria2.txt)"||exit 1
+curl -s https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt || curl -s https://cf.trackerslist.com/all_aria2.txt||exit 1
+export bt_tracker="$(curl -s https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt || curl -s https://cf.trackerslist.com/all_aria2.txt)"||exit 1
 uci set aria2.main.bt_tracker=$bt_tracker||exit 1
 uci commit aria2
 /etc/init.d/aria2 restart
