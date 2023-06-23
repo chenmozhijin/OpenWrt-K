@@ -129,9 +129,7 @@ jobs:
           
       - name: 复制到cmzj_package
         run: |
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-baidupcs-web $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-usb-printer $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-qbittorrent $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-vlmcsd $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-webadmin $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-cifs-mount $CMZJ_PACKAGE_ROOT_PATH/  
@@ -430,8 +428,8 @@ jobs:
           #cat $GITHUB_WORKSPACE/config/linux/config-5.10 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.10
           #cat $GITHUB_WORKSPACE/config/linux/config-5.15 >> $OPENWRT_ROOT_PATH/target/linux/generic/config-5.15
           make defconfig
-          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' >> .config
-          make defconfig
+          #sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' >> .config
+          #make defconfig
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/build1-diffconfig.log
 
@@ -690,12 +688,12 @@ jobs:
           cat build1_ENV
           cat build1_ENV >> $GITHUB_ENV
           
-      - name: 删除附加kmod
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          sed -i -e "/^CONFIG_PACKAGE_kmod-[_a-zA-Z0-9-]\{1,99\}=m$/s/=m/ is not set/g" -e "/^CONFIG_PACKAGE_kmod-[_a-zA-Z0-9-]\{1,99\} is not set$/s/^/# /g" .config
-          ./scripts/diffconfig.sh
-          ./scripts/diffconfig.sh >> $LOG_PATH/build-firmware-diffconfig.log
+#      - name: 删除附加kmod
+#        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+#        run: |
+#          sed -i -e "/^CONFIG_PACKAGE_kmod-[_a-zA-Z0-9-]\{1,99\}=m$/s/=m/ is not set/g" -e "/^CONFIG_PACKAGE_kmod-[_a-zA-Z0-9-]\{1,99\} is not set$/s/^/# /g" .config
+#          ./scripts/diffconfig.sh
+#          ./scripts/diffconfig.sh >> $LOG_PATH/build-firmware-diffconfig.log
 
       - name: 编译并安装包
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -830,6 +828,8 @@ jobs:
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
+          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' >> .config
+          make defconfig
           sed -i -n '/CONFIG_PACKAGE_kmod/p' .config
           cat $GITHUB_WORKSPACE/config/target.config >> $OPENWRT_ROOT_PATH/.config
           cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
