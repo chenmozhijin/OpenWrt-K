@@ -693,8 +693,7 @@ jobs:
       - name: 删除附加kmod
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          sed -i "/^CONFIG_PACKAGE_kmod/s/=m/=n/g" .config
-          make defconfig
+          sed -i -e "/^CONFIG_PACKAGE_kmod-[_a-zA-Z0-9-]\{1,99\}=m$/s/=m/ is not set/g" -e "/^CONFIG_PACKAGE_kmod-[_a-zA-Z0-9-]\{1,99\} is not set$/s/^/# /g" .config
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/build-firmware-diffconfig.log
 
