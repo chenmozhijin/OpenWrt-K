@@ -48,7 +48,7 @@
 +    [luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush)：微信推送
 +    luci-app-wireguard：WireGuard 状态
 +    luci-app-wol：网络唤醒
-+    luci-app-zerotier：ZeroTier虚拟局域网 VPN
++    luci-app-zerotier：ZeroTier虚拟局域网
 
 </details>
 <details>
