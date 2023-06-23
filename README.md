@@ -1,7 +1,6 @@
 # OpenWrt-K
 ![GitHub Repo stars](https://img.shields.io/github/stars/chenmozhijin/OpenWrt-K)
 ![GitHub forks](https://img.shields.io/github/forks/chenmozhijin/OpenWrt-K)
-![releases downloads](https://img.shields.io/github/downloads/chenmozhijin/OpenWrt-K/total)
 ![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/t/chenmozhijin/OpenWrt-K)
 ![GitHub last commit (by committer)](https://img.shields.io/github/last-commit/chenmozhijin/OpenWrt-K)
 ![Workflow Status](https://github.com/chenmozhijin/OpenWrt-K/actions/workflows/build-openwrt.yml/badge.svg)
