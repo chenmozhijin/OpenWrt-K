@@ -988,7 +988,7 @@ jobs:
           du -h --max-depth=1 ./bin
 
       - name: 准备 artifact
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        working-directory: ${{ env.IMAGE_BUILDER_ROOT_PATH }}
         run: |
           mkdir -p ./artifact/buildinfo
           echo "artifact-/bin" >> $LOG_PATH/cmzj_package.log
@@ -1011,8 +1011,8 @@ jobs:
         if: success() || failure()
         run: |
           mkdir -p openwrt-logs
-          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
-          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
+          cp -r $IMAGE_BUILDER_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
+          cp $IMAGE_BUILDER_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
         
       - name: 上传日志
         if: success() || failure()
