@@ -762,9 +762,11 @@ jobs:
           make defconfig
           sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' >> .config
           make defconfig
+          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' >> .config
+          make defconfig
           sed -i -n '/CONFIG_PACKAGE_kmod/p' .config
-          echo CONFIG_IB=y
-          echo CONFIG_IB_STANDALONE=y
+          echo CONFIG_IB=y >> .config
+          echo CONFIG_IB_STANDALONE=y >> .config
           cat $GITHUB_WORKSPACE/config/target.config >> $OPENWRT_ROOT_PATH/.config
           cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
           make defconfig
