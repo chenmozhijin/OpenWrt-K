@@ -863,13 +863,9 @@ jobs:
           ls -l ./bin/** >> $LOG_PATH/cmzj_package.log
           ls -l ./bin/targets/${{ needs.prepare.outputs.target }}/${{ needs.prepare.outputs.subtarget }}/** >> $LOG_PATH/Image_Builder-bin.log
           cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
-          cp -rf $(find ./artifact/package/ -type f -name "kmod*") ./artifact/kmod/
-
-      - name: 上传 buildinfo
-        uses: actions/upload-artifact@v3
-        with:
-          name: Image_Builder-buildinfo
-          path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/buildinfo/
+          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
+          cp -rf $(find ./bin/targets/ -type f -name "*.ipk") ./artifact/package/
+          cp -rf $(find ./artifact/package/ -type f -name "kmod-*") ./artifact/kmod/
 
       - name: 上传 kmod
         uses: actions/upload-artifact@v3
@@ -894,7 +890,7 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}-logs-kmod
+          name: build-Image_Builder-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}-logs
           path: "${{ env.LOG_PATH }}"
 
   build-Image:
@@ -919,9 +915,6 @@ jobs:
       - name: 合并磁盘
         run: |
           bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
-
-      - name: 环境变量
-        run: env
 
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -956,6 +949,9 @@ jobs:
           cd openwrt-imagebuilder-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}.Linux-${{ needs.prepare.outputs.target }}_${{ needs.prepare.outputs.subtarget }}
           export IMAGE_BUILDER_ROOT_PATH="$(pwd)"
           echo "IMAGE_BUILDER_ROOT_PATH=$IMAGE_BUILDER_ROOT_PATH" >> $GITHUB_ENV
+
+      - name: 环境变量
+        run: env
 
       - name: 复制package到build-Image_Builder
         run: |
