@@ -656,6 +656,9 @@ jobs:
           cat build1_ENV
           cat build1_ENV >> $GITHUB_ENV
 
+      - name: 环境变量
+        run: env
+
       - name: 下载 dl 库
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -677,8 +680,8 @@ jobs:
       - name: 编译并生成安装包
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          make package/compile -j $(($(nproc)+1)) || make package/compile -j$(nproc) V=s || make package/compile -j1 V=s
-          make package/install -j $(($(nproc)+1)) || make package/install -j$(nproc) V=s || make package/install -j1 V=s
+          PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/compile -j $(($(nproc)+1)) || PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/compile -j1 V=s
+          PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/install -j $(($(nproc)+1)) || PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/install -j1 V=s
           echo "======================="
           echo "空间使用情况:"
           echo "======================="
@@ -755,6 +758,9 @@ jobs:
           cat build1_ENV
           cat build1_ENV >> $GITHUB_ENV
 
+      - name: 环境变量
+        run: env
+
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -804,11 +810,11 @@ jobs:
           df --total  -Th
           echo "======================="
 
-      - name: 编译并安装包
+      - name: 编译并生成安装包
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          make package/compile -j $(($(nproc)+1)) || make package/compile -j$(nproc) V=s || make package/compile -j1 V=s
-          make package/install -j $(($(nproc)+1)) || make package/install -j$(nproc) V=s || make package/install -j1 V=s
+          PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/compile -j $(($(nproc)+1)) || PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/compile -j1 V=s
+          PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/install -j $(($(nproc)+1)) || PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/install -j1 V=s
           echo "======================="
           echo "空间使用情况:"
           echo "======================="
@@ -912,6 +918,9 @@ jobs:
       - name: 合并磁盘
         run: |
           bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
+
+      - name: 环境变量
+        run: env
 
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
