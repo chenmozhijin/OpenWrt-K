@@ -1053,13 +1053,16 @@ jobs:
           sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget || sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget
           sudo timedatectl set-timezone "Asia/Shanghai"
 
-      - name: 生成 release tag
+      - name: 生成 release 所需变量
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
         run: |
-          export RELEASE_NAME="OpenWrt-K_V$(date +"%y.%m.%d-%H") (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})"
+          export OPENWRT_TAG_BRANCHE="$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
+          echo "OPENWRT_TAG_BRANCHE=$OPENWRT_TAG_BRANCHE" >> $GITHUB_ENV
+          export RELEASE_NAME="OpenWrt-K_V$(date +"%y.%m.%d-%H") (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCHE]"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          export RELEASE_TAG_NAME="v$(date +"%y.%m.%d-%H")(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})"
+          export RELEASE_TAG_NAME="v$(date +"%y.%m.%d-%H")(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCHE]"
           echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
+
           
       - name: 下载固件
         uses: actions/download-artifact@v3
@@ -1089,12 +1092,12 @@ jobs:
       - name: 整理包生成 release body
         run: |
           echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
-          echo "编译的openwrt版本/分支: " $(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//') >> $UPLOAD_ROOT_PATH/release.txt
-          latest_ver="$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
+          echo "编译的openwrt版本/分支: " $OPENWRT_TAG_BRANCHE >> $UPLOAD_ROOT_PATH/release.txt
+          latest_ver="$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "\[$OPENWRT_TAG_BRANCHE\]" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
           echo latest_ver=$latest_ver
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
-          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(x86-64)' | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || exit 0
-          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(x86-64)' | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || exit 0
+          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "\[$OPENWRT_TAG_BRANCHE\]" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || exit 0
+          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "\[$OPENWRT_TAG_BRANCHE\]" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
           unzip package.zip
           unzip allkmod.zip
