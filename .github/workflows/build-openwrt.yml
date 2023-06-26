@@ -607,6 +607,12 @@ jobs:
           name: build1_openwrt_config
           path: ${{ env.OPENWRT_ROOT_PATH }}/build1.config
 
+      - name: 上传 files
+        uses: actions/upload-artifact@v3
+        with:
+          name: build1_openwrt_files
+          path: ${{ env.OPENWRT_ROOT_PATH }}/files
+
       - name: 收集日志
         if: failure()
         run: |
@@ -969,8 +975,11 @@ jobs:
           rm -rf $IMAGE_BUILDER_ROOT_PATH/.config
           cat build1.config > $IMAGE_BUILDER_ROOT_PATH/.config
 
-      - name: 复制files到build-Image_Builder
-        run: cp -r files $IMAGE_BUILDER_ROOT_PATH/files
+      - name: 下载 files到build-Image_Builder
+        uses: actions/upload-artifact@v3
+        with:
+          name: build1_openwrt_files
+          path: ${{ env.IMAGE_BUILDER_ROOT_PATH }}/files
 
       - name: 镜像信息
         working-directory: ${{ env.IMAGE_BUILDER_ROOT_PATH }}
