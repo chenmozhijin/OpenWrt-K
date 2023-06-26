@@ -393,7 +393,7 @@ jobs:
       - name: 复制自定义文件
         run: |
           cp -r files $OPENWRT_ROOT_PATH/files
-          compiler=$(curl https://api.github.com/users/$(echo ${{ github.repository }} | sed "s/\/.*//g") 2>/dev/null  |grep '"name":\ "'|sed 's/  "name":\ "//'|sed 's/",//' 2>/dev/null)
+          compiler=$(curl -s https://api.github.com/users/$(echo ${{ github.repository }} | sed "s/\/.*//g") 2>/dev/null  |grep '"name":\ "'|sed 's/  "name":\ "//'|sed 's/",//' 2>/dev/null)
           echo  'Compiled by' $compiler
           sed -i "s/Compiled by 沉默の金/Compiled by $compiler/g" $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
           cat $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin | grep 'Compiled by'
@@ -436,7 +436,7 @@ jobs:
         run: |
           mkdir -p ./files/usr/bin/AdGuardHome/tmp
           rm ./files/usr/bin/AdGuardHome/tmp/* -fr        
-          latest_ver="$(curl https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
+          latest_ver="$(curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
           Archt="$(sed -n '/CONFIG_ARCH=/p' .config | sed -e 's/CONFIG_ARCH\=\"//' -e 's/\"//')"
           case $Archt in
           "i386")
@@ -1101,11 +1101,11 @@ jobs:
         run: |
           echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
           echo "编译的openwrt版本/分支: " $OPENWRT_TAG_BRANCHE >> $UPLOAD_ROOT_PATH/release.txt
-          latest_ver="$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
+          latest_ver="$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
           echo latest_ver=$latest_ver
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
-          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || exit 0
-          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || exit 0
+          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || exit 0
+          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
           unzip package.zip
           unzip allkmod.zip
