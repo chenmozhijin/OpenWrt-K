@@ -593,6 +593,8 @@ jobs:
           cd $GITHUB_WORKSPACE
           sudo tar cvpzf /build1_WORKSPACE.tgz *
           cp $OPENWRT_ROOT_PATH/.config $OPENWRT_ROOT_PATH/build1.config
+          cd $OPENWRT_ROOT_PATH/files
+          tar cvpzf $GITHUB_WORKSPACE/openwrt_files.tgz *
           
       - name: 上传 build1_WORKSPACE
         uses: actions/upload-artifact@v3
@@ -610,7 +612,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: build1_openwrt_files
-          path: ${{ env.OPENWRT_ROOT_PATH }}/files
+          path: openwrt_files.tgz
 
       - name: 收集日志
         if: failure()
@@ -939,6 +941,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build1_openwrt_config
+          
+      - name: 下载 files
+        uses: actions/download-artifact@v3
+        with:
+          name: build1_openwrt_files          
 
       - name: 建立日志文件夹
         run: |
@@ -954,7 +961,9 @@ jobs:
           cd openwrt-imagebuilder-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}.Linux-${{ needs.prepare.outputs.target }}_${{ needs.prepare.outputs.subtarget }}
           export IMAGE_BUILDER_ROOT_PATH="$(pwd)"
           echo "IMAGE_BUILDER_ROOT_PATH=$IMAGE_BUILDER_ROOT_PATH" >> $GITHUB_ENV
-
+          cd $GITHUB_WORKSPACE
+          tar xvpfz $GITHUB_WORKSPACE/openwrt_files.tgz  -C $IMAGE_BUILDER_ROOT_PATH/files
+          
       - name: 环境变量
         run: env
 
@@ -973,12 +982,6 @@ jobs:
         run: |
           rm -rf $IMAGE_BUILDER_ROOT_PATH/.config
           cat build1.config > $IMAGE_BUILDER_ROOT_PATH/.config
-
-      - name: 下载 files到build-Image_Builder
-        uses: actions/download-artifact@v3
-        with:
-          name: build1_openwrt_files
-          path: ${{ env.IMAGE_BUILDER_ROOT_PATH }}/files
 
       - name: 镜像信息
         working-directory: ${{ env.IMAGE_BUILDER_ROOT_PATH }}
