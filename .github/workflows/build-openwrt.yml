@@ -961,6 +961,7 @@ jobs:
           cd openwrt-imagebuilder-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}.Linux-${{ needs.prepare.outputs.target }}_${{ needs.prepare.outputs.subtarget }}
           export IMAGE_BUILDER_ROOT_PATH="$(pwd)"
           echo "IMAGE_BUILDER_ROOT_PATH=$IMAGE_BUILDER_ROOT_PATH" >> $GITHUB_ENV
+          mkdir -p $IMAGE_BUILDER_ROOT_PATH/files
           cd $GITHUB_WORKSPACE
           tar xvpfz $GITHUB_WORKSPACE/openwrt_files.tgz  -C $IMAGE_BUILDER_ROOT_PATH/files
           
