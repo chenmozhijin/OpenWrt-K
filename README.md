@@ -78,6 +78,15 @@
 
 </details>
 
+## 使用OpenWrt-k配置构建工具
+1. 下载工具
+```
+curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_build_tool.sh && chmod +x config_build_tool.sh
+```
+2. 运行工具
+```
+./config_build_tool.sh
+```
 ## 感谢
  感谢以下项目与各位大佬的付出
  
