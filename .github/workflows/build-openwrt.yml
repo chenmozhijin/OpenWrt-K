@@ -55,7 +55,7 @@ jobs:
       - name: 准备环境
         run: |
           sudo -E apt update
-          sudo apt install -y curl git  rsync unzip wget sed tar || sudo apt install -y curl git  rsync unzip wget sed tar
+          sudo apt install -y curl git rsync unzip wget sed tar || sudo apt install -y curl git rsync unzip wget sed tar
       
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -163,21 +163,13 @@ jobs:
           
       - name: 修改Makefile文件
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
-        run: |
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-vlmcsd/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-webadmin/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-zerotier/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-cifs-mount/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-rclone/Makefile
-          #sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-syncdial/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-usb-printer/Makefile
-          sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' ./luci-app-netdata/Makefile
+        run: sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' $(find ./ -type f -name "Makefile")
           
       - name: 创建软连接以修复中文支持
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
           ln -s zh-cn ./luci-app-webadmin/po/zh_Hans
-          #ln -s zh-cn ./luci-app-netdata/po/zh_Hans
+          ln -s zh-cn ./luci-app-netdata/po/zh_Hans
           ln -s zh-cn ./luci-app-vlmcsd/po/zh_Hans
           ln -s zh-cn ./luci-app-usb-printer/po/zh_Hans
           rm -rf ./luci-app-netspeedtest/po/zh_Hans
@@ -687,8 +679,8 @@ jobs:
       - name: 编译并生成安装包
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/compile -j $(($(nproc)+1)) || PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/compile -j1 V=s
-          PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/install -j $(($(nproc)+1)) || PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/install -j1 V=s
+          make package/compile -j $(($(nproc)+1)) || make package/compile -j1 V=s
+          make package/install -j $(($(nproc)+1)) || make package/install -j1 V=s
           echo "======================="
           echo "空间使用情况:"
           echo "======================="
@@ -820,8 +812,8 @@ jobs:
       - name: 编译并生成安装包
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/compile -j $(($(nproc)+1)) || PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/compile -j1 V=s
-          PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/install -j $(($(nproc)+1)) || PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make package/install -j1 V=s
+          make package/compile -j $(($(nproc)+1)) || make package/compile -j1 V=s
+          make package/install -j $(($(nproc)+1)) || make package/install -j1 V=s
           echo "======================="
           echo "空间使用情况:"
           echo "======================="
@@ -1073,7 +1065,6 @@ jobs:
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
           export RELEASE_TAG_NAME="v$(date +"%y.%m.%d-%H")(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCHE)"
           echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
-
           
       - name: 下载固件
         uses: actions/download-artifact@v3
