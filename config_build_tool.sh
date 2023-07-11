@@ -246,9 +246,14 @@ function prepare() {
         git clone https://github.com/chenmozhijin/chenmozhijin-package $openwrt_dir/package/chenmozhijin-package || download_failed
     fi
     cd $openwrt_dir
+    #修复问题
+    sed -i 's/^  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt$/  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk
+    sed -i 's/^	dnsmasq \\$/	dnsmasq-full \\/g' ./include/target.mk
+    sed -i 's/^	b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/	$(TOPDIR)\/tools\/b43-tools\/files\/b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/' ./package/kernel/mac80211/broadcom.mk
     ./scripts/feeds update -a  || download_failed
     ./scripts/feeds install -a
     [[ -d $openwrt_dir ]] && rm -rf .config
+    [[ -d $openwrt_dir ]] && rm -rf $openwrt_dir/tmp
     cat $OpenWrt_K_dir/config/target.config >> .config
     cat $OpenWrt_K_dir/config/luci.config >> .config
     cat $OpenWrt_K_dir/config/utilities.config >> .config
@@ -257,6 +262,7 @@ function prepare() {
     cat $OpenWrt_K_dir/config/kmod.config >> .config
     cat $OpenWrt_K_dir/config/image.config >> .config
     make defconfig
+    sed -i 's/256/1024/' ./target/linux/$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')/image/Makefile
     cd $build_dir/..	
     whiptail --title "Message box" --msgbox "准备完成，选择ok以返回菜单。" 10 60
     menu
@@ -304,6 +310,7 @@ function targetconfig() {
     make menuconfig
     cat $notargetdiffconfig >> $openwrt_dir/.config
     make defconfig
+    sed -i 's/256/1024/' ./target/linux/$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')/image/Makefile
     [[ -d $TMPDIR/targetconfig ]] && rm -rf $TMPDIR/targetconfig
     cd $build_dir/..
 }
@@ -376,8 +383,8 @@ function build () {
     line=1
     echo diffconfig_row=$diffconfig_row
     until [ "$line" -eq $(($diffconfig_row+1)) ]; do
-        #echo $line $(sed -n "/$(sed -n "${line}p" diffconfig.config)/=" original.config) $(sed -n "${line}p" diffconfig1.config)
-        sed -i "$(sed -n "/$(sed -n "${line}p" diffconfig.config)/=" original.config)c $(sed -n "${line}p" diffconfig1.config)" diffconfig2.config
+        echo $line $(sed -n "/$(sed -n "${line}p" diffconfig.config|sed -e 's@"@\\"@g' -e 's@/@\\/@g' )/=" original.config) $(sed -n "${line}p" diffconfig1.config)
+        sed -i "$(sed -n "/$(sed -n "${line}p" diffconfig.config|sed -e 's@"@\\"@g' -e 's@/@\\/@g' )/=" original.config)c $(sed -n "${line}p" diffconfig1.config|sed 's@"@\\"@g')" diffconfig2.config
         line=$(($line+1))
     done
     sed -i '/^$/d' diffconfig2.config #删除空行
