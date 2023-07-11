@@ -123,6 +123,7 @@ jobs:
           git clone https://github.com/tty228/luci-app-wechatpush
           git clone https://github.com/jerrykuku/luci-theme-argon
           git clone https://github.com/chenmozhijin/luci-app-socat
+          git clone https://github.com/vernesong/OpenClash
           cd $DOWNLOAD_ROOT_PATH
           git clone https://git.openwrt.org/openwrt/openwrt.git
           
@@ -159,6 +160,7 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-socat/luci-app-socat $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/OpenWrt-NIC-Drivers/drivers/r8152 $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/package_kernel_r8125/* $CMZJ_PACKAGE_ROOT_PATH/r8125
+          cp -r $DOWNLOAD_ROOT_PATH/other/OpenClash/luci-app-openclash $CMZJ_PACKAGE_ROOT_PATH/
           cd $CMZJ_PACKAGE_ROOT_PATH && ls
           
       - name: 修改Makefile文件
@@ -341,7 +343,7 @@ jobs:
       - name: 修复问题
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          sed -i 's/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt/DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk #https://github.com/openwrt/openwrt/commit/ecc53240945c95bc77663b79ccae6e2bd046c9c8
+          sed -i 's/^  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt$/  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk #https://github.com/openwrt/openwrt/commit/ecc53240945c95bc77663b79ccae6e2bd046c9c8
           sed -i 's/^	dnsmasq \\$/	dnsmasq-full \\/g' ./include/target.mk
           sed -i 's/256/1024/' ./target/linux/${{ needs.prepare.outputs.target }}/image/Makefile
           sed -i 's/^	b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/	$(TOPDIR)\/tools\/b43-tools\/files\/b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/' ./package/kernel/mac80211/broadcom.mk
@@ -381,7 +383,7 @@ jobs:
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: ./scripts/feeds install -a
 
-      - name: 复制自定义文件
+      - name: 复制自定义文件并替换编译者
         run: |
           cp -r files $OPENWRT_ROOT_PATH/files
           compiler=$(curl -s https://api.github.com/users/$(echo ${{ github.repository }} | sed "s/\/.*//g") 2>/dev/null  |grep '"name":\ "'|sed 's/  "name":\ "//'|sed 's/",//' 2>/dev/null)
@@ -422,112 +424,202 @@ jobs:
           kernel_version="$(sed -n '/CONFIG_LINUX_/p' $OPENWRT_ROOT_PATH/.config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g')"
           cat $GITHUB_WORKSPACE/config/linux/config-$kernel_version >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version || echo "未加载附加内核配置"
 
-      - name: 更新AdGuardHome核心与DNS名单
+      - name: 下载AdGuardHome核心与DNS名单
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          mkdir -p ./files/usr/bin/AdGuardHome/tmp
-          rm ./files/usr/bin/AdGuardHome/tmp/* -fr        
-          latest_ver="$(curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
-          Archt="$(sed -n '/CONFIG_ARCH=/p' .config | sed -e 's/CONFIG_ARCH\=\"//' -e 's/\"//')"
-          case $Archt in
-          "i386")
-          Arch="386"
-          ;;
-          "i686")
-          Arch="386"
-          ;;
-          "x86_64")
-          Arch="amd64"
-          ;;
-          "mipsel")
-          Arch="mipsle"
-          ;;
-          "mips64el")
-          Arch="mips64le"
-          Arch="mipsle"
-          echo -e "mips64el use $Arch may have bug" 
-          ;;
-          "mips")
-          Arch="mips"
-          ;;
-          "mips64")
-          Arch="mips64"
-          Arch="mips"
-          echo -e "mips64 use $Arch may have bug" 
-          ;;
-          "arm")
-          armv="$(sed -n '/CONFIG_arm_/p' .config | sed -e 's/CONFIG_arm_//' -e 's/=y//')"
-          Arch="arm$armv"
-          ;;
-          "aarch64")
-          Arch="arm64"
-          ;;
-          "powerpc")
-          Arch="ppc"
-          echo -e "error not support $Archt" 
-          EXIT 1
-          ;;
-          "powerpc64")
-          Arch="ppc64"
-          echo -e "error not support $Archt" 
-          EXIT 1
-          ;;
-          *)
-          echo -e "error not support $Archt if you can use offical release please issue a bug" 
-          EXIT 1
-          ;;
-          esac
-          wget https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_ver}/AdGuardHome_linux_${Arch}.tar.gz -O ./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz
-          tar -zxf "./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz" -C "./files/usr/bin/AdGuardHome/tmp/"
-          mv -f ./files/usr/bin/AdGuardHome/tmp/AdGuardHome/AdGuardHome ./files/usr/bin/AdGuardHome
-          rm -rf ./files/usr/bin/AdGuardHome/tmp
-          chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
-          echo "更新AdGuardHome DNS黑白名单"
-          mkdir -p ./files/usr/bin/AdGuardHome/data/filters
-          cd $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/data/filters
-          curl -o 1628750870.txt https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt -s
-          curl -o 1628750871.txt https://anti-ad.net/easylist.txt -s
-          curl -o 1677875715.txt https://easylist-downloads.adblockplus.org/easylist.txt -s
-          curl -o 1677875716.txt https://easylist-downloads.adblockplus.org/easylistchina.txt -s
-          curl -o 1677875717.txt https://cdn.jsdelivr.net/gh/cjx82630/cjxlist@master/cjx-annoyance.txt -s
-          curl -o 1677875718.txt https://cdn.jsdelivr.net/gh/zsakvo/AdGuard-Custom-Rule@master/rule/zhihu-strict.txt -s
-          curl -o 1677875720.txt https://gist.githubusercontent.com/Ewpratten/a25ae63a7200c02c850fede2f32453cf/raw/b9318009399b99e822515d388b8458557d828c37/hosts-yt-ads -s
-          curl -o 1677875721.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt -s
-          curl -o 1677875722.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/v -s
-          curl -o 1677875724.txt https://raw.githubusercontent.com/banbendalao/ADgk/master/ADgk.txt -s
-          curl -o 1677875725.txt https://www.i-dont-care-about-cookies.eu/abp/ -s
-          curl -o 1677875726.txt https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts -s
-          curl -o 1677875727.txt https://raw.githubusercontent.com/Goooler/1024_hosts/master/hosts -s
-          curl -o 1677875728.txt https://winhelp2002.mvps.org/hosts.txt -s
-          curl -o 1677875733.txt https://cdn.jsdelivr.net/gh/hl2gu -s
-          curl -o 1677875734.txt https://cdn.jsdelivr.net/gh/hg1978/AdGuard-Home-Whitelist@master/whitelist.txt -s
-          curl -o 1677875735.txt https://cdn.jsdelivr.net/gh/mmotti/adguard-home-filters@master/whitelist.txt -s
-          curl -o 1677875737.txt https://cdn.jsdelivr.net/gh/liwenjie119/adg-rules@master/white.txt -s
-          curl -o 1677875739.txt https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt -s
-          curl -o 1677875740.txt https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt -s
-          ls
-          echo "更新AdGuardHome上游 DNS 服务器" 
-          cd  $WORKSPACE_ROOT_PATH
-          mkdir -p tmp
-          cd $WORKSPACE_ROOT_PATH/tmp
-          ls
-          rm -rf *
-          curl https://raw.githubusercontent.com/YW5vbnltb3Vz/domain-list-community/release/gfwlist.txt -o base64_YW5vbnltb3Vz.txt
-          curl https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/gfw.txt -o Loyalsoldier.txt
-          curl https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt -o base64_gfwlist.txt
-          curl https://raw.githubusercontent.com/Loukky/gfwlist-by-loukky/master/gfwlist.txt -o base64_Loukky.txt
-          base64 -d base64_YW5vbnltb3Vz.txt > YW5vbnltb3Vz.txt
-          base64 -d base64_gfwlist.txt > gfwlist.txt
-          base64 -d base64_Loukky.txt > Loukky.txt
-          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' YW5vbnltb3Vz.txt>> gfwlist_chen
-          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' Loyalsoldier.txt>> gfwlist_chen
-          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' gfwlist.txt>> gfwlist_chen
-          sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' Loukky.txt>> gfwlist_chen
-          sort gfwlist_chen | uniq > gfwlist
-          sed -e 's/^/[\//g' -e 's/$/\/]127.0.0.1:5335/g' gfwlist >AdGuardHomednslist
-          cat ./AdGuardHomednslist >> $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml
-          echo "AdGuardHome-dnslist(by cmzj).yaml" >> $LOG_PATH/AdGuardHome.log
-          cat $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml >> $LOG_PATH/AdGuardHome.log
+          if [ "$(grep -c "^CONFIG_PACKAGE_luci-app-adguardhome=y$" .config)" -ne '0' ];then
+              Archt="$(sed -n '/CONFIG_ARCH=/p' .config | sed -e 's/CONFIG_ARCH\=\"//' -e 's/\"//')"
+              case $Archt in
+              "i386")
+              Arch="386"
+              ;;
+              "i686")
+              Arch="386"
+              ;;
+              "x86_64")
+              Arch="amd64"
+              ;;
+              "mipsel")
+              Arch="mipsle"
+              ;;
+              "mips64el")
+              Arch="mips64le"
+              Arch="mipsle"
+              echo -e "mips64el use $Arch may have bug" 
+              ;;
+              "mips")
+              Arch="mips"
+              ;;
+              "mips64")
+              Arch="mips64"
+              Arch="mips"
+              echo -e "mips64 use $Arch may have bug" 
+              ;;
+              "arm")
+              if [ "$(grep -c "CONFIG_arm_" .config)" -ne '0' ];then
+                armv="$(sed -n '/CONFIG_arm_/p' .config | sed -e 's/CONFIG_arm_//' -e 's/=y//')"
+              else
+                armv=v5
+              fi
+              Arch="arm$armv"
+              ;;
+              "aarch64")
+              Arch="arm64"
+              ;;
+              "powerpc")
+              Arch="ppc"
+              Arch=1
+              echo -e "error not support $Archt" 
+              ;;
+              "powerpc64")
+              Arch="ppc64"
+              Arch=1
+              echo -e "error not support $Archt" 
+              ;;
+              *)
+              echo -e "error not support $Archt if you can use offical release please issue a bug" 
+              Arch=1
+              ;;
+              esac
+              if [ "$Arch" != 1 ]
+                echo AdGuardHome架构为$Arch,开始下载AdGuardHome
+                mkdir -p ./files/usr/bin/AdGuardHome/tmp
+                rm -rf ./files/usr/bin/AdGuardHome/tmp/*
+                latest_ver="$(curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
+                wget https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_ver}/AdGuardHome_linux_${Arch}.tar.gz -O ./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz
+                tar -zxf "./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz" -C "./files/usr/bin/AdGuardHome/tmp/"
+                mv -f ./files/usr/bin/AdGuardHome/tmp/AdGuardHome/AdGuardHome ./files/usr/bin/AdGuardHome
+                rm -rf ./files/usr/bin/AdGuardHome/tmp
+                chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
+                echo "下载AdGuardHome DNS黑白名单"
+                mkdir -p ./files/usr/bin/AdGuardHome/data/filters
+                cd $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/data/filters
+                curl -o 1628750870.txt https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt -s
+                curl -o 1628750871.txt https://anti-ad.net/easylist.txt -s
+                curl -o 1677875715.txt https://easylist-downloads.adblockplus.org/easylist.txt -s
+                curl -o 1677875716.txt https://easylist-downloads.adblockplus.org/easylistchina.txt -s
+                curl -o 1677875717.txt https://cdn.jsdelivr.net/gh/cjx82630/cjxlist@master/cjx-annoyance.txt -s
+                curl -o 1677875718.txt https://cdn.jsdelivr.net/gh/zsakvo/AdGuard-Custom-Rule@master/rule/zhihu-strict.txt -s
+                curl -o 1677875720.txt https://gist.githubusercontent.com/Ewpratten/a25ae63a7200c02c850fede2f32453cf/raw/b9318009399b99e822515d388b8458557d828c37/hosts-yt-ads -s
+                curl -o 1677875721.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt -s
+                curl -o 1677875722.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/v -s
+                curl -o 1677875724.txt https://raw.githubusercontent.com/banbendalao/ADgk/master/ADgk.txt -s
+                curl -o 1677875725.txt https://www.i-dont-care-about-cookies.eu/abp/ -s
+                curl -o 1677875726.txt https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts -s
+                curl -o 1677875727.txt https://raw.githubusercontent.com/Goooler/1024_hosts/master/hosts -s
+                curl -o 1677875728.txt https://winhelp2002.mvps.org/hosts.txt -s
+                curl -o 1677875733.txt https://cdn.jsdelivr.net/gh/hl2gu -s
+                curl -o 1677875734.txt https://cdn.jsdelivr.net/gh/hg1978/AdGuard-Home-Whitelist@master/whitelist.txt -s
+                curl -o 1677875735.txt https://cdn.jsdelivr.net/gh/mmotti/adguard-home-filters@master/whitelist.txt -s
+                curl -o 1677875737.txt https://cdn.jsdelivr.net/gh/liwenjie119/adg-rules@master/white.txt -s
+                curl -o 1677875739.txt https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt -s
+                curl -o 1677875740.txt https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt -s
+                ls
+                echo "制作AdGuardHome上游 DNS 服务器规则" 
+                cd  $WORKSPACE_ROOT_PATH
+                mkdir -p tmp
+                cd $WORKSPACE_ROOT_PATH/tmp
+                ls
+                rm -rf *
+                curl https://raw.githubusercontent.com/YW5vbnltb3Vz/domain-list-community/release/gfwlist.txt -o base64_YW5vbnltb3Vz.txt
+                curl https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/gfw.txt -o Loyalsoldier.txt
+                curl https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt -o base64_gfwlist.txt
+                curl https://raw.githubusercontent.com/Loukky/gfwlist-by-loukky/master/gfwlist.txt -o base64_Loukky.txt
+                base64 -d base64_YW5vbnltb3Vz.txt > YW5vbnltb3Vz.txt
+                base64 -d base64_gfwlist.txt > gfwlist.txt
+                base64 -d base64_Loukky.txt > Loukky.txt
+                sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' YW5vbnltb3Vz.txt>> gfwlist_chen
+                sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' Loyalsoldier.txt>> gfwlist_chen
+                sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' gfwlist.txt>> gfwlist_chen
+                sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' Loukky.txt>> gfwlist_chen
+                sort gfwlist_chen | uniq > gfwlist
+                sed -e 's/^/[\//g' -e 's/$/\/]127.0.0.1:5335/g' gfwlist >AdGuardHomednslist
+                cat ./AdGuardHomednslist >> $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml
+                echo "AdGuardHome-dnslist(by cmzj).yaml" >> $LOG_PATH/AdGuardHome.log
+                cat $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml >> $LOG_PATH/AdGuardHome.log
+                rm -rf $WORKSPACE_ROOT_PATH/tmp/*
+              else
+                echo AdGuardHome核心不支持此架构,退出执行。
+              fi
+          else
+            echo "未检测到luci-app-adguardhome配置为编译进固件,退出执行。"
+          fi
+          
+      - name: 下载openclash内核
+        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        run: |
+          if [ "$(grep -c "^CONFIG_PACKAGE_luci-app-openclash=y$" .config)" -ne '0' ];then
+              ARCHT="$(sed -n '/CONFIG_ARCH=/p' .config | sed -e 's/CONFIG_ARCH\=\"//' -e 's/\"//')"
+              case "${ARCHT}" in
+              	aarch64)
+              		CORE_ARCH="linux-arm64"
+              		;;
+              	arm)
+                  if [ "$(grep -c "CONFIG_arm_" .config)" -ne '0' ];then
+                    armv="$(sed -n '/CONFIG_arm_/p' .config | sed -e 's/CONFIG_arm_//' -e 's/=y//')"
+                  else
+                    armv=v5
+                  fi
+              		CORE_ARCH="linux-arm$armv"
+              		;;
+              	i386)
+              		CORE_ARCH="linux-386"
+              		;;
+              	mips64)
+              		CORE_ARCH="linux-mips64"
+              		;;
+              	mips)
+              		CORE_ARCH="linux-mips-softfloat"
+              		;;
+              	mipsel)
+              		CORE_ARCH="linux-mipsle-softfloat"
+              		;;
+              	x86_64)
+              		CORE_ARCH="linux-amd64"
+              		;;
+              	*)
+              		CORE_ARCH="1"
+              		;;
+              esac
+              echo $CORE_ARCH
+              if [ "$CORE_ARCH" != 1 ]
+                OpenClashTMPDIR=$WORKSPACE_ROOT_PATH/tmp/openclash
+                dev_core_path="$OPENWRT_ROOT_PATH/files/etc/openclash/core/clash"
+                tun_core_path="$OPENWRT_ROOT_PATH/files/etc/openclash/core/clash_tun"
+                meta_core_path="$OPENWRT_ROOT_PATH/files/etc/openclash/core/clash_meta"
+                CPU_MODEL=$CORE_ARCH
+                RELEASE_BRANCH=master
+                mkdir -p $OpenClashTMPDIR
+                rm -rf $OpenClashTMPDIR/*
+                CORE_LV=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version|sed -n 2p)
+                curl -o $OpenClashTMPDIR/clash_tun.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/premium/clash-"$CPU_MODEL"-"$CORE_LV".gz
+                curl -o $OpenClashTMPDIR/clash_meta.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/meta/clash-"$CPU_MODEL".tar.gz
+                curl -o $OpenClashTMPDIR/clash.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/dev/clash-"$CPU_MODEL".tar.gz
+                #tun
+                gzip -d $OpenClashTMPDIR/clash_tun.gz >/dev/null 2>&1
+                rm -rf $OpenClashTMPDIR/clash_tun.gz >/dev/null 2>&1
+                rm -rf "$tun_core_path" >/dev/null 2>&1
+                chmod 4755 $OpenClashTMPDIR/clash_tun >/dev/null 2>&1
+                mv $OpenClashTMPDIR/clash_tun "$tun_core_path"
+                #mate
+                rm -rf "$meta_core_path" >/dev/null 2>&1
+                tar zxvf  $OpenClashTMPDIR/clash_meta.tar.gz -C /tmp
+                mv $OpenClashTMPDIR/clash $OpenClashTMPDIR/clash_meta >/dev/null 2>&1
+                rm -rf  $OpenClashTMPDIR/clash_meta.tar.gz >/dev/null 2>&1
+                chmod 4755 $OpenClashTMPDIR/clash_meta >/dev/null 2>&1
+                mv $OpenClashTMPDIR/clash_meta "$meta_core_path"
+                #dev
+                rm -rf "$dev_core_path" >/dev/null 2>&1
+                tar zxvf $OpenClashTMPDIR/clash.tar.gz -C /tmp
+                rm -rf $OpenClashTMPDIR/clash.tar.gz >/dev/null 2>&1
+                chmod 4755 $OpenClashTMPDIR/clash >/dev/null 2>&1
+                mv $OpenClashTMPDIR/clash "$dev_core_path"
+              else
+                echo openclash核心不支持此架构,退出执行。
+              fi
+          else
+            echo "未检测到luci-app-openclash配置为编译进固件,退出执行。"
+          fi
           
       - name: 更新BT Tracker 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
