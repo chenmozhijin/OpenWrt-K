@@ -1,0 +1,139 @@
+##DirectRule by chenmozhijin
+##-------------------------------------
+###Direct
+##-------------------------------------
+payload:
+
+# > apple
+  - DOMAIN-SUFFIX,apple.com
+
+# > microsoft
+  - DOMAIN-SUFFIX,live.com
+  - DOMAIN-SUFFIX,windowsazure.com
+  - DOMAIN-SUFFIX,login.microsoftonline.com
+  - DOMAIN-SUFFIX,microsoft.com
+  - DOMAIN-SUFFIX,office.net
+
+# > cdn
+  - DOMAIN-SUFFIX,akamaized.net
+  - DOMAIN-SUFFIX,alicdn.com
+  - DOMAIN-SUFFIX,aliyuncs.com
+
+# > douyu
+  - DOMAIN-SUFFIX,douyucdn.cn
+  - DOMAIN-SUFFIX,douyucdn2.cn
+  - DOMAIN-SUFFIX,douyu.com
+
+# > 163
+  - DOMAIN-SUFFIX,163.com
+  - DOMAIN-SUFFIX,126.net
+  - DOMAIN-SUFFIX,127.net
+  - DOMAIN-SUFFIX,netease.com
+  - DOMAIN-SUFFIX,yeah.net
+
+# > baidu
+  - DOMAIN-SUFFIX,baidu.com
+  - DOMAIN-SUFFIX,bdstatic.com
+  - DOMAIN-SUFFIX,bcebos.com
+  - DOMAIN-SUFFIX,bdimg.com
+
+# > ali
+  - DOMAIN-SUFFIX,aliyun.com
+  - DOMAIN-SUFFIX,tmall.com
+  - DOMAIN-SUFFIX,taobao.com
+  - DOMAIN-SUFFIX,aliapp.org
+  - DOMAIN-SUFFIX,alibaba.com
+
+# > 51cto
+  - DOMAIN-SUFFIX,51cto.com
+
+# > bilibili
+  - DOMAIN-SUFFIX,bilibili.com
+  - DOMAIN-SUFFIX,hdslb.com
+  - DOMAIN-SUFFIX,bilivideo.com
+  - DOMAIN-SUFFIX,biliapi.net
+  - DOMAIN-SUFFIX,bilivideo.cn
+
+# > bilibili
+  - DOMAIN-KEYWORD,vipspeedtest,Proxy
+  - DOMAIN-SUFFIX,speedtest.net
+  - DOMAIN-SUFFIX,chinamobile.com
+  - DOMAIN-SUFFIX,ooklaserver.net
+
+# > Moegirlpedia
+  - DOMAIN-SUFFIX,moegirl.org.cn
+
+# > weibo
+  - DOMAIN-SUFFIX,weibo.com
+  - DOMAIN-SUFFIX,weibo.cn
+  - DOMAIN-SUFFIX,sina.com.cn
+  - DOMAIN-SUFFIX,sinaimg.cn
+
+# > huya
+  - DOMAIN-SUFFIX,huya.com
+  - DOMAIN-SUFFIX,msstatic.com
+  - DOMAIN-SUFFIX,livehwc3.cn
+
+
+ldtstore.com.cn
+
+# > cmzj
+  - DOMAIN-SUFFIX,cmzj.org
+  - DOMAIN-SUFFIX,cmzj.top
+
+
+# > mirrors-cn
+  - DOMAIN,mirrors.tuna.tsinghua.edu.cn
+  - DOMAIN,lug.ustc.edu.cn
+  - DOMAIN,mirrors.cqu.edu.cn
+  - DOMAIN,sci.nju.edu.cn
+  - DOMAIN,mirrors.zju.edu.cn
+  - DOMAIN,mirrors.sjtug.sjtu.edu.cn
+  - DOMAIN,mirror.sjtu.edu.cn
+  - DOMAIN,mirrors.bfsu.edu.cn
+  - DOMAIN,mirror.bjtu.edu.cn
+  - DOMAIN,mirrors.jlu.edu.cn
+  - DOMAIN,mirrors.hit.edu.cn
+  - DOMAIN,mirrors.sdu.edu.cn
+  - DOMAIN,mirrors.sustech.edu.cn
+  - DOMAIN,mirrors.xjtu.edu.cn
+  - DOMAIN,mirrors.neusoft.edu.cn
+  - DOMAIN,mirror.iscas.ac.cn
+  - DOMAIN,mirror.lzu.edu.cn
+  - DOMAIN,mirrors.njupt.edu.cn
+  - DOMAIN,mirrors.nwafu.edu.cn
+  - DOMAIN,mirror.nyist.edu.cn
+  - DOMAIN,mirrors.pku.edu.cn
+  - DOMAIN,mirrors.qlu.edu.cn
+  - DOMAIN,mirrors.shanghaitech.edu.cn
+  - DOMAIN,mirrors.uestc.cn
+  - DOMAIN,mirrors.wsyu.edu.cn
+
+
+# > steam-china
+  - DOMAIN,ipv6check-http.steamserver.net
+  - DOMAIN,ipv6check-udp.steamserver.net
+  - DOMAIN,ipv6check-http.steamcontent.com
+  - DOMAIN,ipv6check-udp.steamcontent.com
+  - DOMAIN,steamcloud-ugc-hkg.oss-accelerate.aliyuncs.com
+  - DOMAIN,dl.steam.clngaa.com
+  - DOMAIN,cdn-ali.content.steamchina.com
+  - DOMAIN,xz.pphimalayanrt.com
+  - DOMAIN,lv.queniujq.cn
+  - DOMAIN,st.dl.eccdnx.com
+  - DOMAIN,st.dl.bscstorage.net
+  - DOMAIN,trts.baishancdnx.cn
+  - DOMAIN,cdn-ws.content.steamchina.com
+  - DOMAIN,cdn-qc.content.steamchina.com
+  - DOMAIN,store.st.dl.eccdnx.com
+  - DOMAIN,media.st.dl.eccdnx.com
+  - DOMAIN,avatars.st.dl.eccdnx.com
+  - DOMAIN,cdn.steamstatic.com.8686c.com
+  - DOMAIN,broadcast.st.dl.eccdnx.com
+
+# > epic-china
+  - DOMAIN,epicgames-download1-1251447533.file.myqcloud.com
+
+
+# > ubisoft connect-china
+  - DOMAIN,uplaypc-s-ubisoft.cdn.ubionline.com.cn
