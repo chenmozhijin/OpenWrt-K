@@ -7,9 +7,9 @@ payload:
   - DOMAIN,tds-tapsdk.cn.tapapis.com
 
 # > cdn
-  - DOMAIN,cdn.cookielaw.org
-  - DOMAIN-SUFFIX,zdstatic.speedtest.net
-  - DOMAIN-SUFFIX,cdnst.net
+  cdn.cookielaw.org
+  zdstatic.speedtest.net
+  cdnst.net
 
 # > VPN
   - DOMAIN-SUFFIX,miyun.la
@@ -70,8 +70,8 @@ payload:
 ##api end
 
 # > telegram
-  - DOMAIN-SUFFIX,telegram.org
-  - DOMAIN-SUFFIX,t.me
+telegram.org
+t.me
 ## telegram
 
 # > box

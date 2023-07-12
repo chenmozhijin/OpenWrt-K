@@ -74,8 +74,8 @@ payload:
   - DOMAIN-SUFFIX,msstatic.com
   - DOMAIN-SUFFIX,livehwc3.cn
 
-# > ldtstore
-  - DOMAIN-SUFFIX,ldtstore.com.cn
+
+ldtstore.com.cn
 
 # > cmzj
   - DOMAIN-SUFFIX,cmzj.org
