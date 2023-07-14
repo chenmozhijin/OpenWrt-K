@@ -393,7 +393,6 @@ jobs:
       - name: 复制自定义文件并添加编译信息
         run: |
           cp -r files $OPENWRT_ROOT_PATH/files
-          chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
           chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin-passwall
           #替换编译者
