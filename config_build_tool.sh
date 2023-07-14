@@ -2,7 +2,7 @@
 #   Copyright (C) 2023  沉默の金
 
 trap 'rm -rf "$TMPDIR"' EXIT
-TMPDIR=$(mktemp -d)
+TMPDIR=$(mktemp -d) || exit 1
 
 function start() {
     install_dependencies
