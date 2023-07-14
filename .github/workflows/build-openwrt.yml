@@ -50,8 +50,15 @@ jobs:
     outputs:
       target: ${{ steps.target.outputs.target }}
       subtarget: ${{ steps.target.outputs.subtarget }}
+      starttime: ${{ steps.time.outputs.starttime }}
     runs-on: ubuntu-22.04
     steps:
+      - name: 记录开始时间
+        id: time
+        run: |
+          sudo timedatectl set-timezone "Asia/Shanghai"
+          echo starttime=$(date +"%y.%m.%d-%H") >> "$GITHUB_OUTPUT"
+
       - name: 准备环境
         run: |
           sudo -E apt update
@@ -383,21 +390,31 @@ jobs:
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: ./scripts/feeds install -a
 
-      - name: 复制自定义文件并替换编译者
+      - name: 复制自定义文件并添加编译信息
         run: |
           cp -r files $OPENWRT_ROOT_PATH/files
+          chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
+          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
+          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin-passwall
+          #替换编译者
           if [ "$(curl -s https://api.github.com/users/$(echo ${{ github.repository }} | sed "s/\/.*//g") 2>/dev/null|grep -c "^  \"name\": null,$")" -ne '0' ];then
             compiler=$(echo ${{ github.repository }} | sed "s/\/.*//g")
           else
             compiler=$(curl -s https://api.github.com/users/$(echo ${{ github.repository }} | sed "s/\/.*//g") 2>/dev/null  |grep '"name":\ "'|sed 's/  "name":\ "//'|sed 's/",//' 2>/dev/null)
           fi
-          echo  'Compiled by' $compiler
-          sed -i "s/Compiled by 沉默の金/Compiled by $compiler/g" $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
-          cat $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin | grep 'Compiled by'
-          chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
-          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
-          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin-passwall
-          
+          echo 'Compiled by' $compiler
+          sed -i "s/Compiled by 沉默の金/Compiled by $compiler/g" $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
+          cat $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin | grep 'Compiled by'
+          #添加编译信息
+          export OPENWRT_TAG_BRANCHE="$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
+          echo "COMPILE_START_TIME=\"${{ needs.prepare.outputs.starttime }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "COMPILER=\"$compiler\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "RELEASE_NAME=\"OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCHE]\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "RELEASE_TAG_NAME=\"v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCHE)\""  >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "REPOSITORY_URL=\"https://github.com/${{ github.repository }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "$OPENWRT_ROOT_PATH/files/etc/openwrt-k_info"
+          cat $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -498,26 +515,26 @@ jobs:
                 echo "下载AdGuardHome DNS黑白名单"
                 mkdir -p ./files/usr/bin/AdGuardHome/data/filters
                 cd $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/data/filters
-                curl -o 1628750870.txt https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt -s
-                curl -o 1628750871.txt https://anti-ad.net/easylist.txt -s
-                curl -o 1677875715.txt https://easylist-downloads.adblockplus.org/easylist.txt -s
-                curl -o 1677875716.txt https://easylist-downloads.adblockplus.org/easylistchina.txt -s
-                curl -o 1677875717.txt https://cdn.jsdelivr.net/gh/cjx82630/cjxlist@master/cjx-annoyance.txt -s
-                curl -o 1677875718.txt https://cdn.jsdelivr.net/gh/zsakvo/AdGuard-Custom-Rule@master/rule/zhihu-strict.txt -s
-                curl -o 1677875720.txt https://gist.githubusercontent.com/Ewpratten/a25ae63a7200c02c850fede2f32453cf/raw/b9318009399b99e822515d388b8458557d828c37/hosts-yt-ads -s
-                curl -o 1677875721.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt -s
-                curl -o 1677875722.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/v -s
-                curl -o 1677875724.txt https://raw.githubusercontent.com/banbendalao/ADgk/master/ADgk.txt -s
-                curl -o 1677875725.txt https://www.i-dont-care-about-cookies.eu/abp/ -s
-                curl -o 1677875726.txt https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts -s
-                curl -o 1677875727.txt https://raw.githubusercontent.com/Goooler/1024_hosts/master/hosts -s
-                curl -o 1677875728.txt https://winhelp2002.mvps.org/hosts.txt -s
-                curl -o 1677875733.txt https://cdn.jsdelivr.net/gh/hl2gu -s
-                curl -o 1677875734.txt https://cdn.jsdelivr.net/gh/hg1978/AdGuard-Home-Whitelist@master/whitelist.txt -s
-                curl -o 1677875735.txt https://cdn.jsdelivr.net/gh/mmotti/adguard-home-filters@master/whitelist.txt -s
-                curl -o 1677875737.txt https://cdn.jsdelivr.net/gh/liwenjie119/adg-rules@master/white.txt -s
-                curl -o 1677875739.txt https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt -s
-                curl -o 1677875740.txt https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt -s
+                curl -o 1628750870.txt https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt -s -L --retry 3
+                curl -o 1628750871.txt https://anti-ad.net/easylist.txt -s -L --retry 3
+                curl -o 1677875715.txt https://easylist-downloads.adblockplus.org/easylist.txt -s -L --retry 3
+                curl -o 1677875716.txt https://easylist-downloads.adblockplus.org/easylistchina.txt -s -L --retry 3
+                curl -o 1677875717.txt https://cdn.jsdelivr.net/gh/cjx82630/cjxlist@master/cjx-annoyance.txt -s -L --retry 3
+                curl -o 1677875718.txt https://cdn.jsdelivr.net/gh/zsakvo/AdGuard-Custom-Rule@master/rule/zhihu-strict.txt -s -L --retry 3
+                curl -o 1677875720.txt https://gist.githubusercontent.com/Ewpratten/a25ae63a7200c02c850fede2f32453cf/raw/b9318009399b99e822515d388b8458557d828c37/hosts-yt-ads -s -L --retry 3
+                curl -o 1677875721.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt -s -L --retry 3
+                curl -o 1677875722.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/v -s -L --retry 3
+                curl -o 1677875724.txt https://raw.githubusercontent.com/banbendalao/ADgk/master/ADgk.txt -s -L --retry 3
+                curl -o 1677875725.txt https://www.i-dont-care-about-cookies.eu/abp/ -s -L --retry 3
+                curl -o 1677875726.txt https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts -s -L --retry 3
+                curl -o 1677875727.txt https://raw.githubusercontent.com/Goooler/1024_hosts/master/hosts -s -L --retry 3
+                curl -o 1677875728.txt https://winhelp2002.mvps.org/hosts.txt -s -L --retry 3
+                curl -o 1677875733.txt https://cdn.jsdelivr.net/gh/hl2gu -s -L --retry 3
+                curl -o 1677875734.txt https://cdn.jsdelivr.net/gh/hg1978/AdGuard-Home-Whitelist@master/whitelist.txt -s -L --retry 3
+                curl -o 1677875735.txt https://cdn.jsdelivr.net/gh/mmotti/adguard-home-filters@master/whitelist.txt -s -L --retry 3
+                curl -o 1677875737.txt https://cdn.jsdelivr.net/gh/liwenjie119/adg-rules@master/white.txt -s -L --retry 3
+                curl -o 1677875739.txt https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt -s -L --retry 3
+                curl -o 1677875740.txt https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt -s -L --retry 3
                 ls
                 echo "制作AdGuardHome上游 DNS 服务器规则" 
                 cd  $WORKSPACE_ROOT_PATH
@@ -525,10 +542,10 @@ jobs:
                 cd $WORKSPACE_ROOT_PATH/tmp
                 ls
                 rm -rf *
-                curl https://raw.githubusercontent.com/YW5vbnltb3Vz/domain-list-community/release/gfwlist.txt -o base64_YW5vbnltb3Vz.txt
-                curl https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/gfw.txt -o Loyalsoldier.txt
-                curl https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt -o base64_gfwlist.txt
-                curl https://raw.githubusercontent.com/Loukky/gfwlist-by-loukky/master/gfwlist.txt -o base64_Loukky.txt
+                curl -s -L --retry 3 https://raw.githubusercontent.com/YW5vbnltb3Vz/domain-list-community/release/gfwlist.txt -o base64_YW5vbnltb3Vz.txt
+                curl -s -L --retry 3 https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/gfw.txt -o Loyalsoldier.txt
+                curl -s -L --retry 3 https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt -o base64_gfwlist.txt
+                curl -s -L --retry 3 https://raw.githubusercontent.com/Loukky/gfwlist-by-loukky/master/gfwlist.txt -o base64_Loukky.txt
                 base64 -d base64_YW5vbnltb3Vz.txt > YW5vbnltb3Vz.txt
                 base64 -d base64_gfwlist.txt > gfwlist.txt
                 base64 -d base64_Loukky.txt > Loukky.txt
@@ -595,10 +612,10 @@ jobs:
                 RELEASE_BRANCH=master
                 mkdir -p $OpenClashTMPDIR
                 rm -rf $OpenClashTMPDIR/*
-                CORE_LV=$(curl -s https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version|sed -n 2p)
-                curl -o $OpenClashTMPDIR/clash_tun.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/premium/clash-"$CPU_MODEL"-"$CORE_LV".gz
-                curl -o $OpenClashTMPDIR/clash_meta.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/meta/clash-"$CPU_MODEL".tar.gz
-                curl -o $OpenClashTMPDIR/clash.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/dev/clash-"$CPU_MODEL".tar.gz
+                CORE_LV=$(curl -s -L --retry 3 https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version|sed -n 2p)
+                curl -s -L --retry 3 -o $OpenClashTMPDIR/clash_tun.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/premium/clash-"$CPU_MODEL"-"$CORE_LV".gz
+                curl -s -L --retry 3 -o $OpenClashTMPDIR/clash_meta.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/meta/clash-"$CPU_MODEL".tar.gz
+                curl -s -L --retry 3 -o $OpenClashTMPDIR/clash.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/dev/clash-"$CPU_MODEL".tar.gz
                 #tun
                 gzip -d $OpenClashTMPDIR/clash_tun.gz >/dev/null 2>&1
                 rm -rf $OpenClashTMPDIR/clash_tun.gz >/dev/null 2>&1
@@ -628,8 +645,8 @@ jobs:
       - name: 更新BT Tracker 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-         export bt_tracker="$(curl -s https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt || curl -s https://cf.trackerslist.com/all_aria2.txt)"
-         sed -i "s#^uci set aria2.main.bt_tracker=.*#uci set aria2.main.bt_tracker=\'$bt_tracker\'#g"  $OPENWRT_ROOT_PATH/files/etc/uci-defaults/99_chenmozhijin
+         export bt_tracker="$(curl  -s -L --retry 3 https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt || curl  -s -L --retry 3 https://cf.trackerslist.com/all_aria2.txt)"
+         sed -i "s#^uci set aria2.main.bt_tracker=.*#uci set aria2.main.bt_tracker=\'$bt_tracker\'#g"  $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
          
       - name: 设置时区与主机名
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -1158,9 +1175,9 @@ jobs:
         run: |
           export OPENWRT_TAG_BRANCHE="$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
           echo "OPENWRT_TAG_BRANCHE=$OPENWRT_TAG_BRANCHE" >> $GITHUB_ENV
-          export RELEASE_NAME="OpenWrt-K_V$(date +"%y.%m.%d-%H") (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCHE]"
+          export RELEASE_NAME="OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCHE]"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          export RELEASE_TAG_NAME="v$(date +"%y.%m.%d-%H")(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCHE)"
+          export RELEASE_TAG_NAME="v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCHE)"
           echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
           
       - name: 下载固件
