@@ -214,9 +214,9 @@ set AdGuardHome.AdGuardHome.enabled='1'
 set AdGuardHome.AdGuardHome.httpport='3000'
 set AdGuardHome.AdGuardHome.binpath='/usr/bin/AdGuardHome/AdGuardHome'
 set AdGuardHome.AdGuardHome.waitonboot='1'
-set AdGuardHome.AdGuardHome.redirect='none'
+set AdGuardHome.AdGuardHome.redirect='dnsmasq-upstream'
 set AdGuardHome.AdGuardHome.ucitracktest='1'
-set AdGuardHome.AdGuardHome.old_redirect='none'
+set AdGuardHome.AdGuardHome.old_redirect='dnsmasq-upstream'
 set AdGuardHome.AdGuardHome.old_port='1745'
 set AdGuardHome.AdGuardHome.old_enabled='1'
 EOI
@@ -278,13 +278,13 @@ uci set openclash.config.geo_update_week_time='*'
 uci set openclash.config.geo_update_day_time='1'
 uci set openclash.config.geoip_auto_update='1'
 uci set openclash.config.geoip_update_week_time='*'
-uci set openclash.config.geoip_update_day_time='2'
+uci set openclash.config.geoip_update_day_time='3'
 uci set openclash.config.geosite_auto_update='1'
 uci set openclash.config.geosite_update_week_time='*'
-uci set openclash.config.geosite_update_day_time='2'
+uci set openclash.config.geosite_update_day_time='4'
 uci set openclash.config.chnr_auto_update='1'
 uci set openclash.config.chnr_update_week_time='1'
-uci set openclash.config.chnr_update_day_time='4'
+uci set openclash.config.chnr_update_day_time='5'
 uci set openclash.config.auto_restart='0'
 uci set openclash.config.auto_restart_week_time='1'
 uci set openclash.config.auto_restart_day_time='0'
@@ -307,7 +307,7 @@ uci set openclash.@rule_provider_config[-1].config='all'
 uci add_list openclash.@rule_provider_config[-1].rule_name='代理规则(by 沉默の金)'
 uci commit openclash
 fi
-echo "0 2 * * * /usr/share/cmzj/updatelist.sh" >>/etc/crontabs/root
+echo "0 2 * * * /usr/share/cmzj/openwrt-k_tool.sh update rules" >>/etc/crontabs/root
 uci commit
 exit 0
 
