@@ -502,7 +502,7 @@ jobs:
               Arch=1
               ;;
               esac
-              if [ "$Arch" != 1 ]
+              if [ "$Arch" != 1 ];then
                 echo AdGuardHome架构为$Arch,开始下载AdGuardHome
                 mkdir -p ./files/usr/bin/AdGuardHome/tmp
                 rm -rf ./files/usr/bin/AdGuardHome/tmp/*
@@ -560,7 +560,7 @@ jobs:
                 cat $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml >> $LOG_PATH/AdGuardHome.log
                 rm -rf $WORKSPACE_ROOT_PATH/tmp/*
               else
-                echo AdGuardHome核心不支持此架构,退出执行。
+                echo "AdGuardHome核心不支持此架构,退出执行。"
               fi
           else
             echo "未检测到luci-app-adguardhome配置为编译进固件,退出执行。"
@@ -603,7 +603,7 @@ jobs:
               		;;
               esac
               echo $CORE_ARCH
-              if [ "$CORE_ARCH" != 1 ]
+              if [ "$CORE_ARCH" != 1 ];then
                 OpenClashTMPDIR=$WORKSPACE_ROOT_PATH/tmp/openclash
                 dev_core_path="$OPENWRT_ROOT_PATH/files/etc/openclash/core/clash"
                 tun_core_path="$OPENWRT_ROOT_PATH/files/etc/openclash/core/clash_tun"
@@ -724,7 +724,7 @@ jobs:
           mkdir -p openwrt-logs
           cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
-          ls -la $(find $OPENWRT_ROOT_PATH/files/*)  >> $LOG_PATH/files.list
+          ls -la $(find $OPENWRT_ROOT_PATH/files/ -type d)  >> $LOG_PATH/files.list
 
       - name: 上传日志
         if: failure()
