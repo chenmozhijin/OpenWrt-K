@@ -308,6 +308,8 @@ uci add_list openclash.@rule_provider_config[-1].rule_name='代理规则(by 沉�
 uci commit openclash
 fi
 echo "0 2 * * * /usr/share/cmzj/openwrt-k_tool.sh update rules" >>/etc/crontabs/root
+ln -s /usr/share/cmzj/openwrt-k_tool.sh /bin/openwrt-k
+chmod +x /usr/share/cmzj/openwrt-k_tool.sh
 uci commit
 exit 0
 
