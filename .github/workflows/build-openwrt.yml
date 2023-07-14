@@ -130,7 +130,7 @@ jobs:
           git clone https://github.com/tty228/luci-app-wechatpush
           git clone https://github.com/jerrykuku/luci-theme-argon
           git clone https://github.com/chenmozhijin/luci-app-socat
-          git clone https://github.com/vernesong/OpenClash
+          git clone --depth=1 --single-branch --branch "master" https://github.com/vernesong/OpenClash.git
           cd $DOWNLOAD_ROOT_PATH
           git clone https://git.openwrt.org/openwrt/openwrt.git
           
