@@ -625,23 +625,23 @@ jobs:
                 curl -s -L --retry 3 -o $OpenClashTMPDIR/clash_meta.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/meta/clash-"$CPU_MODEL".tar.gz
                 curl -s -L --retry 3 -o $OpenClashTMPDIR/clash.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/dev/clash-"$CPU_MODEL".tar.gz
                 #tun
-                gzip -d $OpenClashTMPDIR/clash_tun.gz >/dev/null 2>&1
-                rm -rf $OpenClashTMPDIR/clash_tun.gz >/dev/null 2>&1
-                rm -rf "$tun_core_path" >/dev/null 2>&1
-                chmod 4755 $OpenClashTMPDIR/clash_tun >/dev/null 2>&1
+                gzip -d $OpenClashTMPDIR/clash_tun.gz
+                rm -rf $OpenClashTMPDIR/clash_tun.gz
+                rm -rf "$tun_core_path"
+                chmod 4755 $OpenClashTMPDIR/clash_tun
                 mv $OpenClashTMPDIR/clash_tun "$tun_core_path"
                 #mate
-                rm -rf "$meta_core_path" >/dev/null 2>&1
-                tar zxvf  $OpenClashTMPDIR/clash_meta.tar.gz -C /tmp
-                mv $OpenClashTMPDIR/clash $OpenClashTMPDIR/clash_meta >/dev/null 2>&1
-                rm -rf  $OpenClashTMPDIR/clash_meta.tar.gz >/dev/null 2>&1
-                chmod 4755 $OpenClashTMPDIR/clash_meta >/dev/null 2>&1
+                rm -rf "$meta_core_path"
+                tar zxvf $OpenClashTMPDIR/clash_meta.tar.gz -C $OpenClashTMPDIR
+                mv $OpenClashTMPDIR/clash $OpenClashTMPDIR/clash_meta
+                rm -rf  $OpenClashTMPDIR/clash_meta.tar.gz
+                chmod 4755 $OpenClashTMPDIR/clash_meta
                 mv $OpenClashTMPDIR/clash_meta "$meta_core_path"
                 #dev
-                rm -rf "$dev_core_path" >/dev/null 2>&1
-                tar zxvf $OpenClashTMPDIR/clash.tar.gz -C /tmp
-                rm -rf $OpenClashTMPDIR/clash.tar.gz >/dev/null 2>&1
-                chmod 4755 $OpenClashTMPDIR/clash >/dev/null 2>&1
+                rm -rf "$dev_core_path"
+                tar zxvf $OpenClashTMPDIR/clash.tar.gz -C $OpenClashTMPDIR
+                rm -rf $OpenClashTMPDIR/clash.tar.gz
+                chmod 4755 $OpenClashTMPDIR/clash
                 mv $OpenClashTMPDIR/clash "$dev_core_path"
                 echo "files"
                 ls -la $(find $OPENWRT_ROOT_PATH/files/ -type d)
