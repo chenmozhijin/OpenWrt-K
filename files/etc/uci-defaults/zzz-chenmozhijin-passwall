@@ -6,6 +6,7 @@ sleep 5
 [ ! -s "/etc/config/passwall" ] && sleep 5
 [ ! -s "/etc/config/passwall" ] && sleep 5
 [ ! -s "/etc/config/passwall" ] && cp -f /usr/share/passwall/0_default_config /etc/config/passwall
+if [ "$( opkg list-installed 2>/dev/null| grep -c "^luci-app-passwall - ")" -ne '0' ];then
 uci set passwall.@global[0].dns_mode='dns2tcp'
 uci set passwall.@global[0].tcp_proxy_mode='gfwlist'
 uci set passwall.@global[0].tcp_node_socks_port='1070'
@@ -41,4 +42,5 @@ uci set passwall.@auto_switch[0].testing_time='1'
 uci set passwall.@auto_switch[0].enable='1'
 uci commit passwall
 /etc/init.d/passwall restart
+fi
 exit 0

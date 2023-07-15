@@ -2,7 +2,7 @@
 #   Copyright (C) 2023  沉默の金
 
 trap 'rm -rf "$TMPDIR"' EXIT
-TMPDIR=$(mktemp -d)
+TMPDIR=$(mktemp -d) || exit 1
 
 function start() {
     install_dependencies
@@ -107,10 +107,15 @@ function input_parameters() {
         fi
     done
     inputbox="输入OpenWrt-K存储库地址"
-    OpenWrt_K_url="$(whiptail --title "Enter the repository address" --inputbox "$inputbox" 10 60 https://github.com/chenmozhijin/OpenWrt-K 3>&1 1>&2 2>&3)"
+    OpenWrt_K_url="$(whiptail --title "Enter the repository address" --inputbox "$inputbox" 10 60 https://github.com/chenmozhijin/OpenWrt-K 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
     exitstatus=$?
     if [ $exitstatus = 0 ]; then
-        whiptail --title "Message box title" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCHE\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url" 10 80
+        if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
+            build_dir=$(grep "^build_dir=" buildconfig.config|sed -e "s/build_dir=//")
+            rm -rf $build_dir/OpenWrt-K
+            whiptail --title "Message box" --msgbox "请重新准备运行环境" 10 80
+        fi
+        whiptail --title "Message box" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCHE\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url" 10 80
         echo OPENWRT_TAG_BRANCHE=$OPENWRT_TAG_BRANCHE > buildconfig.config
         echo OpenWrt_K_url=$OpenWrt_K_url >> buildconfig.config
     else
@@ -149,7 +154,7 @@ function menu() {
             about
         else  
             if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
-                if [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/openwrt/feeds/telephony.index" ];then
+                if [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/openwrt/feeds/telephony.index" ] && [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/OpenWrt-K" ] ;then
                   case "${OPTION}" in
                     2)
                       menuconfig
@@ -217,7 +222,7 @@ function prepare() {
         openwrt_dir=$build_dir/openwrt
     fi
     OpenWrt_K_url=$(grep "^OpenWrt_K_url=" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_url=//")
-    OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g")
+    OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g" -e "s/\ .*//g")
     OPENWRT_TAG_BRANCHE=$(grep "^OPENWRT_TAG_BRANCHE=" $build_dir/../buildconfig.config|sed  "s/OPENWRT_TAG_BRANCHE=//")
     if [ -d "$OpenWrt_K_dir" ]; then
         git -C $OpenWrt_K_dir pull || download_failed
@@ -246,9 +251,14 @@ function prepare() {
         git clone https://github.com/chenmozhijin/chenmozhijin-package $openwrt_dir/package/chenmozhijin-package || download_failed
     fi
     cd $openwrt_dir
+    #修复问题
+    sed -i 's/^  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt$/  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk
+    sed -i 's/^	dnsmasq \\$/	dnsmasq-full \\/g' ./include/target.mk
+    sed -i 's/^	b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/	$(TOPDIR)\/tools\/b43-tools\/files\/b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/' ./package/kernel/mac80211/broadcom.mk
     ./scripts/feeds update -a  || download_failed
     ./scripts/feeds install -a
     [[ -d $openwrt_dir ]] && rm -rf .config
+    [[ -d $openwrt_dir ]] && rm -rf $openwrt_dir/tmp
     cat $OpenWrt_K_dir/config/target.config >> .config
     cat $OpenWrt_K_dir/config/luci.config >> .config
     cat $OpenWrt_K_dir/config/utilities.config >> .config
@@ -257,6 +267,7 @@ function prepare() {
     cat $OpenWrt_K_dir/config/kmod.config >> .config
     cat $OpenWrt_K_dir/config/image.config >> .config
     make defconfig
+    sed -i 's/256/1024/' ./target/linux/$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')/image/Makefile
     cd $build_dir/..	
     whiptail --title "Message box" --msgbox "准备完成，选择ok以返回菜单。" 10 60
     menu
@@ -304,6 +315,7 @@ function targetconfig() {
     make menuconfig
     cat $notargetdiffconfig >> $openwrt_dir/.config
     make defconfig
+    sed -i 's/256/1024/' ./target/linux/$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')/image/Makefile
     [[ -d $TMPDIR/targetconfig ]] && rm -rf $TMPDIR/targetconfig
     cd $build_dir/..
 }
@@ -312,7 +324,7 @@ function importopenwrt_kconfig() {
     build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
     openwrt_dir=$build_dir/openwrt
     OpenWrt_K_url=$(grep "^OpenWrt_K_url=" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_url=//")
-    OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g")
+    OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g" -e "s/\ .*//g")
     cd $openwrt_dir
     [[ -d $openwrt_dir ]] && rm -rf .config
     cat $OpenWrt_K_dir/config/target.config >> .config
@@ -376,8 +388,8 @@ function build () {
     line=1
     echo diffconfig_row=$diffconfig_row
     until [ "$line" -eq $(($diffconfig_row+1)) ]; do
-        #echo $line $(sed -n "/$(sed -n "${line}p" diffconfig.config)/=" original.config) $(sed -n "${line}p" diffconfig1.config)
-        sed -i "$(sed -n "/$(sed -n "${line}p" diffconfig.config)/=" original.config)c $(sed -n "${line}p" diffconfig1.config)" diffconfig2.config
+        echo $line $(sed -n "/$(sed -n "${line}p" diffconfig.config|sed -e 's@"@\\"@g' -e 's@/@\\/@g' )/=" original.config) $(sed -n "${line}p" diffconfig1.config)
+        sed -i "$(sed -n "/$(sed -n "${line}p" diffconfig.config|sed -e 's@"@\\"@g' -e 's@/@\\/@g' )/=" original.config)c $(sed -n "${line}p" diffconfig1.config|sed 's@"@\\"@g')" diffconfig2.config
         line=$(($line+1))
     done
     sed -i '/^$/d' diffconfig2.config #删除空行
