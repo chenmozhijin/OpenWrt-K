@@ -107,10 +107,15 @@ function input_parameters() {
         fi
     done
     inputbox="输入OpenWrt-K存储库地址"
-    OpenWrt_K_url="$(whiptail --title "Enter the repository address" --inputbox "$inputbox" 10 60 https://github.com/chenmozhijin/OpenWrt-K 3>&1 1>&2 2>&3)"
+    OpenWrt_K_url="$(whiptail --title "Enter the repository address" --inputbox "$inputbox" 10 60 https://github.com/chenmozhijin/OpenWrt-K 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
     exitstatus=$?
     if [ $exitstatus = 0 ]; then
-        whiptail --title "Message box title" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCHE\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url" 10 80
+        if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
+            build_dir=$(grep "^build_dir=" buildconfig.config|sed -e "s/build_dir=//")
+            rm -rf $build_dir/OpenWrt-K
+            whiptail --title "Message box" --msgbox "请重新准备运行环境" 10 80
+        fi
+        whiptail --title "Message box" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCHE\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url" 10 80
         echo OPENWRT_TAG_BRANCHE=$OPENWRT_TAG_BRANCHE > buildconfig.config
         echo OpenWrt_K_url=$OpenWrt_K_url >> buildconfig.config
     else
@@ -149,7 +154,7 @@ function menu() {
             about
         else  
             if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
-                if [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/openwrt/feeds/telephony.index" ];then
+                if [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/openwrt/feeds/telephony.index" ] && [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/OpenWrt-K" ] ;then
                   case "${OPTION}" in
                     2)
                       menuconfig
@@ -217,7 +222,7 @@ function prepare() {
         openwrt_dir=$build_dir/openwrt
     fi
     OpenWrt_K_url=$(grep "^OpenWrt_K_url=" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_url=//")
-    OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g")
+    OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g" -e "s/\ .*//g")
     OPENWRT_TAG_BRANCHE=$(grep "^OPENWRT_TAG_BRANCHE=" $build_dir/../buildconfig.config|sed  "s/OPENWRT_TAG_BRANCHE=//")
     if [ -d "$OpenWrt_K_dir" ]; then
         git -C $OpenWrt_K_dir pull || download_failed
@@ -319,7 +324,7 @@ function importopenwrt_kconfig() {
     build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
     openwrt_dir=$build_dir/openwrt
     OpenWrt_K_url=$(grep "^OpenWrt_K_url=" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_url=//")
-    OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g")
+    OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g" -e "s/\ .*//g")
     cd $openwrt_dir
     [[ -d $openwrt_dir ]] && rm -rf .config
     cat $OpenWrt_K_dir/config/target.config >> .config

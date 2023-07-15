@@ -249,14 +249,31 @@ update_package() {
         exit 1
         ;;
     esac
+    read -n1 -p "下载到内存 [Y/N]?" answer
+    case "$answer" in
+    Y | y)
+        echo "下载到内存"
+        mkdir $TMPDIR/update/package/download
+        DOWNLOAD_PATH=$TMPDIR/update/package/download/newpackage.zip
+        ;;
+    N | n)
+        echo "下载到磁盘"
+        mkdir -p /usr/share/cmzj/download
+        DOWNLOAD_PATH=/usr/share/cmzj/download/newpackage.zip
+        ;;
+
+    *)
+        echo "错误:未指定的选择"
+        exit 1
+        ;;
+    esac
     [[ -d /usr/share/cmzj/download/ ]] && rm -rf /usr/share/cmzj/download/*
-    mkdir -p /usr/share/cmzj/download
-    curl -L --retry 3 --connect-timeout 20 $REPOSITORY_URL/releases/download/${latest_ver}/package.zip -o /usr/share/cmzj/download/newpackage.zip || download_failed
-    unzip -l /usr/share/cmzj/download/newpackage.zip|grep "-"|grep ":"|grep " "|sed "s/.*[0-9][0-9]-[0-9]\{1,2\}-[0-9]\{1,5\} [0-9]\{1,2\}:[0-9]\{1,2\}   //g"|sed "s/ //g" > newpackage.list
-    unzip /usr/share/cmzj/download/newpackage.zip $(grep "$(cat update_package.list)" newpackage.list | sed ':label;N;s/\n/ /;b label') -d $TMPDIR/update/package
-    rm -rf /usr/share/cmzj/download
+    curl -L --retry 3 --connect-timeout 20 $REPOSITORY_URL/releases/download/${latest_ver}/package.zip -o $DOWNLOAD_PATH || download_failed
+    unzip -l $DOWNLOAD_PATH |grep "-"|grep ":"|grep " "|sed "s/.*[0-9][0-9]-[0-9]\{1,2\}-[0-9]\{1,5\} [0-9]\{1,2\}:[0-9]\{1,2\}   //g"|sed "s/ //g" > newpackage.list
+    unzip $DOWNLOAD_PATH $(grep "$(cat update_package.list)" newpackage.list | sed ':label;N;s/\n/ /;b label') -d $TMPDIR/update/package
+    rm -rf /usr/share/cmzj/download $TMPDIR/update/package/download
     if opkg install $TMPDIR/update/package/package/* ; then
-        echo "安装成功"
+        echo "安装成功"        
     else
         echo "安装失败"
     fi
