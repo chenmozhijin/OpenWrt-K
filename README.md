@@ -224,7 +224,7 @@ uci commit network
 /etc/init.d/network restart
 ```
 到/files/etc/uci-defaults/zzz-chenmozhijin的第二行
-3.如果你fork了此仓库固件版本与页脚中的```Compiled by 沉默の金```中的沉默の金会被修改为你的github名称，你可以在[settings/Public profile](https://github.com/settings/profile) Name一栏中修改
+3. 如果你fork了此仓库固件版本与页脚中的```Compiled by 沉默の金```中的沉默の金会被修改为你的github名称，你可以在[settings/Public profile](https://github.com/settings/profile) Name一栏中修改
 
 ## 感谢
  感谢以下项目与各位制作软件包大佬的付出
