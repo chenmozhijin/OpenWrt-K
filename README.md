@@ -71,6 +71,47 @@
 
 +    LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
 
+<details>
+ <summary>网卡驱动</summary>
+
++    kmod-8139cp
++    kmod-8139too
++    kmod-alx
++    kmod-amazon-ena
++    kmod-amd-xgbe
++    kmod-bnx2
++    kmod-bnx2x
++    kmod-e1000
++    kmod-e1000e
++    kmod-forcedeth
++    kmod-i40e
++    kmod-iavf
++    kmod-igb
++    kmod-igbvf
++    kmod-igc
++    kmod-ixgbe
++    kmod-libphy
++    kmod-macvlan
++    kmod-mii
++    kmod-mlx4-core
++    kmod-mlx5-core
++    kmod-net-selftests
++    kmod-pcnet32
++    kmod-phy-ax88796b
++    kmod-phy-realtek
++    kmod-phy-smsc
++    [kmod-r8125](https://github.com/sbwml/package_kernel_r8125)
++    kmod-r8152
++    kmod-r8168
++    kmod-tg3
++    kmod-tulip
++    kmod-via-velocity
++    kmod-vmxnet3
+ 
+</details>
+
+
+
 ## 固件预览
 <details>
  <summary>点击展开预览</summary>
