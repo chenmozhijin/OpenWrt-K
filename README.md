@@ -215,8 +215,17 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
 ### 6.注意事项
 1. 不建议编译sfe，如需编译请删除[此行](https://github.com/chenmozhijin/OpenWrt-K/blob/06af48fd0cdcc21525d96061fa65c111ae462c56/.github/workflows/build-openwrt.yml#LL438C11-L438C174)的注释并删除build-openwrt.yml中的所有
 ```
-|sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g'
+|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' 
 ```
+与build-openwrt.yml中所有的
+```
+|sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'
+```
+或
+```
+|sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g'
+```
+> 注:kmod-shortcut-fe-cm与kmod-fast-classifier无法同时编译，上面删除仅删除要编译的即可。
 2. 如需修改默认ip```192.168.1.1```可将
 ```
 uci set network.lan.ipaddr="192.168.2.1"
