@@ -38,6 +38,9 @@ payload:
 #bbs end
 
 ##api
+# > ip
+  - DOMAIN-SUFFIX,ip.sb
+  - DOMAIN-SUFFIX,ipify.org
 # > p
   - DOMAIN,picaapi.picacomic.com
   - DOMAIN,live-server.bidobido.xyz
