@@ -217,13 +217,13 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
 ```
 |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g'
 ```
-2. 如需修改默认ip```192.168.1.1```可添加
+2. 如需修改默认ip```192.168.1.1```可将
 ```
 uci set network.lan.ipaddr="192.168.2.1"
 uci commit network
 /etc/init.d/network restart
 ```
-到/files/etc/uci-defaults/zzz-chenmozhijin的第二行
+插入到/files/etc/uci-defaults/zzz-chenmozhijin的第二行
 
 3. 如果你fork了此仓库，则编译出的固件的固件版本与页脚中的```Compiled by 沉默の金```中的沉默の金会被修改为你的github名称，你可以在[settings/Public profile](https://github.com/settings/profile) Name一栏中修改
 
