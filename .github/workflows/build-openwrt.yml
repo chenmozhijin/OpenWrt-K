@@ -123,7 +123,6 @@ jobs:
           cd other
           git clone https://github.com/rufengsuixing/luci-app-adguardhome
           git clone https://github.com/jerrykuku/luci-app-argon-config
-          git clone https://github.com/csrutil/OpenWrt-NIC-Drivers
           git clone https://github.com/sbwml/package_kernel_r8125
           git clone https://github.com/lisaac/luci-app-diskman
           git clone https://github.com/sirpdboy/NetSpeedTest
@@ -146,6 +145,7 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ddns-scripts_aliyun $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ddns-scripts_dnspod $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/r8168 $CMZJ_PACKAGE_ROOT_PATH/
+          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/r8152 $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/shortcut-fe $CMZJ_PACKAGE_ROOT_PATH/turboacc/
           #cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-syncdial $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-rclone $CMZJ_PACKAGE_ROOT_PATH/
@@ -166,7 +166,6 @@ jobs:
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-wechatpush $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-theme-argon $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-socat/luci-app-socat $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/OpenWrt-NIC-Drivers/drivers/r8152 $CMZJ_PACKAGE_ROOT_PATH/
           cp -r $DOWNLOAD_ROOT_PATH/other/package_kernel_r8125/* $CMZJ_PACKAGE_ROOT_PATH/r8125
           cp -r $DOWNLOAD_ROOT_PATH/other/OpenClash/luci-app-openclash $CMZJ_PACKAGE_ROOT_PATH/
           cd $CMZJ_PACKAGE_ROOT_PATH && ls
