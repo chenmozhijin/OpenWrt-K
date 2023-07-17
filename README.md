@@ -336,7 +336,7 @@ uci commit network
 3. 如果你fork了此仓库，则编译出的固件的固件版本与页脚中的```Compiled by 沉默の金```中的沉默の金会被修改为你的github名称，你可以在[settings/Public profile](https://github.com/settings/profile) Name一栏中修改
 4. 部分软件包对firewall4的兼容不是很好，不建议编译。具体列表见openwrt/openwrt#11614
 5. 工作流中“下载AdGuardHome核心与DNS名单”与“下载openclash内核”两个步骤会根据你在配置文件中是否将luci-app-adguardhome或luci-app-openclash配置为编译进固件决定下载或清除残留文件，请配置好配置文件。
-6. 你添加的包应该是openwrt与其feeds中有的或本仓库中有移植的（访问[本仓库的Actions](https://github.com/chenmozhijin/OpenWrt-K/actions)点击最新运行完的工作流，在Artifacts下载build1_openwrt_config，解压出build1.config搜索里面是否包含你添加的包），否则你需要修改```build-openwrt.yml```prepare job中的“克隆源代码”与“复制到cmzj_package”步骤并且如果你添加包是luci app且其po目录下没有zh_Hans只有zh-cn你需要添加
+6. 你在配置中添加的包应该是openwrt与其feeds中有的或本仓库中有移植的（访问[本仓库的Actions](https://github.com/chenmozhijin/OpenWrt-K/actions)点击最新运行完的工作流，在Artifacts下载build1_openwrt_config，解压出build1.config搜索里面是否包含你添加的包），否则你需要修改```build-openwrt.yml```prepare job中的“克隆源代码”与“复制到cmzj_package”步骤并且如果你添加包是luci app且其po目录下没有zh_Hans只有zh-cn你需要添加
 ```
 ln -s zh-cn ./luci app文件夹名/po/zh_Hans
 ```
