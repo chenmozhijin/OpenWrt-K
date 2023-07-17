@@ -5,20 +5,22 @@
 ![GitHub last commit (by committer)](https://img.shields.io/github/last-commit/chenmozhijin/OpenWrt-K)
 ![Workflow Status](https://github.com/chenmozhijin/OpenWrt-K/actions/workflows/build-openwrt.yml/badge.svg)
 > OpenWRT软件包与固件自动云编译
-
-
+## 目录
+1. [固件介绍](https://github.com/chenmozhijin/OpenWrt-K#%E5%9B%BA%E4%BB%B6%E4%BB%8B%E7%BB%8D)
+2. [固件使用方法](https://github.com/chenmozhijin/OpenWrt-K#%E5%9B%BA%E4%BB%B6%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)
+3. [定制编译 OpenWrt 固件](https://github.com/chenmozhijin/OpenWrt-K#%E5%AE%9A%E5%88%B6%E7%BC%96%E8%AF%91-openwrt-%E5%9B%BA%E4%BB%B6)
 ## 固件介绍
 
 1. 基于OpenWrt官方源码编译
 2. 自带丰富的LuCI插件与软件包（见内置功能）
-3. 自带SmartDNS+AdGuard Home配置（AdGuard Home 默认密码：password）
+3. 自带SmartDNS+AdGuard Home配置（AdGuard Home 默认密码：```password```）
 4. 随固件编译几乎全部kmod（无sfe），拒绝kernel版本不兼容（kmod在Releases allkmod.zip中，建议与固件一同下载)、
 5. 固件自带OpenWrt-K工具支持升级官方源没有的软件包（使用```openwrt-k```命令）
 6. 使用清华镜像源加快软件包下载
 7. 提供多种格式固件以应对不同需求
 
 
-## 内置功能
+### 内置功能
 已内置以下软件包：
 <details>
  <summary>LuCI插件</summary>
@@ -112,7 +114,7 @@
 
 
 
-## 固件预览
+### 固件预览
 <details>
  <summary>点击展开预览</summary>
  
@@ -136,6 +138,46 @@
 ![概览](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/9.webp)
 ### ZeroTier虚拟局域网
 ![概览](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/10.webp)
+
+</details>
+
+## 固件使用方法
+<details>
+ <summary>点击展开使用方法</summary>
+
+#### 1. 下载固件：
+1. 点击右侧的```"Releases"```
+2. 点击```"Show all xx assetss"```展开
+3. 下载需要的固件（x86_64架构pve/exsi建议下载openwrt-x86-64-generic-squashfs-combined-efi.vmdk）
+#### 2. 安装固件：
+##### 1. pve安装
+1. 点击创建虚拟机输入一个名称记下VMID点击下一步
+2. 操作系统选项系统类别选```Linux```版本选```6.x - 2.6 Kernel```并选择```不使用任何介质```
+3. 系统选项BIOS选```OVMF (UEFI)```，取消勾选```添加EFI磁盘```其他默认（如果下载的固件名不含```-efi```则默认即可）
+4. 磁盘选项删除所有磁盘（磁盘一会直接上传）
+5. CPU选项根据自己机器的性能选（这里的核心数应该是线程数）
+6. 内存选项根据自己机器的性能选（一般1024mib或512mib）
+7. 网络选项模型建议选```VMware vmxnet3```，因为半虚拟化在我这里丢包严重（访问nas中的图片图片都损坏）
+8. 确认完成后将固件传送到pve的```/var/lib/vz/images/你刚记的VMID/```目录下，在终端输入
+```
+qm importdisk 你刚记的VMID "/var/lib/vz/images/你刚记的VMID/你下载的固件" local --format=qcow2
+```
+然后回车，你会发现你刚创建的虚拟机的硬件菜单下会多一个未使用的磁盘
+
+9. 选中未使用的磁盘点上面的编辑在点添加
+10. 点击选项菜单双击引导顺序，仅给刚添加的磁盘打勾然后点ok，现在你可以启动虚拟机了
+
+### 2. 固件使用：
+1. 进入openwrt web界面，一般访问```192.168.1.1```即可
+>  注：此ip容易与光猫路由器冲突，这可能导致无法访问openwrt或互联网，你可以修改它们的ip或修改openwrt ip
+
+2. 第一次访问没有密码直接登录即可，第一次开机会运行大量脚本建议开机后等几分钟在开始设置
+3. 设置密码：访问[```系统/管理权```](http://192.168.1.1/cgi-bin/luci/admin/system/admin)中设置密码
+5. 配置PPPoE：上网访问[```网络/接口```](http://192.168.1.1/cgi-bin/luci/admin/network/network)找到```wan```点编辑，协议选择```PPPoE```点```切换协议```输入```PAP/CHAP 用户名```与```PAP/CHAP 密码```再点击保存点击保存并应用即可
+6. 配置lan口：访问[```网络/接口```](http://192.168.1.1/cgi-bin/luci/admin/network/network)点击上面的```设备```找到```br-lan```点配置，在网桥端口为你需要作为lan口的网口打勾再点击保存点击保存并应用即可
+7. SmartDNS与AdGuardHome默认就是启用并设置好的（AdGuardHome默认密码：```password```），访问[```服务/AdGuard Home```](http://192.168.1.1/cgi-bin/luci/admin/services/AdGuardHome)点下面的更多选项选择```改变网页登录密码```点添加，找到改变网页登录密码输入密码后按载入计算模块然后计算最后点下面的保存并应用
+8. 使用openclash：本固件中以默认将openclash的DNS设置设置为AdGuardHome如需使用openclash请将[```服务/AdGuard Home```](http://192.168.1.1/cgi-bin/luci/admin/services/AdGuardHome)中的1745重定向设置为```无```，并在订阅配置后在规则附加选项中全部点all找到有```代理规则(by 沉默の金)```的一项将策略组改为你代理用的策略组
+9. 使用PassWall：本固件中以默认将PassWal的DNS设置为AdGuardHome，请不要修改DNS设置并保持[```服务/AdGuard Home```](http://192.168.1.1/cgi-bin/luci/admin/services/AdGuardHome)中的1745重定向设置为```作为dnsmasq的上游服务器```
 
 </details>
 
@@ -210,10 +252,13 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
 > 请确保你工作流运行成功
 1. 进入你fork的仓库的```"Code"```页面
 2. 点击右侧的```"Releases"```
-3. 下载你需要的镜像（校验信息在sha256sums中）
+3. 点击```"Show all xx assetss"```展开（生成的文件较少则无此按钮）
+4. 下载你需要的镜像（校验信息在sha256sums中）
 
 ### 6.注意事项
-1. 不建议编译sfe，如需编译请删除[此行](https://github.com/chenmozhijin/OpenWrt-K/blob/06af48fd0cdcc21525d96061fa65c111ae462c56/.github/workflows/build-openwrt.yml#LL438C11-L438C174)的注释并删除build-openwrt.yml中的所有
+1. 不建议编译sfe，如需编译请删除
+[build-openwrt.yml中```#cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version```](https://github.com/chenmozhijin/OpenWrt-K/blob/06af48fd0cdcc21525d96061fa65c111ae462c56/.github/workflows/build-openwrt.yml#LL438C11-L438C174)
+的注释并删除build-openwrt.yml中的所有
 ```
 |sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' 
 ```
@@ -235,6 +280,7 @@ uci commit network
 插入到/files/etc/uci-defaults/zzz-chenmozhijin的第二行
 
 3. 如果你fork了此仓库，则编译出的固件的固件版本与页脚中的```Compiled by 沉默の金```中的沉默の金会被修改为你的github名称，你可以在[settings/Public profile](https://github.com/settings/profile) Name一栏中修改
+4. 部分软件包对firewall4的兼容不是很好，不建议编译。具体列表见openwrt/openwrt#11614
 
 ## 感谢
  感谢以下项目与各位制作软件包大佬的付出
