@@ -155,7 +155,7 @@ config_build_tool.sh --- OpenWrt-k配置构建工具
 2. build1: 修改部分源码按需添加openclash内核与AdGuardHome核心并编译工具链
 3. build-package：编译固件所需的软件包
 4. build-Image_Builder：编译Image_Builder与所有kmod（除sfe）
-5. 使用4编译的Image Builderkmod添加3编译软件包（除kmod或许有sfe）与4编译的kmod（除sfe）构建镜像
+5. 使用4编译的Image Builderkmod添加3编译软件包（除kmod）与4编译的kmod（除sfe）构建镜像
 +  注：3与4同时进行，拆成5个job是因为github限制一个job只能运行6小时软件包多点就超时了
  
 ### 3. 修改openwrt编译配置
