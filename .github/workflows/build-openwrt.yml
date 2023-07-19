@@ -104,7 +104,6 @@ jobs:
           
       - name: 导入拓展软件包
         run: |
-          bash -x
           TMPDIR=$(mktemp -d) || exit 1
           EXT_PKGS_PREP_PATH=$TMPDIR/extpackages_prepare
           EXT_PKGS_DL_PATH=$DOWNLOAD_ROOT_PATH/extpackages/dl
@@ -127,19 +126,38 @@ jobs:
           echo "开始克隆拓展软件包仓库"
           n=1
           while [ "$n" -le $NUMBER_OF_CLONES ]; do
+              echo "debug1"
+              echo "EXT_PKGS_PREP_PATH=$EXT_PKGS_PREP_PATH"
+              echo "EXT_PKGS_DL_PATH=$EXT_PKGS_DL_PATH"
+              echo "EXT_PKGS_PATH=$EXT_PKGS_PATH"
+              echo "EXT_PKGS_CONFIG=$EXT_PKGS_CONFIG"
+              echo "NUMBER_OF_CLONES=$NUMBER_OF_CLONES"
+              echo "n=$n"
               mkdir -p $EXT_PKGS_DL_PATH/TMP
+              echo "debug2"
+              ls -al $EXT_PKGS_DL_PATH/TMP
               COLNE_ARGUMENT=$(sed -n "${n}p" $EXT_PKGS_PREP_PATH/clone.config)
+              echo "debug4"
+              echo "COLNE_ARGUMENT=$COLNE_ARGUMENT"
               git clone --depth=1 --single-branch $COLNE_ARGUMENT $EXT_PKGS_DL_PATH/TMP
+              echo "debug5"
+              ls -al $EXT_PKGS_DL_PATH/TMP
               cd $EXT_PKGS_DL_PATH/TMP
               if [ "$(echo "$COLNE_ARGUMENT" | grep -c " --branch ")" -ne '0' ];then
                   BRANCH=$(git rev-parse --abbrev-ref HEAD)
               else
                   BRANCH="default_branch"
-              fi
+              fiecho "debug6"
+              echo "BRANCH=$BRANCH"
               REPO_PATH="$BRANCH""/""$(echo "$COLNE_ARGUMENT" | sed -e "s/ --branch.*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")"
+              fiecho "debug7"
+              echo "REPO_PATH=$REPO_PATH"
               mkdir -p $EXT_PKGS_DL_PATH/$REPO_PATH
               cp -RT $EXT_PKGS_DL_PATH/TMP/ $EXT_PKGS_DL_PATH/$REPO_PATH
               rm -rf $EXT_PKGS_DL_PATH/TMP/
+              echo "debug8"
+              ls -al $EXT_PKGS_DL_PATH/TMP
+              ls -al $EXT_PKGS_DL_PATH/$REPO_PATH
               n=$(( n+1 ))
           done
           echo "开始整理拓展软件包"
