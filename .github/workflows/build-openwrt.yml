@@ -104,6 +104,7 @@ jobs:
           
       - name: 导入拓展软件包
         run: |
+          bash -x
           TMPDIR=$(mktemp -d) || exit 1
           EXT_PKGS_PREP_PATH=$TMPDIR/extpackages_prepare
           EXT_PKGS_DL_PATH=$DOWNLOAD_ROOT_PATH/extpackages/dl
