@@ -159,7 +159,6 @@ jobs:
               cp -RT $EXT_PKGS_DL_PATH/TMP/ $EXT_PKGS_DL_PATH/$REPO_PATH
               rm -rf $EXT_PKGS_DL_PATH/TMP/
               echo "debug8"
-              ls -al $EXT_PKGS_DL_PATH/TMP
               ls -al $EXT_PKGS_DL_PATH/$REPO_PATH
               n=$(( n+1 ))
           done
