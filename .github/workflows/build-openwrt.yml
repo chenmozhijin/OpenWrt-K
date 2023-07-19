@@ -125,8 +125,10 @@ jobs:
           sed -i "s/^REPOSITORIE=//g" $EXT_PKGS_PREP_PATH/clone.config
           echo "开始克隆拓展软件包仓库"
           n=1
+          echo "debug1"
+          cat $EXT_PKGS_PREP_PATH/clone.config
           while [ "$n" -le $NUMBER_OF_CLONES ]; do
-              echo "debug1"
+              echo "debug2"
               echo "EXT_PKGS_PREP_PATH=$EXT_PKGS_PREP_PATH"
               echo "EXT_PKGS_DL_PATH=$EXT_PKGS_DL_PATH"
               echo "EXT_PKGS_PATH=$EXT_PKGS_PATH"
@@ -134,7 +136,7 @@ jobs:
               echo "NUMBER_OF_CLONES=$NUMBER_OF_CLONES"
               echo "n=$n"
               mkdir -p $EXT_PKGS_DL_PATH/TMP
-              echo "debug2"
+              echo "debug3"
               ls -al $EXT_PKGS_DL_PATH/TMP
               COLNE_ARGUMENT=$(sed -n "${n}p" $EXT_PKGS_PREP_PATH/clone.config)
               echo "debug4"
