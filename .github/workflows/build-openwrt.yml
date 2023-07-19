@@ -88,99 +88,110 @@ jobs:
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
           mkdir -p $CMZJ_PATCH_ROOT_PATH/firewall4/patches/ $CMZJ_PATCH_ROOT_PATH/libnftnl/patches/ $CMZJ_PATCH_ROOT_PATH/nftables/patches/ $CMZJ_PATCH_ROOT_PATH/hack-5.10 $CMZJ_PATCH_ROOT_PATH/hack-5.15 $CMZJ_PATCH_ROOT_PATH/hack-6.1 $CMZJ_PATCH_ROOT_PATH/dnsmasq $CMZJ_PATCH_ROOT_PATH/libubox $CMZJ_PATCH_ROOT_PATH/netdata
 
-      - name: 克隆源代码
+      - name: 克隆补丁所需源代码
         working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}
         run: |
           cd lede
           git clone https://github.com/coolsnowwolf/lede
-          git clone https://github.com/coolsnowwolf/luci
-          git clone https://github.com/coolsnowwolf/packages 
           cd $DOWNLOAD_ROOT_PATH        
-          cd Lienol
-          git clone https://github.com/Lienol/openwrt-package
-          cd $DOWNLOAD_ROOT_PATH
           cd immortalwrt
-          git clone https://github.com/immortalwrt/luci
           git clone https://github.com/immortalwrt/packages
           cd $DOWNLOAD_ROOT_PATH
-          cd wongsyrone
-          git clone https://github.com/wongsyrone/lede-1
-          cd $DOWNLOAD_ROOT_PATH
-          cd passwall
-          git clone https://github.com/xiaorouji/openwrt-passwall -b luci
-          mv ./openwrt-passwall/luci-app-passwall ./luci-app-passwall
-          rm -rf openwrt-passwall
-          git clone https://github.com/xiaorouji/openwrt-passwall
-          git clone https://github.com/xiaorouji/openwrt-passwall2
-          cd $DOWNLOAD_ROOT_PATH
           cd turboacc
-          git clone https://github.com/chenmozhijin/turboacc
-          mv ./turboacc/luci-app-turboacc ./luci-app-turboacc
-          rm -rf ./turboacc
           git clone https://github.com/chenmozhijin/turboacc -b package
-          git clone https://github.com/fullcone-nat-nftables/nft-fullcone
-          cd $DOWNLOAD_ROOT_PATH
-          cd other
-          git clone https://github.com/rufengsuixing/luci-app-adguardhome
-          git clone https://github.com/jerrykuku/luci-app-argon-config
-          git clone https://github.com/sbwml/package_kernel_r8125
-          git clone https://github.com/lisaac/luci-app-diskman
-          git clone https://github.com/sirpdboy/NetSpeedTest
-          git clone https://github.com/tty228/luci-app-wechatpush
-          git clone https://github.com/jerrykuku/luci-theme-argon
-          git clone https://github.com/chenmozhijin/luci-app-socat
-          git clone --depth=1 --single-branch --branch "master" https://github.com/vernesong/OpenClash.git
           cd $DOWNLOAD_ROOT_PATH
           git clone https://git.openwrt.org/openwrt/openwrt.git
           
-      - name: 复制到cmzj_package
-        run: |
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-usb-printer $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-vlmcsd $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-webadmin $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-cifs-mount $CMZJ_PACKAGE_ROOT_PATH/  
-          cp -r $DOWNLOAD_ROOT_PATH/lede/luci/applications/luci-app-netdata $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/packages/net/vlmcsd $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ipv6-helper $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ddns-scripts_aliyun $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/ddns-scripts_dnspod $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/r8168 $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/r8152 $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/lede/lede/package/lean/shortcut-fe $CMZJ_PACKAGE_ROOT_PATH/turboacc/
-          #cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-syncdial $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-rclone $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/immortalwrt/luci/applications/luci-app-zerotier $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/Lienol/openwrt-package/luci-app-fileassistant $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/passwall/luci-app-passwall $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/passwall/openwrt-passwall/* $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/passwall/openwrt-passwall2/luci-app-passwall2 $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/turboacc/nft-fullcone $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/turboacc/luci-app-turboacc $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-adguardhome $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-argon-config $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-diskman $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/NetSpeedTest/luci-app-netspeedtest $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/NetSpeedTest/homebox $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-wechatpush $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/luci-theme-argon $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/luci-app-socat/luci-app-socat $CMZJ_PACKAGE_ROOT_PATH/
-          cp -r $DOWNLOAD_ROOT_PATH/other/package_kernel_r8125/* $CMZJ_PACKAGE_ROOT_PATH/r8125
-          cp -r $DOWNLOAD_ROOT_PATH/other/OpenClash/luci-app-openclash $CMZJ_PACKAGE_ROOT_PATH/
-          cd $CMZJ_PACKAGE_ROOT_PATH && ls
+          - name: 导入拓展软件包
+          run: |
+            TMPDIR=$(mktemp -d) || exit 1
+            EXT_PKGS_PREP_PATH=$TMPDIR/extpackages_prepare
+            EXT_PKGS_DL_PATH=$DOWNLOAD_ROOT_PATH/extpackages/dl
+            EXT_PKGS_PATH=$DOWNLOAD_ROOT_PATH/extpackages/extpackages
+            EXT_PKGS_CONFIG=$GITHUB_WORKSPACE/config/OpenWrt-K/extpackages.config
+            mkdir -p $EXT_PKGS_PREP_PATH $EXT_PKGS_PATH $EXT_PKGS_DL_PATH
+            NUMBER_OF_PKGS=$(grep -c "^EXT_PACKAGES_NAME\[" $EXT_PKGS_CONFIG)
+            n=1
+            while [ "$n" -le $NUMBER_OF_PKGS ]; do
+                EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
+                EXT_PKG_BRANCHE=$(grep "^EXT_PACKAGES_BRANCHE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
+                echo "REPOSITORIE=$EXT_PKG_REPOSITORIE BRANCHE=$EXT_PKG_BRANCHE" >> $EXT_PKGS_PREP_PATH/extpackagesbr.config
+                n=$(( n+1 ))
+            done
+            sort $EXT_PKGS_PREP_PATH/extpackagesbr.config|uniq > $EXT_PKGS_PREP_PATH/clone.config
+            sed -i -e "s/BRANCHE=$//g" $EXT_PKGS_PREP_PATH/clone.config
+            sed -i -e "s/BRANCHE=/--branch /g" $EXT_PKGS_PREP_PATH/clone.config
+            NUMBER_OF_CLONES=$(grep -c "REPOSITORIE=" $EXT_PKGS_PREP_PATH/clone.config)
+            sed -i "s/^REPOSITORIE=//g" $EXT_PKGS_PREP_PATH/clone.config
+            echo "开始克隆拓展软件包仓库"
+            n=1
+            while [ "$n" -le $NUMBER_OF_CLONES ]; do
+                mkdir -p $EXT_PKGS_DL_PATH/TMP
+                COLNE_ARGUMENT=$(sed -n "${n}p" $EXT_PKGS_PREP_PATH/clone.config)
+                git clone --depth=1 --single-branch $COLNE_ARGUMENT $EXT_PKGS_DL_PATH/TMP  || return 4
+                cd $EXT_PKGS_DL_PATH/TMP
+                if [ "$(echo "$COLNE_ARGUMENT" | grep -c " --branch ")" -ne '0' ];then
+                    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+                else
+                    BRANCH="default_branch"
+                fi
+                REPO_PATH="$BRANCH""/""$(echo "$COLNE_ARGUMENT" | sed -e "s/ --branch.*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")"
+                mkdir -p $EXT_PKGS_DL_PATH/$REPO_PATH
+                cp -RT $EXT_PKGS_DL_PATH/TMP/ $EXT_PKGS_DL_PATH/$REPO_PATH
+                rm -rf $EXT_PKGS_DL_PATH/TMP/
+                n=$(( n+1 ))
+            done
+            echo "开始整理拓展软件包"
+            n=1
+            while [ "$n" -le $NUMBER_OF_PKGS ]; do
+                NUMBER_OF_PKGS=$(grep -c "^EXT_PACKAGES_NAME\[" $EXT_PKGS_CONFIG)
+                EXT_PKG_NAME=$(grep "^EXT_PACKAGES_NAME\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
+                EXT_PKG_PATH=$(grep "^EXT_PACKAGES_PATH\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
+                EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
+                EXT_PKG_BRANCHE=$(grep "^EXT_PACKAGES_BRANCHE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
+                EXT_PKG_REPO_PATH=$(echo "$EXT_PKG_REPOSITORIE" | sed -e "s/$ //g" -e "s/ .*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")
+                if [ -z "$EXT_PKG_BRANCHE" ];then
+                    EXT_PKG_BRANCHE="default_branch"
+                fi
+                mkdir -p $EXT_PKGS_PATH/$EXT_PKG_NAME
+                cp -RT $EXT_PKGS_DL_PATH/$EXT_PKG_BRANCHE/$EXT_PKG_REPO_PATH/$EXT_PKG_PATH $EXT_PKGS_PATH/$EXT_PKG_NAME
+                n=$(( n+1 ))
+            done
+            cp -RT $EXT_PKGS_PATH $CMZJ_PACKAGE_ROOT_PATH
+            [[ -d $TMPDIR ]] && rm -rf "$TMPDIR"
+            cd $CMZJ_PACKAGE_ROOT_PATH
+            ls -la $(find $CMZJ_PACKAGE_ROOT_PATH -type d)
           
       - name: 修改Makefile文件
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' $(find ./ -type f -name "Makefile")
           
-      - name: 创建软连接以修复中文支持
+      - name: 创建符号链接以修复中文支持
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
-          ln -s zh-cn ./luci-app-webadmin/po/zh_Hans
-          ln -s zh-cn ./luci-app-netdata/po/zh_Hans
-          ln -s zh-cn ./luci-app-vlmcsd/po/zh_Hans
-          ln -s zh-cn ./luci-app-usb-printer/po/zh_Hans
-          rm -rf ./luci-app-netspeedtest/po/zh_Hans
-          ln -s zh-cn ./luci-app-netspeedtest/po/zh_Hans
+          TMPDIR=$(mktemp -d) || exit 1
+          find . -name 'po' -type d > $TMPDIR/podir.list
+          total_rows=$(sed -n '$=' $TMPDIR/podir.list) #行数-文件夹个数
+          n=1
+          while [ "$n" -le $total_rows ]; do
+              DIR=$(sed -n "${n}p" $TMPDIR/podir.list)
+              if [ -h $DIR/zh_Hans ]; then
+                  echo "$DIR/zh_Hans 符号链接以存在无需修复"
+              elif [ -d $DIR/zh_Hans ]; then
+                  echo "$DIR/zh_Hans 目录已存在无需修复"
+              elif [ -e $DIR/zh_Hans ]; then
+                  echo "$DIR/zh_Hans 存在非符号链接文件删除后重新创建"
+                  rm -rf $DIR/zh_Hans||exit 1
+                  ln -s zh-cn $DIR/zh_Hans||exit 1
+              elif [ ! -d $DIR/zh-cn ]; then
+                  echo "$DIR/zh-cn 原汉化文件夹不存在，这可能是该luci插件原生为中文或不支持中文"
+              else
+                  echo "$DIR/zh_Hans 符号链接不存在创建符号链接"
+                  ln -s zh-cn $DIR/zh_Hans||exit 1
+              fi
+              n=$(( n+1 ))
+          done
+          [[ -d $TMPDIR ]] && rm -rf "$TMPDIR"
           
       - name: 复制到cmzj_patch
         run: |
