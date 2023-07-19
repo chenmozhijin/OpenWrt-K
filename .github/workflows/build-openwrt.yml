@@ -125,41 +125,20 @@ jobs:
           sed -i "s/^REPOSITORIE=//g" $EXT_PKGS_PREP_PATH/clone.config
           echo "开始克隆拓展软件包仓库"
           n=1
-          echo "debug1"
-          cat $EXT_PKGS_PREP_PATH/clone.config
           while [ "$n" -le $NUMBER_OF_CLONES ]; do
-              echo "debug2"
-              echo "EXT_PKGS_PREP_PATH=$EXT_PKGS_PREP_PATH"
-              echo "EXT_PKGS_DL_PATH=$EXT_PKGS_DL_PATH"
-              echo "EXT_PKGS_PATH=$EXT_PKGS_PATH"
-              echo "EXT_PKGS_CONFIG=$EXT_PKGS_CONFIG"
-              echo "NUMBER_OF_CLONES=$NUMBER_OF_CLONES"
-              echo "n=$n"
               mkdir -p $EXT_PKGS_DL_PATH/TMP
-              echo "debug3"
-              ls -al $EXT_PKGS_DL_PATH/TMP
               COLNE_ARGUMENT=$(sed -n "${n}p" $EXT_PKGS_PREP_PATH/clone.config)
-              echo "debug4"
-              echo "COLNE_ARGUMENT=$COLNE_ARGUMENT"
               git clone --depth=1 --single-branch $COLNE_ARGUMENT $EXT_PKGS_DL_PATH/TMP
-              echo "debug5"
-              ls -al $EXT_PKGS_DL_PATH/TMP
               cd $EXT_PKGS_DL_PATH/TMP
               if [ "$(echo "$COLNE_ARGUMENT" | grep -c " --branch ")" -ne '0' ];then
                   BRANCH=$(git rev-parse --abbrev-ref HEAD)
               else
                   BRANCH="default_branch"
               fi
-              echo "debug6"
-              echo "BRANCH=$BRANCH"
               REPO_PATH="$BRANCH""/""$(echo "$COLNE_ARGUMENT" | sed -e "s/ --branch.*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")"
-              echo "debug7"
-              echo "REPO_PATH=$REPO_PATH"
               mkdir -p $EXT_PKGS_DL_PATH/$REPO_PATH
               cp -RT $EXT_PKGS_DL_PATH/TMP/ $EXT_PKGS_DL_PATH/$REPO_PATH
               rm -rf $EXT_PKGS_DL_PATH/TMP/
-              echo "debug8"
-              ls -al $EXT_PKGS_DL_PATH/$REPO_PATH
               cd $GITHUB_WORKSPACE
               n=$(( n+1 ))
           done
@@ -182,6 +161,7 @@ jobs:
           cp -RT $EXT_PKGS_PATH $CMZJ_PACKAGE_ROOT_PATH
           [[ -d $TMPDIR ]] && rm -rf "$TMPDIR"
           cd $CMZJ_PACKAGE_ROOT_PATH
+          echo "CMZJ_PACKAGE_ROOT_PATH"
           ls -la $(find $CMZJ_PACKAGE_ROOT_PATH -type d)
           
       - name: 修改Makefile文件
