@@ -160,6 +160,7 @@ jobs:
               rm -rf $EXT_PKGS_DL_PATH/TMP/
               echo "debug8"
               ls -al $EXT_PKGS_DL_PATH/$REPO_PATH
+              cd $GITHUB_WORKSPACE
               n=$(( n+1 ))
           done
           echo "开始整理拓展软件包"
