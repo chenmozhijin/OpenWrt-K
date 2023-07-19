@@ -128,7 +128,7 @@ jobs:
           while [ "$n" -le $NUMBER_OF_CLONES ]; do
               mkdir -p $EXT_PKGS_DL_PATH/TMP
               COLNE_ARGUMENT=$(sed -n "${n}p" $EXT_PKGS_PREP_PATH/clone.config)
-              git clone --depth=1 --single-branch $COLNE_ARGUMENT $EXT_PKGS_DL_PATH/TMP  || return 4
+              git clone --depth=1 --single-branch $COLNE_ARGUMENT $EXT_PKGS_DL_PATH/TMP
               cd $EXT_PKGS_DL_PATH/TMP
               if [ "$(echo "$COLNE_ARGUMENT" | grep -c " --branch ")" -ne '0' ];then
                   BRANCH=$(git rev-parse --abbrev-ref HEAD)
