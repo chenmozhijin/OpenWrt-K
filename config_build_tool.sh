@@ -131,7 +131,7 @@ function input_parameters() {
             whiptail --title "Message box" --msgbox "请重新准备运行环境" 10 80
         fi
         whiptail --title "Message box" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCHE\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url" 10 80
-        echo "警告：请勿手动修改本文件" > buildconfig.config
+        echo "警告：请勿手动修改本文件" > buildconfig.config 
         echo OPENWRT_TAG_BRANCHE=$OPENWRT_TAG_BRANCHE >> buildconfig.config
         echo OpenWrt_K_url=$OpenWrt_K_url >> buildconfig.config
     else
@@ -146,7 +146,7 @@ function import_ext_packages_config() {
     "1" "从原OpenWrt-K仓库导入拓展软件包配置" \
     "2" "从你指定的OpenWrt-K仓库导入拓展软件包配置"  3>&1 1>&2 2>&3)
     exitstatus=$?
-    if [ $exitstatus != 0 ]; then
+    if [ $exitstatus -ne 0 ]; then
         return 11
     fi
     if [ $OPTION = 1 ]; then
@@ -231,7 +231,7 @@ function config_ext_packages_mainmenu() {
     echo "$n 添加一个拓展软件包 " >> $TMPDIR/config_ext_packages/menu
     n=$(( n+1 ))
     echo "$n 重新导入拓展软件包配置 " >> $TMPDIR/config_ext_packages/menu
-    OPTION=$(whiptail --title "OpenWrt-k配置构建工具-配置拓展软件包菜单" --menu "选择你要修改的配置拓展软件包或选择。请不要重复添加拓展软件包，也不要忘记添加依赖或删除其他包的依赖。如果你已经准备完运行环境请重新载入拓展软件包。" 25 70 15 $(cat $TMPDIR/config_ext_packages/menu) 3>&1 1>&2 2>&3)
+    OPTION=$(whiptail --title "OpenWrt-k配置构建工具-配置拓展软件包菜单" --menu "选择你要修改的配置拓展软件包或选择。请不要重复添加拓展软件包，也不要忘记添加依赖或删除其他包的依赖。如果你已经准备完运行环境请重新载入拓展软件包。选择Cancel返回主菜单。" 25 70 15 $(cat $TMPDIR/config_ext_packages/menu) 3>&1 1>&2 2>&3)
     exitstatus=$?
     if [ $exitstatus = 0 ]; then
         if [ $OPTION = "$(( $NUMBER_OF_PKGS+1 ))" ]; then  #添加一个拓展软件包
@@ -298,8 +298,11 @@ function config_ext_packages_mainmenu() {
             sed -i "$(sed -n '/^EXT_PACKAGES/=' buildconfig.config|sed -n '$p')a EXT_PACKAGES_BRANCHE\[$NEW_EXT_PKG_NUMBER\]=\"$NEW_EXT_PKG_BRANCHE\"" buildconfig.config
             return 6
         elif [ $OPTION = "$(( $NUMBER_OF_PKGS+2 ))" ]; then  #重新配置软件包数与拓展软件包
-            sed -i "/^EXT_PACKAGES/d" buildconfig.config
             import_ext_packages_config
+            if [ "$?" -eq '11' ];then
+            echo "你选择了退出"
+            return 6
+            fi
         elif [ $OPTION -le "$(( $NUMBER_OF_PKGS ))" ]; then  #编辑配置
             while true; do
                 config_ext_packages_submenu
@@ -323,7 +326,7 @@ function config_ext_packages_submenu() {
     EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$OPTION\]" buildconfig.config| sed -e "s/.*=\"//g" -e "s/\"//g")
     EXT_PKG_BRANCHE=$(grep "^EXT_PACKAGES_BRANCHE\[$OPTION\]" buildconfig.config| sed -e "s/.*=\"//g" -e "s/\"//g")
     rm -rf $TMPDIR/config_ext_packages/submenu/$EXT_PKG_NAME
-    mkdir $TMPDIR/config_ext_packages/submenu/
+    mkdir -p $TMPDIR/config_ext_packages/submenu/
     echo "1 包名：$EXT_PKG_NAME" >> $TMPDIR/config_ext_packages/submenu/$EXT_PKG_NAME
     if [ -z $EXT_PKG_PATH ]; then
         echo "2 包在存储库中的目录：存储库根目录（空）" >> $TMPDIR/config_ext_packages/submenu/$EXT_PKG_NAME
@@ -445,7 +448,7 @@ function menu() {
     "4" "载入OpenWrt-K默认config" \
     "5" "清除所有openwrt配置" \
     "6" "清除运行环境" \
-    "7" "重新配置OpenWrt-K存储库地址、OpenWrt branch或tag与配置拓展软件包" \
+    "7" "重新配置OpenWrt-K存储库地址、OpenWrt branch或tag与拓展软件包" \
     "8" "配置拓展软件包" \
     "9" "重新载入拓展软件包" \
     "10" "关于" 3>&1 1>&2 2>&3)
@@ -579,18 +582,19 @@ function prepare() {
         git checkout $OPENWRT_TAG_BRANCHE || return 7
     fi
     #克隆拓展软件包仓库
+    inputbox="准备完成，选择ok以返回菜单。"
     import_ext_packages
     exitstatus=$?
     if [ $exitstatus = 4 ]; then
         return 4
+    elif [ $exitstatus = 1 ]; then
+        inputbox="准备完成。但有软件包依赖错误，请尝试修复，选择ok以返回菜单。"
     fi
     #修复问题
     cd $openwrt_dir
     sed -i 's/^  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt$/  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk
     sed -i 's/^	dnsmasq \\$/	dnsmasq-full \\/g' ./include/target.mk
     sed -i 's/^	b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/	$(TOPDIR)\/tools\/b43-tools\/files\/b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/' ./package/kernel/mac80211/broadcom.mk
-    ./scripts/feeds update -a  || return 4
-    ./scripts/feeds install -a
     [[ -d $openwrt_dir ]] && rm -rf .config
     [[ -d $openwrt_dir ]] && rm -rf $openwrt_dir/tmp
     cat $OpenWrt_K_dir/config/target.config >> .config
@@ -603,11 +607,12 @@ function prepare() {
     make defconfig
     sed -i 's/256/1024/' ./target/linux/$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')/image/Makefile
     cd $build_dir/..	
-    whiptail --title "Message box" --msgbox "准备完成，选择ok以返回菜单。" 10 60
+    whiptail --title "Message box" --msgbox "$inputbox" 10 60
     return 0
 }
 
 function import_ext_packages() {
+    openwrt_dir=$build_dir/openwrt
     [[ -d $build_dir/extpackages ]] && rm -rf $build_dir/extpackages
     [[ -d $TMPDIR/extpackages_prepare ]] && rm -rf $TMPDIR/extpackages_prepare
     EXT_PKGS_PREP_PATH=$TMPDIR/extpackages_prepare
@@ -692,7 +697,36 @@ function import_ext_packages() {
     mkdir -p $openwrt_dir/package/extpackages
     cp -RT $EXT_PKGS_PATH $openwrt_dir/package/extpackages
     rm -rf $EXT_PKGS_PREP_PATH $build_dir/extpackages
-    cd $build_dir/..
+    cd $openwrt_dir
+    ./scripts/feeds update -a  || return 4
+    ./scripts/feeds install -a
+    check_packagedeps
+    exitstatus=$?
+    if [ $exitstatus = 1 ]; then
+        cd $build_dir/..
+        return 1
+    else
+        cd $build_dir/..
+        return 0
+    fi
+    
+}
+
+function check_packagedeps() {
+    openwrt_dir=$build_dir/openwrt
+    PACKAGEDEPWARNING=$TMPDIR/packagedepwarning.log
+    cd $openwrt_dir
+    rm -rf $PACKAGEDEPWARNING
+    gmake -s prepare-tmpinfo
+    ./scripts/package-metadata.pl mk tmp/.packageinfo > tmp/.packagedeps 2>$PACKAGEDEPWARNING || { rm -f tmp/.packagedeps; false; } 
+    if [ -n "$(cat $PACKAGEDEPWARNING)" ]; then
+        #有错误
+        echo "发现错误"
+        whiptail --title "错误" --msgbox "检查到软件包依赖问题：\n$(cat $PACKAGEDEPWARNING)\n这大概率与错误的拓展软件包配置有关，请尝试重新配置拓展软件包" 30 110
+        return 1
+    else
+       return 0
+    fi
 }
 
 function menuconfig() {
@@ -780,6 +814,13 @@ function build () {
     #准备工作
     build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
     openwrt_dir=$build_dir/openwrt
+    check_packagedeps
+    exitstatus=$?
+    if [ $exitstatus = 1 ]; then
+        whiptail --title "提示" --msgbox "请先修复软件包依赖错误在构建配置" 10 60
+        cd $build_dir/..
+        return 1
+    fi
     [[ -d $TMPDIR/buildconfig ]] && rm -rf $TMPDIR/buildconfig
     [[ -d $TMPDIR/output ]] && rm -rf $TMPDIR/output
     buildconfigdir=$TMPDIR/buildconfig
