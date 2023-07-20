@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
 #   Copyright (C) 2023  沉默の金
 
+# 设置一个用于临时文件的目录，并在脚本退出时自动删除
 trap 'rm -rf "$TMPDIR"' EXIT
 TMPDIR=$(mktemp -d) || exit 1
 
+# 定义函数"start"，用于执行整个脚本的主要逻辑
 function start() {
+     # 调用"install_dependencies"函数以安装所需的依赖项
     install_dependencies
+    # 检查是否存在配置文件，如果不存在，则执行输入参数的操作
     if [ ! -e "buildconfig.config" ]; then
         input_parameters
     fi
+    # 检查拓展软件包配置是否正常
     check_ext_packages_config
+    # 无限循环，直到用户选择退出菜单
     while true; do
+        # 显示菜单
         menu
         exitstatus=$?
         if [ $exitstatus -ne 6 ]; then
@@ -20,8 +27,12 @@ function start() {
     echo end
 }
 
+# 检测安装依赖函数
 function install_dependencies() {
-    which which||echo "请先安装which"
+    if ! type which &>/dev/null ; then
+        echo "未找到which命令"
+        exit 1
+    fi
     echo "检测运行环境"
     if which apt-get &>/dev/null; then
     PM=apt
@@ -32,6 +43,7 @@ function install_dependencies() {
     n=0
     case $PM in
         apt)
+            # 检查并安装缺少的依赖包（基于apt包管理器）
             for package_name in build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev python3-distutils rsync unzip zlib1g-dev file wget make; do
             if [ "$(apt list --installed 2>/dev/null| grep -c "^${package_name}")" -eq '0' ];then
                 if test ${n} = 0; then
@@ -45,6 +57,7 @@ function install_dependencies() {
             done
             ;;
         yum)
+            # 检查并安装缺少的依赖包（基于yum包管理器）
             for package_name in bzip2 gcc gcc-c++ git make ncurses-devel patch rsync tar unzip wget which diffutils python2 python3 perl-base perl-Data-Dumper perl-File-Compare perl-File-Copy perl-FindBin perl-IPC-Cmd perl-Thread-Queue; do
             if [ "$(yum list installed 2>/dev/null| grep -c "^${package_name}")" -eq '0' ];then
                 if test ${n} = 0; then
@@ -58,12 +71,14 @@ function install_dependencies() {
             done
             ;;
         *)
+            # 如果不支持自动安装依赖的系统，则提示用户使用ubuntu或手动安装openwrt依赖
             if ! (whiptail --title "Yes/No Box" --yes-button "我已安装全部依赖" --no-button "退出" --yesno "不支持自动安装依赖的系统，建议使用ubuntu或手动安装openwrt依赖。openwrt所需依赖见\nhttps://openwrt.org/docs/guide-developer/toolchain/install-buildsystem#linux_gnu-linux_distributions" 10 104) then
                 exit 0
             fi
             ;;
         esac
     if [ -e "$TMPDIR/install.list" ]; then
+        # 用户确认是否安装缺少的依赖包
         if (whiptail --title "Yes/No Box" --yes-button "安装" --no-button "退出" --yesno "是否安装$(cat $TMPDIR/install.list|sed "s/ /、/g")，它们是此脚本的依赖" 10 60) then
             source /etc/os-release
             case $PM in
@@ -82,38 +97,48 @@ function install_dependencies() {
             exit 0
         fi
     fi
-    if ! type uniq  ; then
+    if ! type uniq &>/dev/null ; then
         echo "未找到uniq命令"
         exit 1
     fi
-    if ! type sort ; then
+    if ! type sort &>/dev/null ; then
         echo "未找到sort命令"
         exit 1
     fi
 }
 
+# 检查GitHub API速率限制的函数
 function detect_github_api_rate_limit() {
+#使用curl命令获取GitHub API的请求剩余次数，并提取整数部分赋值给变量remaining_requests
 remaining_requests=$(curl -s -L -i https://api.github.com/users/octocat|sed -n "/^x-ratelimit-remaining:/p"|sed "s/.*: //"| awk '{print int($0)}') || network_error
+# 如果剩余请求次数少于3次，输出超出API速率限制的提示信息
 if [ "$remaining_requests" -lt "3" ]; then
+    # 使用curl命令获取GitHub API的重置时间，并将时间戳转换为格式化日期字符串
     reset_time=$(date -d @$(curl -s -L -i https://api.github.com/users/octocat|sed -n "/^x-ratelimit-reset:/p"|sed "s/.*: //") +"%Y-%m-%d %H:%M:%S") || network_error
     echo "超出github的 API 速率限制,请等待到"$reset_time
 fi
 }
 
+# 输入参数函数
 function input_parameters() {
+    # 调用detect_github_api_rate_limit函数以检查GitHub API速率限制
     detect_github_api_rate_limit
     curl -s -L https://api.github.com/repos/openwrt/openwrt/tags|sed -n  '/^    "name": "/p'|sed -e 's/    "name": "//g' -e 's/",//g'> $TMPDIR/tagbranch.list || network_error
     curl -s -L https://api.github.com/repos/openwrt/openwrt/branches|sed -n  '/^    "name": "/p'|sed -e 's/    "name": "//g' -e 's/",//g'>> $TMPDIR/tagbranch.list || network_error
+    # 获取最新的OpenWrt标签（tag）
     latest_tag=$(curl -s -L https://api.github.com/repos/openwrt/openwrt/tags|sed -n  '/^    "name": "/p'|sed -e 's/    "name": "//g' -e 's/",//g'| sed -n '1p')
+    # 提示用户输入OpenWrt的branch或tag，并将用户输入的值保存到OPENWRT_TAG_BRANCHE变量
     inputbox="输入编译的OpenWrt branch或tag例如v23.05.0-rc1或master\nEnter the compiled OpenWrt branch or tag such as v23.05.0-rc1 or master"
     OPENWRT_TAG_BRANCHE=$(whiptail --title "choose tag/branch" --inputbox "$inputbox" 10 60 $latest_tag 3>&1 1>&2 2>&3)
     exitstatus=$?
+    # 如果用户选择退出，则输出提示信息并退出脚本
     if [ $exitstatus != 0 ]; then
         echo "你选择了退出"
         exit 0
     fi
+    # 检查用户输入的OpenWrt branch或tag是否存在，如果不存在则要求重新输入
     while [ "$(grep -c "^${OPENWRT_TAG_BRANCHE}$" $TMPDIR/tagbranch.list)" -eq '0' ]; do
-        whiptail --title "Message box" --msgbox "输入的OpenWrt branch或tag不存在,选择ok重新输入" 10 60
+        whiptail --title "错误" --msgbox "输入的OpenWrt branch或tag不存在,选择ok重新输入" 10 60
         OPENWRT_TAG_BRANCHE=$(whiptail --title "choose tag/branch" --inputbox "$inputbox" 10 60 $latest_tag 3>&1 1>&2 2>&3)
         exitstatus=$?
         if [ $exitstatus != 0 ]; then
@@ -121,39 +146,49 @@ function input_parameters() {
             exit 0
         fi
     done
+    # 提示用户输入OpenWrt-K存储库地址，并保存到OpenWrt_K_url变量
     inputbox="输入OpenWrt-K存储库地址"
     OpenWrt_K_url="$(whiptail --title "Enter the repository address" --inputbox "$inputbox" 10 60 https://github.com/chenmozhijin/OpenWrt-K 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
     exitstatus=$?
     if [ $exitstatus = 0 ]; then
         if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
             build_dir=$(grep "^build_dir=" buildconfig.config|sed -e "s/build_dir=//")
-            rm -rf $build_dir/OpenWrt-K
-            whiptail --title "Message box" --msgbox "请重新准备运行环境" 10 80
         fi
-        whiptail --title "Message box" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCHE\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url" 10 80
+        whiptail --title "完成" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCHE\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url" 10 80
         echo "警告：请勿手动修改本文件" > buildconfig.config 
         echo OPENWRT_TAG_BRANCHE=$OPENWRT_TAG_BRANCHE >> buildconfig.config
         echo OpenWrt_K_url=$OpenWrt_K_url >> buildconfig.config
+        if [ -n "$build_dir" ];then
+            echo build_dir=$build_dir >> buildconfig.config
+            rm -rf $build_dir/OpenWrt-K
+            whiptail --title "提示" --msgbox "请重新准备运行环境" 10 80
+        fi
     else
         echo "你选择了退出"
         exit 0
     fi
+    # 调用config_ext_packages函数进行后续配置
     config_ext_packages
 }
 
+# 导入拓展软件包配置函数
 function import_ext_packages_config() {
+    # 让用户选择导入拓展软件包配置的方式
     OPTION=$(whiptail --title "配置拓展软件包" --menu "选择导入拓展软件包配置的方式，如果你没有拓展软件包配置你将只能构建openwrt官方源码与feeds自带的软件包。你现有的拓展软件包配置会被覆盖。" 15 60 4 \
     "1" "从原OpenWrt-K仓库导入拓展软件包配置" \
     "2" "从你指定的OpenWrt-K仓库导入拓展软件包配置"  3>&1 1>&2 2>&3)
     exitstatus=$?
+    # 如果用户选择退出，则返回11（作为退出标记），否则继续执行
     if [ $exitstatus -ne 0 ]; then
         return 11
     fi
     if [ $OPTION = 1 ]; then
         DOWNLOAD_URL=https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config/OpenWrt-K/extpackages.config
     elif [ $OPTION = 2 ]; then
+        # 从配置文件buildconfig.config中提取OpenWrt-K仓库的URL
         OpenWrt_K_url=$(grep "^OpenWrt_K_url=" buildconfig.config|sed  "s/OpenWrt_K_url=//")
         OpenWrt_K_repo=$(echo $OpenWrt_K_url|sed -e "s/https:\/\/github.com\///" -e "s/\/$//" )
+        # 从GitHub API获取OpenWrt-K仓库的默认分支
         branch=$(curl -s -L --retry 3 https://api.github.com/repos/$OpenWrt_K_repo|grep "\"default_branch\": \""|grep "\","| sed -e "s/  \"default_branch\": \"//g" -e "s/\",//g" )
         [[ -z "$branch" ]] && echo "错误获取分支失败" && exit 1
         DOWNLOAD_URL=https://raw.githubusercontent.com/$OpenWrt_K_repo/$branch/config/OpenWrt-K/extpackages.config
@@ -161,6 +196,7 @@ function import_ext_packages_config() {
         echo "错误的选项"
         exit 1
     fi
+    # 删除临时目录下的拓展软件包配置文件（如果存在），并下载新的配置文件
     [[  -e $TMPDIR/config_ext_packages/extpackages.config ]] && rm -rf $TMPDIR/config_ext_packages/extpackages.config
     mkdir -p $TMPDIR/config_ext_packages/
     curl -o $TMPDIR/config_ext_packages/extpackages.config -s -L --retry 3 --connect-timeout 20 $DOWNLOAD_URL
@@ -180,17 +216,21 @@ function import_ext_packages_config() {
     [[  -e $TMPDIR/config_ext_packages/extpackages.config ]] && rm -rf $TMPDIR/config_ext_packages/extpackages.config
 }
 
+# 检查拓展软件包配置函数
 function check_ext_packages_config() {
     if [ "$(grep -c "^EXT_PACKAGES" buildconfig.config)" -eq '0' ];then
+    # 如果buildconfig.config中不存在拓展软件包配置，调用import_ext_packages_config函数进行导入
         import_ext_packages_config
         if [ "$?" -eq '11' ];then
             echo "你选择了退出"
             exit 0
         fi
     fi
+    # 检查拓展软件包配置是否正确
     NUMBER_OF_PKGS=$(grep -c "^EXT_PACKAGES_NAME\[" buildconfig.config)
-    if [ "$(grep -c "^EXT_PACKAGES_NAME\[$NUMBER_OF_PKGS\]" buildconfig.config)" -eq "0" ];then #最后一个不存在
-        whiptail --title "Message box" --msgbox "检测到拓展软件包配置有错误，点击ok重新导入（你现有的拓展软件包配置会被覆盖）" 10 60 #最后一个后还有
+    if [ "$(grep -c "^EXT_PACKAGES_NAME\[$NUMBER_OF_PKGS\]" buildconfig.config)" -eq "0" ];then
+        # 如果最后一个配置不存在，则输出错误信息，并调用import_ext_packages_config函数重新导入配置
+        whiptail --title "错误" --msgbox "检测到拓展软件包配置有错误，点击ok重新导入（你现有的拓展软件包配置会被覆盖）" 10 60
         sed -i "/^EXT_PACKAGES/d" buildconfig.config || exit 1
         import_ext_packages_config
         if [ "$?" -eq '11' ];then
@@ -198,7 +238,8 @@ function check_ext_packages_config() {
             exit 0
         fi
     elif [ "$(grep -c "^EXT_PACKAGES_NAME\[$(( $NUMBER_OF_PKGS+1 ))\]" buildconfig.config)" -ne "0" ];then
-        whiptail --title "Message box" --msgbox "检测到拓展软件包配置有错误，点击ok重新导入（你现有的拓展软件包配置会被覆盖）" 10 60
+        # 如果配置中有多余的拓展软件包配置，输出错误信息，并调用import_ext_packages_config函数重新导入配置
+        whiptail --title "错误" --msgbox "检测到拓展软件包配置有错误，点击ok重新导入（你现有的拓展软件包配置会被覆盖）" 10 60
         sed -i "/^EXT_PACKAGES/d" buildconfig.config || exit 1
         import_ext_packages_config
         if [ "$?" -eq '11' ];then
@@ -208,9 +249,12 @@ function check_ext_packages_config() {
     fi
 }
 
+# 配置拓展软件包函数
 function config_ext_packages() {
+    # 检查拓展软件包配置是否正确
     check_ext_packages_config
     while true; do
+        # 调用config_ext_packages_mainmenu函数显示拓展软件包的主菜单
         config_ext_packages_mainmenu
         exitstatus=$?
         if [ $exitstatus -ne 6 ]; then
@@ -219,38 +263,44 @@ function config_ext_packages() {
     done
 }
 
+# 配置拓展软件包的主菜单函数
 function config_ext_packages_mainmenu() {
+    # 获取拓展软件包配置的数量
     NUMBER_OF_PKGS=$(grep -c "^EXT_PACKAGES_NAME\[" buildconfig.config)
     mkdir -p $TMPDIR/config_ext_packages || exit 1
     rm -rf $TMPDIR/config_ext_packages/menu $TMPDIR/config_ext_packages/submenu
     n=1
     while [ "$n" -le $NUMBER_OF_PKGS ]; do
-    echo "$n $(grep "^EXT_PACKAGES_NAME\[$n\]" buildconfig.config| sed -e "s/.*=\"//g" -e "s/\"//g")" >> $TMPDIR/config_ext_packages/menu
-    n=$(( n+1 ))
+    # 将拓展软件包的名称和序号添加到临时目录下的菜单文件中
+        echo "$n $(grep "^EXT_PACKAGES_NAME\[$n\]" buildconfig.config| sed -e "s/.*=\"//g" -e "s/\"//g")" >> $TMPDIR/config_ext_packages/menu
+        n=$(( n+1 ))
     done
     echo "$n 添加一个拓展软件包 " >> $TMPDIR/config_ext_packages/menu
     n=$(( n+1 ))
     echo "$n 重新导入拓展软件包配置 " >> $TMPDIR/config_ext_packages/menu
+    # 使用whiptail显示菜单，并根据用户选择执行相应操作
     OPTION=$(whiptail --title "OpenWrt-k配置构建工具-配置拓展软件包菜单" --menu "选择你要修改的配置拓展软件包或选择。请不要重复添加拓展软件包，也不要忘记添加依赖或删除其他包的依赖。如果你已经准备完运行环境请重新载入拓展软件包。选择Cancel返回主菜单。" 25 70 15 $(cat $TMPDIR/config_ext_packages/menu) 3>&1 1>&2 2>&3)
     exitstatus=$?
     if [ $exitstatus = 0 ]; then
         if [ $OPTION = "$(( $NUMBER_OF_PKGS+1 ))" ]; then  #添加一个拓展软件包
             while true; do
+                # 提示用户输入新的拓展软件包名称
                 NEW_EXT_PKG_NAME=$(whiptail --title "输入拓展软件包名" --inputbox "此包名将用于创建包存放文件夹，请勿输入空格斜杠或与其他软件包重名" 10 60 3>&1 1>&2 2>&3)
                 exitstatus=$?
                 if [ $exitstatus != 0 ]; then
                     echo "你选择了退出"
                     return 6
                 elif [ -z "$NEW_EXT_PKG_NAME" ]; then
-                    whiptail --title "Message box" --msgbox "拓展软件包名不能为空" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包名不能为空" 10 60
                 elif [ "$(echo "$NEW_EXT_PKG_NAME"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
-                    whiptail --title "Message box" --msgbox "拓展软件包名中有非法字符" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包名中有非法字符" 10 60
                 elif [ "$(sed -n "/^EXT_PACKAGES_NAME/p" buildconfig.config | sed -e "s/.*=\"//g" -e "s/\"//g"|grep -c "^$NEW_EXT_PKG_NAME$")" -ne '0' ];then
-                    whiptail --title "Message box" --msgbox "此拓展软件包名与其他软件包重名" 10 60
+                    whiptail --title "错误" --msgbox "此拓展软件包名与其他软件包重名" 10 60
                 else
                     break
                 fi
             done
+            # 提示用户输入新的拓展软件包目录
             while true; do
                 NEW_EXT_PKG_PATH=$(whiptail --title "输入拓展软件包在存储库中的目录" --inputbox "输入包与存储库的相对位置，例如一个包在存储库根目录的luci-app-xxx文件夹下则输入luci-app-xxx，如果包就在根目录着可以不输入。" 10 60 3>&1 1>&2 2>&3)
                 exitstatus=$?
@@ -258,11 +308,12 @@ function config_ext_packages_mainmenu() {
                     echo "你选择了退出"
                     return 6
                 elif [ "$(echo "$NEW_EXT_PKG_PATH"|grep -c "[!@#$%^&:*=+\`~\'\"\(\) ]")" -ne '0' ];then
-                    whiptail --title "Message box" --msgbox "拓展软件包目录中有非法字符" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包目录中有非法字符" 10 60
                 else
                     break
                 fi
             done
+            # 提示用户输入新的拓展软件包存储库地址
             while true; do
                 NEW_EXT_PKG_REPOSITORIE=$(whiptail --title "输入拓展软件包所在存储库" --inputbox "输入https的存储库地址，无需加“.git”，例如：“https://github.com/chenmozhijin/turboacc”" 10 60 3>&1 1>&2 2>&3)
                 exitstatus=$?
@@ -270,15 +321,22 @@ function config_ext_packages_mainmenu() {
                     echo "你选择了退出"
                     return 6
                 elif [ -z "$NEW_EXT_PKG_REPOSITORIE" ]; then
-                    whiptail --title "Message box" --msgbox "拓展软件包所在存储库不能为空" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包所在存储库不能为空" 10 60
                 elif [ "$(echo "$NEW_EXT_PKG_REPOSITORIE"|grep -c "[!$^*+\`~\'\"\(\) ]")" -ne '0' ];then
-                    whiptail --title "Message box" --msgbox "拓展软件包所在存储库中有非法字符" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包所在存储库中有非法字符" 10 60
                 elif [ "$(echo "$NEW_EXT_PKG_REPOSITORIE"|grep -c "^http[s]\{0,1\}://")" -eq '0' ]  || [ "$(echo "$NEW_EXT_PKG_REPOSITORIE"|grep -c ".")" -eq '0' ] ;then
-                    whiptail --title "Message box" --msgbox "拓展软件包所在存储库链接不正常" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包所在存储库链接不正常" 10 60
                 else
-                    break
+                    error_msg=$(git ls-remote --exit-code "$NEW_EXT_PKG_REPOSITORIE" 2>&1)
+                    if [ $? -ne 0 ]; then
+                        whiptail --title "错误" --msgbox "无效的拓展软件包所在存储库链接，错误信息：\n$error_msg" 10 60
+                    else
+                        NEW_EXT_PKG_REPOSITORIE=$(echo "$NEW_EXT_PKG_REPOSITORIE"|sed "s/\.git$//g" )
+                        break
+                    fi
                 fi
             done
+            # 提示用户输入新的拓展软件包分支
             while true; do
                 NEW_EXT_PKG_BRANCHE=$(whiptail --title "输入拓展软件包所在分支" --inputbox "输入软件包在存储库的分支，一般不输入默认留空使用默认分支即可" 10 60 3>&1 1>&2 2>&3)
                 exitstatus=$?
@@ -286,11 +344,19 @@ function config_ext_packages_mainmenu() {
                     echo "你选择了退出"
                     return 6
                 elif [ "$(echo "$NEW_EXT_PKG_BRANCHE"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
-                    whiptail --title "Message box" --msgbox "拓展软件包所在分支中有非法字符" 10 60
-                else
+                    whiptail --title "错误" --msgbox "拓展软件包所在分支中有非法字符" 10 60
+                elif [ -z "$NEW_EXT_PKG_BRANCHE" ]; then
                     break
+                else
+                    # 检查远程仓库是否有该分支
+                    if git ls-remote --exit-code --heads "$NEW_EXT_PKG_REPOSITORIE" "refs/heads/$NEW_EXT_PKG_BRANCHE" 2>&1; then
+                        break
+                    else
+                        whiptail --title "错误" --msgbox "这个拓展软件包存储库地址不含有分支 '$NEW_EXT_PKG_BRANCHE'。" 10 60
+                    fi
                 fi
             done
+            # 添加新的拓展软件包配置到buildconfig.config
             NEW_EXT_PKG_NUMBER=$(( $NUMBER_OF_PKGS+1 ))
             sed -i "$(sed -n '/^EXT_PACKAGES/=' buildconfig.config|sed -n '$p')a EXT_PACKAGES_NAME\[$NEW_EXT_PKG_NUMBER\]=\"$NEW_EXT_PKG_NAME\"" buildconfig.config
             sed -i "$(sed -n '/^EXT_PACKAGES/=' buildconfig.config|sed -n '$p')a EXT_PACKAGES_PATH\[$NEW_EXT_PKG_NUMBER\]=\"$NEW_EXT_PKG_PATH\"" buildconfig.config
@@ -305,6 +371,7 @@ function config_ext_packages_mainmenu() {
             fi
         elif [ $OPTION -le "$(( $NUMBER_OF_PKGS ))" ]; then  #编辑配置
             while true; do
+                # 调用config_ext_packages_submenu函数显示拓展软件包的子菜单
                 config_ext_packages_submenu
                 exitstatus=$?
                 if [ $exitstatus -ne 6 ]; then
@@ -319,14 +386,19 @@ function config_ext_packages_mainmenu() {
     fi
 }
 
+# 配置拓展软件包的子菜单函数
 function config_ext_packages_submenu() {
+    # 获取拓展软件包配置的数量
     NUMBER_OF_PKGS=$(grep -c "^EXT_PACKAGES_NAME\[" buildconfig.config)
+    # 根据用户选择的序号获取对应拓展软件包的名称、存储库路径、存储库地址和分支
     EXT_PKG_NAME=$(grep "^EXT_PACKAGES_NAME\[$OPTION\]" buildconfig.config| sed -e "s/.*=\"//g" -e "s/\"//g")
     EXT_PKG_PATH=$(grep "^EXT_PACKAGES_PATH\[$OPTION\]" buildconfig.config| sed -e "s/.*=\"//g" -e "s/\"//g")
     EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$OPTION\]" buildconfig.config| sed -e "s/.*=\"//g" -e "s/\"//g")
     EXT_PKG_BRANCHE=$(grep "^EXT_PACKAGES_BRANCHE\[$OPTION\]" buildconfig.config| sed -e "s/.*=\"//g" -e "s/\"//g")
+    # 删除之前的子菜单文件夹，并创建一个新的子菜单文件夹
     rm -rf $TMPDIR/config_ext_packages/submenu/$EXT_PKG_NAME
     mkdir -p $TMPDIR/config_ext_packages/submenu/
+    # 将拓展软件包的相关信息添加到子菜单文件夹中
     echo "1 包名：$EXT_PKG_NAME" >> $TMPDIR/config_ext_packages/submenu/$EXT_PKG_NAME
     if [ -z $EXT_PKG_PATH ]; then
         echo "2 包在存储库中的目录：存储库根目录（空）" >> $TMPDIR/config_ext_packages/submenu/$EXT_PKG_NAME
@@ -340,6 +412,7 @@ function config_ext_packages_submenu() {
         echo "4 包所在分支：$EXT_PKG_BRANCHE" >> $TMPDIR/config_ext_packages/submenu/$EXT_PKG_NAME
     fi
     echo "5 删除此拓展包" >> $TMPDIR/config_ext_packages/submenu/$EXT_PKG_NAME
+    # 使用whiptail显示子菜单，并根据用户选择执行相应操作
     SUBOPTION=$(whiptail --title "编辑$EXT_PKG_NAME" --menu "选择你要修改项目或选择Cancel返回" 15 90 5 $(cat $TMPDIR/config_ext_packages/submenu/$EXT_PKG_NAME) 3>&1 1>&2 2>&3)
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
@@ -348,6 +421,7 @@ function config_ext_packages_submenu() {
     fi
     case "${SUBOPTION}" in
         1)
+            # 编辑拓展软件包名
             while true; do
                 NEW_EXT_PKG_NAME=$(whiptail --title "编辑拓展软件包名" --inputbox "此包名将用于创建包存放文件夹，请勿输入空格斜杠或与其他软件包重名" 10 60 $EXT_PKG_NAME 3>&1 1>&2 2>&3)
                 exitstatus=$?
@@ -355,19 +429,21 @@ function config_ext_packages_submenu() {
                     echo "你选择了退出"
                     return 6
                 elif [ -z "$NEW_EXT_PKG_NAME" ]; then
-                    whiptail --title "Message box" --msgbox "拓展软件包名不能为空" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包名不能为空" 10 60
                 elif [ "$(echo "$NEW_EXT_PKG_NAME"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
-                    whiptail --title "Message box" --msgbox "拓展软件包名中有非法字符" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包名中有非法字符" 10 60
                 elif [ "$(sed -n "/^EXT_PACKAGES_NAME/p" buildconfig.config | sed -e "s/.*=\"//g" -e "s/\"//g"|grep -c "^$NEW_EXT_PKG_NAME$")" -ne '0' ];then
-                    whiptail --title "Message box" --msgbox "此拓展软件包名与其他软件包重名" 10 60
+                    whiptail --title "错误" --msgbox "此拓展软件包名与其他软件包重名" 10 60
                 else
                     break
                 fi
             done
+            # 修改拓展软件包名的配置
             sed -i "/^EXT_PACKAGES_NAME\[$OPTION\]/s/=\".*/=\"$NEW_EXT_PKG_NAME\"/g" buildconfig.config
             return 6
             ;;
         2)
+             # 编辑拓展软件包在存储库中的目录
             while true; do
                 NEW_EXT_PKG_PATH=$(whiptail --title "编辑拓展软件包在存储库中的目录" --inputbox "输入包与存储库的相对位置，例如一个包在存储库根目录的luci-app-xxx文件夹下则输入luci-app-xxx，如果包就在根目录着可以不输入" 10 60 $EXT_PKG_PATH 3>&1 1>&2 2>&3)
                 exitstatus=$?
@@ -375,15 +451,17 @@ function config_ext_packages_submenu() {
                     echo "你选择了退出"
                     return 6
                 elif [ "$(echo "$NEW_EXT_PKG_PATH"|grep -c "[!@#$%^&:*=+\`~\'\"\(\) ]")" -ne '0' ];then
-                    whiptail --title "Message box" --msgbox "拓展软件包目录中有非法字符" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包目录中有非法字符" 10 60
                 else
                     break
                 fi
             done
+            # 修改拓展软件包在存储库中的目录的配置
             sed -i "s@EXT_PACKAGES_PATH\[$OPTION\]=\".*@EXT_PACKAGES_PATH\[$OPTION\]=\"$NEW_EXT_PKG_PATH\"@g" buildconfig.config
             return 6
             ;;
         3)
+            # 编辑拓展软件包所在存储库
             while true; do
                 NEW_EXT_PKG_REPOSITORIE=$(whiptail --title "编辑拓展软件包所在存储库" --inputbox "输入https的存储库地址，无需加“.git”，例如：“https://github.com/chenmozhijin/turboacc”" 10 60 $EXT_PKG_REPOSITORIE 3>&1 1>&2 2>&3)
                 exitstatus=$?
@@ -391,19 +469,27 @@ function config_ext_packages_submenu() {
                     echo "你选择了退出"
                     return 6
                 elif [ -z "$NEW_EXT_PKG_REPOSITORIE" ]; then
-                    whiptail --title "Message box" --msgbox "拓展软件包所在存储库不能为空" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包所在存储库不能为空" 10 60
                 elif [ "$(echo "$NEW_EXT_PKG_REPOSITORIE"|grep -c "[!$^*+\`~\'\"\(\) ]")" -ne '0' ];then
-                    whiptail --title "Message box" --msgbox "拓展软件包所在存储库中有非法字符" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包所在存储库中有非法字符" 10 60
                 elif [ "$(echo "$NEW_EXT_PKG_REPOSITORIE"|grep -c "^http[s]\{0,1\}://")" -eq '0' ]  || [ "$(echo "$NEW_EXT_PKG_REPOSITORIE"|grep -c ".")" -eq '0' ] ;then
-                    whiptail --title "Message box" --msgbox "拓展软件包所在存储库链接不正常" 10 60
+                    whiptail --title "错误" --msgbox "拓展软件包所在存储库链接不正常" 10 60
                 else
-                    break
+                    error_msg=$(git ls-remote --exit-code "$NEW_EXT_PKG_REPOSITORIE" 2>&1)
+                    if [ $? -ne 0 ]; then
+                        whiptail --title "错误" --msgbox "无效的拓展软件包所在存储库链接，错误信息：\n$error_msg" 10 60
+                    else
+                        NEW_EXT_PKG_REPOSITORIE=$(echo "$NEW_EXT_PKG_REPOSITORIE"|sed "s/\.git$//g" )
+                        break
+                    fi
                 fi
             done
+            # 修改拓展软件包所在存储库的配置
             sed -i "s@EXT_PACKAGES_REPOSITORIE\[$OPTION\]=\".*@EXT_PACKAGES_REPOSITORIE\[$OPTION\]=\"$NEW_EXT_PKG_REPOSITORIE\"@g" buildconfig.config
             return 6
             ;;
         4)
+            # 编辑拓展软件包所在分支
             while true; do
                 NEW_EXT_PKG_BRANCHE=$(whiptail --title "编辑拓展软件包所在分支" --inputbox "输入软件包在存储库的分支，一般不输入默认留空使用默认分支即可" 10 60 $EXT_PKG_BRANCHE 3>&1 1>&2 2>&3)
                 exitstatus=$?
@@ -411,15 +497,24 @@ function config_ext_packages_submenu() {
                     echo "你选择了退出"
                     return 6
                 elif [ "$(echo "$NEW_EXT_PKG_BRANCHE"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
-                    whiptail --title "Message box" --msgbox "拓展软件包所在分支中有非法字符" 10 60
-                else
+                    whiptail --title "错误" --msgbox "拓展软件包所在分支中有非法字符" 10 60
+                elif [ -z "$NEW_EXT_PKG_BRANCHE" ]; then
                     break
+                else
+                    # 检查远程仓库是否有该分支
+                    if git ls-remote --exit-code --heads "$NEW_EXT_PKG_REPOSITORIE" "refs/heads/$NEW_EXT_PKG_BRANCHE" 2>&1; then
+                        break
+                    else
+                        whiptail --title "错误" --msgbox "这个拓展软件包存储库地址不含有分支 '$NEW_EXT_PKG_BRANCHE'。" 10 60
+                    fi
                 fi
             done
+            # 修改拓展软件包所在分支的配置
             sed -i "/^EXT_PACKAGES_BRANCHE\[$OPTION\]/s/=\".*/=\"$NEW_EXT_PKG_BRANCHE\"/g" buildconfig.config
             return 6
             ;;
         5)
+            # 删除此拓展软件包的配置
             sed -i "/EXT_PACKAGES_[A-Z]\{1,20\}\[$OPTION\]/d" buildconfig.config
             n=$(( $OPTION+1 ))
             while [ "$n" -le $NUMBER_OF_PKGS ]; do
@@ -435,12 +530,14 @@ function config_ext_packages_submenu() {
     esac
 }
 
+# 网络错误提示函数
 function network_error() {
-    whiptail --title "Message box" --msgbox "获取最新OpenWrt branch与tag失败,请检查你的网络环境是否能正常与github通信。" 10 60
+    whiptail --title "错误" --msgbox "获取最新OpenWrt branch与tag失败,请检查你的网络环境是否能正常与github通信。" 10 60
     exit 1
 }
 
 function menu() {
+    # 使用whiptail显示主菜单，让用户选择执行哪个步骤或退出
     OPTION=$(whiptail --title "OpenWrt-k配置构建工具" --menu "选择你要执行的步骤或选择Cancel退出" 16 80 10 \
     "1" "准备运行环境" \
     "2" "打开openwrt配置菜单" \
@@ -455,28 +552,33 @@ function menu() {
     exitstatus=$?
     if [ $exitstatus = 0 ]; then
         if [ "$OPTION" = "1" ]; then
+            # 准备运行环境选项
             if (whiptail --title "Yes/No Box" --yesno "这将会下载openwrt以及其插件的源码，请确保你拥有良好的网络环境。选择yes继续no返回菜单。" 10 60) then
                 prepare
                 exitstatus=$?
                 if [ $exitstatus = 4 ]; then
-                    whiptail --title "Message box" --msgbox "下载失败,请检查你的网络环境是否正常、OpenWrt-K与拓展软件包存储库地址是否正确。如果不是第一次准备请尝试清除运行环境" 10 60
+                    whiptail --title "错误" --msgbox "下载失败,请检查你的网络环境是否正常、OpenWrt-K与拓展软件包存储库地址是否正确。如果不是第一次准备请尝试清除运行环境" 10 60
                 elif [ $exitstatus = 7 ]; then
-                    whiptail --title "Message box" --msgbox "git checkot执行失败，请尝试清除运行环境" 10 60
+                    whiptail --title "错误" --msgbox "git checkot执行失败，请尝试清除运行环境" 10 60
                 fi
             fi
             return 6
         elif [ "$OPTION" = "6" ]; then
+            # 清除运行环境选项
             if  (whiptail --title "Yes/No Box" --yesno "这将会删除你未生成的配置与下载的文件。选择yes继续no返回菜单。" 10 60) then
                 clearrunningenvironment
             fi
             return 6
         elif [ "$OPTION" = "7" ]; then
+            # 重新配置OpenWrt-K存储库地址、OpenWrt branch或tag与拓展软件包选项
             input_parameters
             return 6
         elif [ "$OPTION" = "8" ]; then
+            # 配置拓展软件包选项
             config_ext_packages
             return 6
         elif [ "$OPTION" = "10" ]; then
+            # 关于选项
             about
             return 6
         else
@@ -484,33 +586,38 @@ function menu() {
                 if [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/openwrt/feeds/telephony.index" ] && [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/OpenWrt-K" ] ;then
                   case "${OPTION}" in
                     2)
+                    # 打开openwrt配置菜单选项
                       menuconfig
                       return 6
                       ;;
                     3)
+                    # 构建配置选项
                         if  (whiptail --title "Yes/No Box" --yesno "这将会覆盖你已生成的配置。选择yes继续no返回菜单。" 10 60) then
                             build
                         fi
                         return 6
                       ;;
                     4)
+                    # 载入OpenWrt-K默认config选项
                         if  (whiptail --title "Yes/No Box" --yesno "这将会覆盖你的现有配置。选择yes继续no返回菜单。" 10 60) then
                             importopenwrt_kconfig
                         fi
                         return 6
                         ;;
                     5)
+                    # 清除所有openwrt配置选项
                         if  (whiptail --title "Yes/No Box" --yesno "这将会删除你的现有配置。选择yes继续no返回菜单。" 10 60) then
                             clearconfig
                         fi
                         return 6
                         ;;
                     9)
+                    # 重新载入拓展软件包选项
                         if (whiptail --title "Yes/No Box" --yesno "这将会重新下载拓展软件包源码，请确保你拥有良好的网络环境。选择yes继续no返回菜单。" 10 60) then
                             build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
                             import_ext_packages
                             if [ $exitstatus = 4 ]; then
-                                whiptail --title "Message box" --msgbox "下载失败,请检查你的网络环境是否正常与拓展软件包存储库地址是否正确。" 10 60
+                                whiptail --title "错误" --msgbox "下载失败,请检查你的网络环境是否正常与拓展软件包存储库地址是否正确。" 10 60
                             fi
                         fi
                         return 6
@@ -523,11 +630,11 @@ function menu() {
                     if [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")" ];then
                     sed -i "/^OpenWrt_K_dir=/d" buildconfig.config
                     fi
-                    whiptail --title "Message box" --msgbox "你还没有准备运行环境，选择ok以返回菜单。" 10 60
+                    whiptail --title "错误" --msgbox "你还没有准备运行环境，选择ok以返回菜单。" 10 60
                     return 6
                 fi
             else
-                whiptail --title "Message box" --msgbox "你还没有准备运行环境，选择ok以返回菜单。" 10 60
+                whiptail --title "错误" --msgbox "你还没有准备运行环境，选择ok以返回菜单。" 10 60
                 return 6
             fi
         fi
@@ -538,8 +645,11 @@ function menu() {
     fi
 }
 
+# 准备运行环境，克隆OpenWrt和拓展软件包仓库
 function prepare() {
+    # 创建OpenWrt-K_config_build_dir目录
     mkdir -p OpenWrt-K_config_build_dir
+    # 检查是否已存在build_dir配置，若有则设置相应变量，否则创建新的build_dir配置
     if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
         build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
         openwrt_dir=$build_dir/openwrt
@@ -550,14 +660,17 @@ function prepare() {
         sed -i "\$a\build_dir=$build_dir" $build_dir/../buildconfig.config
         openwrt_dir=$build_dir/openwrt
     fi
+    # 获取OpenWrt-K的存储库URL、OpenWrt-K所在目录和选择的OPENWRT分支/标签
     OpenWrt_K_url=$(grep "^OpenWrt_K_url=" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_url=//")
     OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g" -e "s/\ .*//g")
     OPENWRT_TAG_BRANCHE=$(grep "^OPENWRT_TAG_BRANCHE=" $build_dir/../buildconfig.config|sed  "s/OPENWRT_TAG_BRANCHE=//")
+    # 检查OpenWrt-K目录是否已存在，若存在则执行git pull更新，否则执行git clone克隆
     if [ -d "$OpenWrt_K_dir" ]; then
         git -C $OpenWrt_K_dir pull || return 4
     else
         git clone $OpenWrt_K_url $OpenWrt_K_dir || return 4
     fi
+    # 检查openwrt目录是否已存在，若存在则执行git pull更新并检查分支/标签，否则执行git clone克隆
     if [ -d "$openwrt_dir" ]; then
         cd $openwrt_dir
         if ! [[ "$OPENWRT_TAG_BRANCHE" =~ ^v.* ]]; then
@@ -568,6 +681,7 @@ function prepare() {
                 git -C $openwrt_dir pull || return 4
                 git checkout $OPENWRT_TAG_BRANCHE
                 exitstatus=$?
+                # 若检出标签失败，则删除openwrt目录并重新克隆OpenWrt源码
                 if [ $exitstatus -ne 0 ]; then
                     rm -rf $openwrt_dir
                     git clone https://github.com/openwrt/openwrt $openwrt_dir || return 4
@@ -595,6 +709,7 @@ function prepare() {
     sed -i 's/^  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt$/  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk
     sed -i 's/^	dnsmasq \\$/	dnsmasq-full \\/g' ./include/target.mk
     sed -i 's/^	b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/	$(TOPDIR)\/tools\/b43-tools\/files\/b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/' ./package/kernel/mac80211/broadcom.mk
+    # 删除旧的.config和tmp目录，并将OpenWrt-K中的OpenWrt配置合并到新的.config中
     [[ -d $openwrt_dir ]] && rm -rf .config
     [[ -d $openwrt_dir ]] && rm -rf $openwrt_dir/tmp
     cat $OpenWrt_K_dir/config/target.config >> .config
@@ -606,12 +721,15 @@ function prepare() {
     cat $OpenWrt_K_dir/config/image.config >> .config
     make defconfig
     sed -i 's/256/1024/' ./target/linux/$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')/image/Makefile
-    cd $build_dir/..	
-    whiptail --title "Message box" --msgbox "$inputbox" 10 60
+    cd $build_dir/..
+    # 显示准备完成提示信息	
+    whiptail --title "完成" --msgbox "$inputbox" 10 60
     return 0
 }
 
+# 导入拓展软件包函数，克隆拓展软件包仓库并进行整理
 function import_ext_packages() {
+    # 设置变量
     openwrt_dir=$build_dir/openwrt
     [[ -d $build_dir/extpackages ]] && rm -rf $build_dir/extpackages
     [[ -d $TMPDIR/extpackages_prepare ]] && rm -rf $TMPDIR/extpackages_prepare
@@ -619,9 +737,11 @@ function import_ext_packages() {
     EXT_PKGS_DL_PATH=$build_dir/extpackages/dl
     EXT_PKGS_PATH=$build_dir/extpackages/extpackages
     EXT_PKGS_CONFIG=$EXT_PKGS_PREP_PATH/extpackages.config
+    # 创建必要的目录结构
     mkdir -p $EXT_PKGS_PREP_PATH $EXT_PKGS_PATH $EXT_PKGS_DL_PATH
     sed -n "/^EXT_PACKAGES/p" $build_dir/../buildconfig.config > $EXT_PKGS_CONFIG
     NUMBER_OF_PKGS=$(grep -c "^EXT_PACKAGES_NAME\[" $EXT_PKGS_CONFIG)
+    # 提取拓展软件包配置信息并生成拓展软件包仓库URL与分支的配置文件
     n=1
     while [ "$n" -le $NUMBER_OF_PKGS ]; do
         EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
@@ -629,11 +749,13 @@ function import_ext_packages() {
         echo "REPOSITORIE=$EXT_PKG_REPOSITORIE BRANCHE=$EXT_PKG_BRANCHE" >> $EXT_PKGS_PREP_PATH/extpackagesbr.config
         n=$(( n+1 ))
     done
+    # 整理拓展软件包仓库克隆配置，去重并生成参数
     sort $EXT_PKGS_PREP_PATH/extpackagesbr.config|uniq > $EXT_PKGS_PREP_PATH/clone.config
     sed -i -e "s/BRANCHE=$//g" $EXT_PKGS_PREP_PATH/clone.config
     sed -i -e "s/BRANCHE=/--branch /g" $EXT_PKGS_PREP_PATH/clone.config
     NUMBER_OF_CLONES=$(grep -c "REPOSITORIE=" $EXT_PKGS_PREP_PATH/clone.config)
     sed -i "s/^REPOSITORIE=//g" $EXT_PKGS_PREP_PATH/clone.config
+    # 克隆拓展软件包仓库并整理
     echo "开始克隆拓展软件包仓库"
     n=1
     while [ "$n" -le $NUMBER_OF_CLONES ]; do
@@ -653,6 +775,7 @@ function import_ext_packages() {
         rm -rf $EXT_PKGS_DL_PATH/TMP/
         n=$(( n+1 ))
     done
+    # 整理拓展软件包并修复包的一些问题
     echo "开始整理拓展软件包"
     n=1
     while [ "$n" -le $NUMBER_OF_PKGS ]; do
@@ -670,7 +793,7 @@ function import_ext_packages() {
         n=$(( n+1 ))
     done
     cd $EXT_PKGS_PATH
-    #修复包
+    # 修复包的一些问题
     sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' $(find ./ -type f -name "Makefile")
     find . -name 'po' -type d > $EXT_PKGS_PREP_PATH/podir.list
     total_rows=$(sed -n '$=' $EXT_PKGS_PREP_PATH/podir.list) #行数-文件夹个数
@@ -692,7 +815,8 @@ function import_ext_packages() {
             ln -s zh-cn $DIR/zh_Hans||exit 1
         fi
         n=$(( n+1 ))
-    done   
+    done
+    # 复制拓展软件包至OpenWrt目录，并更新和安装feeds
     [[ -d $openwrt_dir ]] && rm -rf $openwrt_dir/package/extpackages
     mkdir -p $openwrt_dir/package/extpackages
     cp -RT $EXT_PKGS_PATH $openwrt_dir/package/extpackages
@@ -712,46 +836,59 @@ function import_ext_packages() {
     
 }
 
+# 检查软件包依赖函数
 function check_packagedeps() {
+    # 设置变量
     openwrt_dir=$build_dir/openwrt
     PACKAGEDEPWARNING=$TMPDIR/packagedepwarning.log
+    # 进入OpenWrt目录并清理之前的依赖错误记录
     cd $openwrt_dir
     rm -rf $PACKAGEDEPWARNING
+    # 使用` gmake -s prepare-tmpinfo`检查软件包依赖并将错误信息保存至`$PACKAGEDEPWARNING`
     gmake -s prepare-tmpinfo
     ./scripts/package-metadata.pl mk tmp/.packageinfo > tmp/.packagedeps 2>$PACKAGEDEPWARNING || { rm -f tmp/.packagedeps; false; } 
+    # 检查是否有软件包依赖问题，如果有，使用whiptail显示错误提示信息，并返回1
     if [ -n "$(cat $PACKAGEDEPWARNING)" ]; then
         #有错误
         echo "发现错误"
         whiptail --title "错误" --msgbox "检查到软件包依赖问题：\n$(cat $PACKAGEDEPWARNING)\n这大概率与错误的拓展软件包配置有关，请尝试重新配置拓展软件包" 30 110
         return 1
     else
-       return 0
+        return 0
     fi
 }
 
 function menuconfig() {
+    # 获取build_dir目录路径
     build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
+    # 提示用户是否要修改OpenWrt的TARGET配置
     if (whiptail --title "Yes/No Box" --yesno "你是否要修改openwrt的TARGET配置？（若未修改存储库则默认为x86_64）" 10 60) then
         targetconfig
     else
         echo "You chose No. Exit status was $?."
     fi
+    # 进入OpenWrt目录并执行make menuconfig
     cd $build_dir/openwrt
     make menuconfig
     cd $build_dir/..
 }
 
+# 修改OpenWrt的TARGET配置
 function targetconfig() {
+    # 获取build_dir目录路径和openwrt_dir目录路径
     build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
     openwrt_dir=$build_dir/openwrt
+    # 创建临时目录
     [[ -d $TMPDIR/targetconfig ]] && rm -rf $TMPDIR/targetconfig
     mkdir -p $TMPDIR/targetconfig
     targetconfigpath=$TMPDIR/targetconfig/
     targetdiffconfig=$targetconfigpath/diff.config
     notargetdiffconfig=$targetconfigpath/notargetdiff.config
+    # 进入OpenWrt目录并生成TARGET配置差异文件
     cd $openwrt_dir
     ./scripts/diffconfig.sh > $targetdiffconfig
     TARGET=$(sed -n  "/^CONFIG_TARGET_[a-zA-Z0-9]\{1,15\}=y$/p" $targetdiffconfig | sed -e 's/CONFIG_TARGET_//'  -e 's/=y//')
+    # 进行一些差异文件的处理，包括删除旧的TARGET配置，提示用户修改新的TARGET配置，再更新配置文件
     sed "/^CONFIG_TARGET_${TARGET}.*/d" $targetdiffconfig > $notargetdiffconfig
     sed -i "/^CONFIG_TARGET_MULTI_PROFILE=y$/d" $notargetdiffconfig
     sed -i "/^CONFIG_TARGET_DEVICE_${TARGET}.*/d" $notargetdiffconfig
@@ -759,7 +896,7 @@ function targetconfig() {
     sed -i "/^CONFIG_TARGET_DEVICE_PACKAGES_${TARGET}.*/d" $notargetdiffconfig
     sed -i "/^CONFIG_TARGET_PER_DEVICE_ROOTFS=y$/d" $notargetdiffconfig
     sed -i "/^CONFIG_TARGET_ALL_PROFILES=y$/d" $notargetdiffconfig
-    whiptail --title "Message box" --msgbox "点击ok后，请仅修改TARGET配置然后保存退出，请勿修改其他配置或修改保存的目录与文件名" 10 60
+    whiptail --title "提示" --msgbox "点击ok后，请仅修改TARGET配置然后保存退出，请勿修改其他配置或修改保存的目录与文件名" 10 60
     cd $build_dir/openwrt
     make menuconfig
     cat $notargetdiffconfig >> $openwrt_dir/.config
@@ -769,11 +906,15 @@ function targetconfig() {
     cd $build_dir/..
 }
 
+# 导入OpenWrt-K的配置文件至当前OpenWrt目录
 function importopenwrt_kconfig() {
+    # 获取build_dir目录路径和openwrt_dir目录路径
     build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
     openwrt_dir=$build_dir/openwrt
+    # 获取OpenWrt-K配置文件的URL并生成OpenWrt-K目录路径
     OpenWrt_K_url=$(grep "^OpenWrt_K_url=" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_url=//")
     OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g" -e "s/\ .*//g")
+    # 进入OpenWrt目录，并将OpenWrt-K的配置文件合并到当前OpenWrt配置文件
     cd $openwrt_dir
     [[ -d $openwrt_dir ]] && rm -rf .config
     cat $OpenWrt_K_dir/config/target.config >> .config
@@ -787,33 +928,43 @@ function importopenwrt_kconfig() {
     cd $build_dir/..
 }
 
+# 清除OpenWrt目录的配置文件和临时文件
 function clearconfig() {
+    # 获取build_dir目录路径和openwrt_dir目录路径
     build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
     openwrt_dir=$build_dir/openwrt
+    # 删除OpenWrt目录的配置文件和临时文件
     [[ -d $openwrt_dir ]] && rm -rf $openwrt_dir/tmp
     [[ -d $openwrt_dir ]] && rm -rf $openwrt_dir/.config
     [[ -d $openwrt_dir ]] && rm -rf $openwrt_dir/.config.old
+    # 重新生成默认配置
     cd $openwrt_dir
     make defconfig
     cd $build_dir/..
 }
 
+# 清除运行环境的配置
 function clearrunningenvironment() {
+    # 获取build_dir目录路径，并删除整个build_dir目录
     build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
     cd $build_dir/..
     rm -rf $build_dir
+    # 在buildconfig.config中删除build_dir配置
     sed -i  "/^build_dir=/d" buildconfig.config
 }
 
+# 显示关于信息
 function about() {
     whiptail --title "关于" --msgbox "这是一个用于生成OpenWrt-K配置文件的脚本\n\
     Copyright (C) 2023  沉默の金, All rights reserved.\n" 10 60
 }
 
+# 构建OpenWrt-K配置文件
 function build () {
     #准备工作
     build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
     openwrt_dir=$build_dir/openwrt
+    # 检查软件包依赖是否满足要求，如果有错误则提示用户修复
     check_packagedeps
     exitstatus=$?
     if [ $exitstatus = 1 ]; then
@@ -821,6 +972,7 @@ function build () {
         cd $build_dir/..
         return 1
     fi
+    # 创建临时目录和输出目录
     [[ -d $TMPDIR/buildconfig ]] && rm -rf $TMPDIR/buildconfig
     [[ -d $TMPDIR/output ]] && rm -rf $TMPDIR/output
     buildconfigdir=$TMPDIR/buildconfig
@@ -866,35 +1018,35 @@ function build () {
       sed -i "$(($(sed -n "/# Target Images$/=" diffconfig2.config)-1)),$(sed -n "/# end of Target Images$/=" diffconfig2.config)d" diffconfig2.config
     else
       echo "没有Target Images配置"
-      echo "" > image.config
+      > image.config
     fi
     if [ "$(grep -c "# Kernel modules$" diffconfig2.config)" -ne '0' ];then
       sed -n "$(($(sed -n "/# Kernel modules$/=" diffconfig2.config)-1)),$(sed -n "/# end of Kernel modules$/=" diffconfig2.config)p" diffconfig2.config > $outputdir/kmod.config
       sed -i "$(($(sed -n "/# Kernel modules$/=" diffconfig2.config)-1)),$(sed -n "/# end of Kernel modules$/=" diffconfig2.config)d" diffconfig2.config
     else
       echo "没有Kernel modules配置"
-      echo "" > kmod.config
+      > kmod.config
     fi
     if [ "$(grep -c "# LuCI$" diffconfig2.config)" -ne '0' ];then
       sed -n "$(($(sed -n "/# LuCI$/=" diffconfig2.config)-1)),$(sed -n "/# end of LuCI$/=" diffconfig2.config)p" diffconfig2.config > $outputdir/luci.config
       sed -i "$(($(sed -n "/# LuCI$/=" diffconfig2.config)-1)),$(sed -n "/# end of LuCI$/=" diffconfig2.config)d" diffconfig2.config
     else
       echo "没有LuCI配置"
-      echo "" > luci.config
+      > luci.config
     fi
     if [ "$(grep -c "# Network$" diffconfig2.config)" -ne '0' ];then
       sed -n "$(($(sed -n "/# Network$/=" diffconfig2.config)-1)),$(sed -n "/# end of Network$/=" diffconfig2.config)p" diffconfig2.config > $outputdir/network.config
       sed -i "$(($(sed -n "/# Network$/=" diffconfig2.config)-1)),$(sed -n "/# end of Network$/=" diffconfig2.config)d" diffconfig2.config
     else
       echo "没有Network配置"
-      echo "" > network.config
+      > network.config
     fi
     if [ "$(grep -c "# Utilities$" diffconfig2.config)" -ne '0' ];then
       sed -n "$(($(sed -n "/# Utilities$/=" diffconfig2.config)-1)),$(sed -n "/# end of Utilities$/=" diffconfig2.config)p" diffconfig2.config > $outputdir/utilities.config
       sed -i "$(($(sed -n "/# Utilities$/=" diffconfig2.config)-1)),$(sed -n "/# end of Utilities$/=" diffconfig2.config)d" diffconfig2.config
     else
       echo "没有Utilities配置"
-      echo "" > utilities.config
+      > utilities.config
     fi
     if [ "$(grep -c "^CONFIG_TARGET_[a-zA-Z0-9]\{1,15\}=y$" diffconfig2.config)" -ne '0' ];then
       sed -n "/^CONFIG_TARGET_$(sed -n  "/^CONFIG_TARGET_[a-zA-Z0-9]\{1,15\}=y$/p" diffconfig2.config | sed -e 's/CONFIG_TARGET_//'  -e 's/=y//').*/p" diffconfig2.config > $outputdir/target.config
@@ -916,11 +1068,12 @@ function build () {
     fi
     cat diffconfig2.config > $outputdir/other.config
     sed -n "/^EXT_PACKAGES/p" $build_dir/../buildconfig.config > $outputdir/OpenWrt-K/extpackages.config
-    #输出
+    # 输出配置文件
     [[ -d $build_dir/../config/ ]] && rm -rf $build_dir/../config/
     mkdir -p $build_dir/../config/
     cp -RT $outputdir/ $build_dir/../config/
     cd $build_dir/../config/
+    # 显示成功消息框
     whiptail --title "成功" --msgbox "OpenWrt-K配置文件构建完成\n\
     输出目录：$(pwd)\n\
     如果你修改了OpenWrt branch或tag请在OpenWrt-K.Config做相应修改\n\
