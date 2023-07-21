@@ -1,10 +1,10 @@
 # OpenWrt-K
 
-![GitHub Repo stars](https://img.shields.io/github/stars/chenmozhijin/OpenWrt-K)
-![GitHub forks](https://img.shields.io/github/forks/chenmozhijin/OpenWrt-K)
-![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/t/chenmozhijin/OpenWrt-K)
-![GitHub last commit (by committer)](https://img.shields.io/github/last-commit/chenmozhijin/OpenWrt-K)
-![Workflow Status](https://github.com/chenmozhijin/OpenWrt-K/actions/workflows/build-openwrt.yml/badge.svg)
+[![GitHub Repo stars](https://img.shields.io/github/stars/chenmozhijin/OpenWrt-K)](https://github.com/chenmozhijin/OpenWrt-K/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/chenmozhijin/OpenWrt-K)](https://github.com/chenmozhijin/OpenWrt-K/forks)
+[![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/t/chenmozhijin/OpenWrt-K)](https://github.com/chenmozhijin/OpenWrt-K/commits)
+[![GitHub last commit (by committer)](https://img.shields.io/github/last-commit/chenmozhijin/OpenWrt-K)](https://github.com/chenmozhijin/OpenWrt-K/commits)
+[![Workflow Status](https://github.com/chenmozhijin/OpenWrt-K/actions/workflows/build-openwrt.yml/badge.svg)](https://github.com/chenmozhijin/OpenWrt-K/actions)
 > OpenWRT软件包与固件自动云编译
 >
 ## 目录
@@ -140,7 +140,8 @@
 
 ### AdGuardHome广告屏蔽工具
 
-![AdGuardHome](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/5.webp)
+![luci-app-adguardhome](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/5.webp)
+![AdGuardHome](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/11.webp)
 
 ### SmartDNS DNS服务器
 
