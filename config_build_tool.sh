@@ -784,7 +784,7 @@ function import_ext_packages() {
         EXT_PKG_PATH=$(grep "^EXT_PACKAGES_PATH\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
         EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
         EXT_PKG_BRANCHE=$(grep "^EXT_PACKAGES_BRANCHE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-        EXT_PKG_REPO_PATH=$(echo "$EXT_PKG_REPOSITORIE" | sed -e "s/$ //g" -e "s/ .*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")
+        EXT_PKG_REPO_PATH=$(echo "$EXT_PKG_REPOSITORIE" | sed -e 's/[[:space:]]*$//' -e "s/\.git$//g" -e "s/ .*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")
         if [ -z "$EXT_PKG_BRANCHE" ];then
             EXT_PKG_BRANCHE="default_branch"
         fi
