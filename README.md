@@ -1,7 +1,7 @@
 # OpenWrt-K
 
 [![GitHub Repo stars](https://img.shields.io/github/stars/chenmozhijin/OpenWrt-K)](https://github.com/chenmozhijin/OpenWrt-K/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/chenmozhijin/OpenWrt-K)](https://github.com/chenmozhijin/OpenWrt-K/forks)
+[![GitHub forks](https://img.shields.io/github/forks/chenmozhijin/OpenWrt-K)](https://github.com/chenmozhijin/OpenWrt-K/forks?include=active%2Carchived%2Cinactive%2Cnetwork&page=1&period=2y&sort_by=stargazer_counts)
 [![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/t/chenmozhijin/OpenWrt-K)](https://github.com/chenmozhijin/OpenWrt-K/commits)
 [![GitHub last commit (by committer)](https://img.shields.io/github/last-commit/chenmozhijin/OpenWrt-K)](https://github.com/chenmozhijin/OpenWrt-K/commits)
 [![Workflow Status](https://github.com/chenmozhijin/OpenWrt-K/actions/workflows/build-openwrt.yml/badge.svg)](https://github.com/chenmozhijin/OpenWrt-K/actions)
@@ -198,7 +198,7 @@
 9. 选中未使用的磁盘点上面的编辑在点添加
 10. 点击选项菜单双击引导顺序，仅给刚添加的磁盘打勾然后点ok，现在你可以启动虚拟机了
 
-### 2. 固件使用
+### 2. 固件配置
 
 1. 进入openwrt web界面，一般访问```192.168.1.1```即可
 
