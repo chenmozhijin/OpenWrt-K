@@ -226,7 +226,7 @@
 config  --- 存储openwrt编译配置，会在编译过程中程合并成```.config```文件
 files   --- openwrt固件自定义文件
 scripts --- 编译时所用的部分脚本
-OpenWrt-K.Config --- 暂时仅用于定义openwrt编译所用的分支或tag（仅官方源）
+OpenWrt-K.Config --- 用于定义openwrt编译所用的分支或tag（仅官方源）与配置kmod编译排除列表
 config_build_tool.sh --- OpenWrt-k配置构建工具
 ```
 
@@ -442,7 +442,10 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
 3. 部分软件包对firewall4的兼容不是很好，不建议编译。具体列表见 [openwrt/openwrt#16818](https://github.com/openwrt/packages/issues/16818)
 4. 工作流中“下载AdGuardHome核心与DNS名单”与“下载openclash内核”两个步骤会根据你在配置文件中是否将luci-app-adguardhome或luci-app-openclash配置为编译进固件决定下载或清除残留文件，请配置好配置文件。
 5. 默认不编译sfe，Releases allkmod.zip也没有如果需要修改openwrt固件编译配置时添加即可（必须设为添加进固件）。注意:kmod-shortcut-fe-cm与kmod-fast-classifier无法同时编译，同时编译会报不兼容。
-6. 如你在编译与使用过程中遇到问题欢迎提[issue](https://github.com/chenmozhijin/OpenWrt-K/issues)。
+6. 现在main/master分支部分架构升级到了6.1内核部分内核模块(kmod)可能有bug导致无法编译成功,而本仓库默认编译所有内核模块(kmod)导致编译失败。现在可以使用内核模块(kmod)编译排除列表排除那些内核模块(kmod)。
+    > 注：内核模块(kmod)编译排除列表在仓库根目录的OpenWrt-K.Config中，不同内核模块(kmod)名之间用```,```(英文逗号)分隔，支持通字符```.*```。  
+    > 例：如果build-Image_Builder中编译并生成安装包步骤遇到dahdi相关的错误，如：```base.c:45:10: fatal error: stdbool.h: No such file or directory```可以添加```,dahdi.*```到内核模块(kmod)编译排除列表。
+7. 如你在编译与使用过程中遇到问题欢迎提[issue](https://github.com/chenmozhijin/OpenWrt-K/issues)。
 
 ## 感谢
 
