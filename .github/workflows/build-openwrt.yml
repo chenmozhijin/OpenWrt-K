@@ -971,7 +971,20 @@ jobs:
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          kmod_compile_exclude_list=$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//' -e 's/,$//g' -e 's#^#\\(#' -e "s#,#\\\|#g" -e "s/$/\\\)/g" )
+          if [ -n "$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')" ];then
+            kmod_compile_exclude_list=$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//' -e 's/,$//g' -e 's#^#\\(#' -e "s#,#\\\|#g" -e "s/$/\\\)/g" )
+            echo "::notice ::kmod编译排除列表：$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')"
+          else
+            echo "::warning ::kmod编译排除列表无法获取或为空，这很有可能导致编译失败。"
+          fi
+          if [ "$(sed -n "/$kmod_compile_exclude_list/p" .config| grep -c "=m$")" -ne '0' ];then
+            echo "::error ::有kmod被kmod排除列表匹配但仍然设置为编译为模块(=m),到build-Image_Builder的加载自定义配置并生成配置文件步骤查看详情"
+            sed -n "/$kmod_compile_exclude_list/p" .config| grep "=m$"
+          fi
+          if [ "$(sed -n "/$kmod_compile_exclude_list/p" .config| grep -c "=y$")" -ne '0' ];then
+            echo "::warning ::有kmod被配置为编译进固件(=y)同时在kmod排除列表中,到build-Image_Builder的加载自定义配置并生成配置文件步骤查看详情"
+            sed -n "/$kmod_compile_exclude_list/p" .config| grep "=y$"
+          fi
           sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' | sed "s/\($kmod_compile_exclude_list\)=m/\1=n/g" >> .config
           make defconfig
           sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' | sed "s/\($kmod_compile_exclude_list\)=m/\1=n/g" >> .config
@@ -988,6 +1001,15 @@ jobs:
           sed -i -e  "/^CONFIG_TARGET_ROOTFS_TARGZ=y$/s/=y/=n/g" .config
           sed -i -e  "/^CONFIG_TARGET_ROOTFS_CPIOGZ=y$/s/=y/=n/g" .config
           make defconfig
+          if [ "$(sed -n "/$kmod_compile_exclude_list/p" .config| grep -c "=m$")" -ne '0' ];then
+            echo "::error ::检测到有kmod被kmod排除列表匹配但仍然设置为编译为模块(=m),到build-Image_Builder的加载自定义配置并生成配置文件步骤查看详情"
+            sed -n "/$kmod_compile_exclude_list/p" .config| grep "=m$"
+          fi
+          if [ "$(sed -n "/$kmod_compile_exclude_list/p" .config| grep -c "=y$")" -ne '0' ];then
+            echo "::warning ::检测到有kmod被配置为编译进固件(=y)同时在kmod排除列表中,到build-Image_Builder的加载自定义配置并生成配置文件步骤查看详情"
+            sed -n "/$kmod_compile_exclude_list/p" .config| grep "=y$"
+          fi
+          echo "以下是配置差异文件的内容"
           ./scripts/diffconfig.sh
 
       - name: 下载 dl 库
