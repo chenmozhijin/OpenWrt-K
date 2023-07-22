@@ -583,7 +583,7 @@ function menu() {
             return 6
         else
             if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
-                if [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/openwrt/feeds/telephony.index" ] && [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/OpenWrt-K" ] ;then
+                if [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/openwrt/feeds/telephony.index" ] && [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g" -e "s/\ .*//g")" ] ;then
                   case "${OPTION}" in
                     2)
                     # 打开openwrt配置菜单选项
@@ -628,7 +628,7 @@ function menu() {
                     esac
                 else
                     if [ -e "$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")" ];then
-                    sed -i "/^OpenWrt_K_dir=/d" buildconfig.config
+                    sed -i "/^build_dir=/d" buildconfig.config
                     fi
                     whiptail --title "错误" --msgbox "你还没有准备运行环境，选择ok以返回菜单。" 10 60
                     return 6
