@@ -444,7 +444,7 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
 5. 默认不编译sfe，Releases allkmod.zip也没有如果需要修改openwrt固件编译配置时添加即可（必须设为添加进固件）。注意:kmod-shortcut-fe-cm与kmod-fast-classifier无法同时编译，同时编译会报不兼容。
 6. 现在main/master分支部分架构升级到了6.1内核部分内核模块(kmod)可能有bug导致无法编译成功,而本仓库默认编译所有内核模块(kmod)导致编译失败。现在可以使用内核模块(kmod)编译排除列表排除那些内核模块(kmod)。
     > 注：内核模块(kmod)编译排除列表在仓库根目录的OpenWrt-K.Config中，不同内核模块(kmod)名之间用```,```(英文逗号)分隔，支持通字符```.*```。  
-    > 例：如果build-Image_Builder中编译并生成安装包步骤遇到dahdi相关的错误，如：```base.c:45:10: fatal error: stdbool.h: No such file or directory```可以添加```,dahdi.*```到内核模块(kmod)编译排除列表。
+    > 例：如果build-Image_Builder中编译并生成安装包步骤遇到dahdi相关的错误，如：```base.c:45:10: fatal error: stdbool.h: No such file or directory```可以添加```,kmod-dahdi.*```到内核模块(kmod)编译排除列表。
 7. 如你在编译与使用过程中遇到问题欢迎提[issue](https://github.com/chenmozhijin/OpenWrt-K/issues)。
 
 ## 感谢
