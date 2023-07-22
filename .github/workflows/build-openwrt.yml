@@ -57,7 +57,9 @@ jobs:
         id: time
         run: |
           sudo timedatectl set-timezone "Asia/Shanghai"
-          echo starttime=$(date +"%y.%m.%d-%H") >> "$GITHUB_OUTPUT"
+          starttime=$(date +"%y.%m.%d-%H")
+          echo starttime=$starttime >> "$GITHUB_OUTPUT"
+          echo "::notice ::编译开始时间$starttime"
 
       - name: 准备环境
         run: |
@@ -87,6 +89,7 @@ jobs:
           export CMZJ_PATCH_ROOT_PATH="$(pwd)"
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
           mkdir -p $CMZJ_PATCH_ROOT_PATH/firewall4/patches/ $CMZJ_PATCH_ROOT_PATH/libnftnl/patches/ $CMZJ_PATCH_ROOT_PATH/nftables/patches/ $CMZJ_PATCH_ROOT_PATH/hack-5.10 $CMZJ_PATCH_ROOT_PATH/hack-5.15 $CMZJ_PATCH_ROOT_PATH/hack-6.1 $CMZJ_PATCH_ROOT_PATH/dnsmasq $CMZJ_PATCH_ROOT_PATH/libubox $CMZJ_PATCH_ROOT_PATH/netdata
+          mkdir -p $CMZJ_PATCH_ROOT_PATH/pending-5.10/ $CMZJ_PATCH_ROOT_PATH/pending-5.15/ $CMZJ_PATCH_ROOT_PATH/pending-6.1/
 
       - name: 克隆补丁所需源代码
         working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}
@@ -199,16 +202,18 @@ jobs:
         run: |
           cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
           cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
-          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/982-add-bcm-fullconenat-support.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
           cp $DOWNLOAD_ROOT_PATH/turboacc/turboacc/hack-5.15/952-add-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-5.15/
           cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.15/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-5.15/
           cp $DOWNLOAD_ROOT_PATH/turboacc/turboacc/hack-6.1/952-add-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-6.1/
           cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-6.1/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-6.1/
-          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/firewall4-04a06bd70b9808b14444cae81a2faba4708ee231/firewall4 $CMZJ_PATCH_ROOT_PATH/firewall4
-          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/libnftnl-1.2.5/libnftnl $CMZJ_PATCH_ROOT_PATH/libnftnl
-          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/nftables-1.0.7/nftables $CMZJ_PATCH_ROOT_PATH/nftables
-          #cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/network/services/dnsmasq $CMZJ_PATCH_ROOT_PATH/dnsmasq
-          #cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/libubox
+          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/$(ls -tr $DOWNLOAD_ROOT_PATH/turboacc/turboacc/ | grep "firewall4-" |sed -n "1p")/firewall4 $CMZJ_PATCH_ROOT_PATH/firewall4
+          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/$(ls -tr $DOWNLOAD_ROOT_PATH/turboacc/turboacc/ | grep "libnftnl-" |sed -n "1p")/libnftnl $CMZJ_PATCH_ROOT_PATH/libnftnl
+          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/$(ls -tr $DOWNLOAD_ROOT_PATH/turboacc/turboacc/ | grep "nftables-" |sed -n "1p")/nftables $CMZJ_PATCH_ROOT_PATH/nftables
+          cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/network/services/dnsmasq $CMZJ_PATCH_ROOT_PATH/dnsmasq
+          cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/libubox
+          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/pending-5.10/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-5.10/
+          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/pending-5.15/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-5.15/
+          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/pending-6.1/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-6.1/
           cp -RT $DOWNLOAD_ROOT_PATH/immortalwrt/packages/admin/netdata $CMZJ_PATCH_ROOT_PATH/netdata
           
       - name: 压缩
@@ -238,7 +243,8 @@ jobs:
           make defconfig
           echo target=$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//') >> "$GITHUB_OUTPUT"
           echo subtarget=$(sed -n '/CONFIG_TARGET_SUBTARGET/p' .config | sed -e 's/CONFIG_TARGET_SUBTARGET\=\"//' -e 's/\"//') >> "$GITHUB_OUTPUT"
-  
+          echo "::notice ::你编译的架构为$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')，子架构为$(sed -n '/CONFIG_TARGET_SUBTARGET/p' .config | sed -e 's/CONFIG_TARGET_SUBTARGET\=\"//' -e 's/\"//')"
+
   build1:
     runs-on: ubuntu-22.04
     needs: prepare
@@ -320,43 +326,17 @@ jobs:
           
       - name: 切换标签/分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: git checkout $(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
+        run: |
+          git checkout $(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
+          echo "::notice ::你编译的标签/分支为$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
 
-      - name: 复制cmzj_package 打补丁 
+      - name: 复制cmzj_package
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
           cp -r $CMZJ_PACKAGE_ROOT_PATH $OPENWRT_ROOT_PATH/package/cmzj_package
-          rm -rf $OPENWRT_ROOT_PATH/package/libs/libnftnl
-          rm -rf $OPENWRT_ROOT_PATH/package/network/config/firewall4
-          rm -rf $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          #rm -rf $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          #rm -rf $OPENWRT_ROOT_PATH/package/libs/libubox
-          mkdir -p $OPENWRT_ROOT_PATH/package/network/config/firewall4
-          mkdir -p $OPENWRT_ROOT_PATH/package/libs/libnftnl
-          mkdir -p $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          #mkdir -p $OPENWRT_ROOT_PATH/package/libs/libubox
-          #mkdir -p $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4 $OPENWRT_ROOT_PATH/package/network/config/firewall4
-          cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl $OPENWRT_ROOT_PATH/package/libs/libnftnl
-          cp -RT $CMZJ_PATCH_ROOT_PATH/nftables $OPENWRT_ROOT_PATH/package/network/utils/nftables
-          #cp -RT $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
-          #cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          echo "cmzj_patch" >> $LOG_PATH/cmzj_patch.log
-          ls $CMZJ_PATCH_ROOT_PATH >> $LOG_PATH/cmzj_patch.log
           echo "cmzj_package" >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/package/cmzj_package >> $LOG_PATH/cmzj_patch.log
-          echo "libnftnl-file" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/libs/libnftnl >> $LOG_PATH/cmzj_patch.log
-          echo "firewall4-file" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/network/config/firewall4 >> $LOG_PATH/cmzj_patch.log
-          echo "nftables-file" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/network/utils/nftables >> $LOG_PATH/cmzj_patch.log
-          echo "firewall4-patches" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/network/config/firewall4/patches/ >> $LOG_PATH/cmzj_patch.log
-          echo "libnftnl-patches" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/libs/libnftnl/patches/ >> $LOG_PATH/cmzj_patch.log
-          echo "nftables-patches" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/network/utils/nftables/patches/ >> $LOG_PATH/cmzj_patch.log
+
       
       - name: 修复问题
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -415,6 +395,7 @@ jobs:
           echo 'Compiled by' $compiler
           sed -i "s/Compiled by 沉默の金/Compiled by $compiler/g" $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
           cat $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin | grep 'Compiled by'
+          echo "::notice ::编译者已替换为$compiler"
           #添加编译信息
           export OPENWRT_TAG_BRANCHE="$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
           echo "COMPILE_START_TIME=\"${{ needs.prepare.outputs.starttime }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
@@ -439,21 +420,111 @@ jobs:
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/build1-diffconfig.log
 
-      - name: 打内核补丁 
+      - name: 添加内核补丁与所需内核配置
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
           kernel_version="$(sed -n '/CONFIG_LINUX_/p' $OPENWRT_ROOT_PATH/.config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g')"
           echo kernel_version=$kernel_version
-          cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/952-add-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version
-          #cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version
+          if [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_SHORTCUT_FE_DRV=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-shortcut-fe-drv=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
+            echo "::notice ::检测到sfe设为编译进固件"
+            sfe=true
+          elif [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_SHORTCUT_FE_CM=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-shortcut-fe-cm=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
+            echo "::notice ::检测到sfe设为编译进固件"
+            sfe=true
+          elif [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_SHORTCUT_FE=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-fast-classifier=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
+            echo "::notice ::检测到sfe设为编译进固件"
+            sfe=true
+          elif [ "$(grep -c "^CONFIG_PACKAGE_kmod-shortcut-fe=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
+            echo "::notice ::检测到sfe设为编译进固件"
+            sfe=true
+          else
+            echo "::notice ::未检测到sfe设为编译进固件"
+            sfe=false
+          fi
+          if [ $sfe = true ];then
+            echo "::notice ::添加sfe所需补丁与附加内核配置"
+            cp -f $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch ./target/linux/generic/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch
+            cp -f $CMZJ_PATCH_ROOT_PATH/pending-$kernel_version/613-netfilter_optional_tcp_window_check.patch ./target/linux/generic/pending-$kernel_version/613-netfilter_optional_tcp_window_check.patch
+            echo "#  CONFIG_SHORTCUT_FE is not set" >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version
+          fi          
+          if [ $sfe = true ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-nft-fullcone=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_NFT_FULLCONE=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
+            if  [ "$kernel_version" = "6.1" ] || [ "$kernel_version" = "5.15" ]; then
+              echo "::notice ::添加sfe/fullcone所需补丁与附加内核配置"
+              cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/952-add-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version
+            elif [ "$kernel_version" = "5.10" ] ; then
+              echo "::notice ::添加sfe/fullcone所需补丁与附加内核配置(5.10内核)"
+              cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/952-net-conntrack-events-support-multiple-registrant.patch  $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version
+            else
+              echo "::error ::OpenWrt-K不支持为5.10以下内核打补丁，如需编译请删除此步骤与turboacc的相关的步骤"
+              exti 1
+            fi
+            echo "#  CONFIG_NF_CONNTRACK_CHAIN_EVENTS is not set" >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version
+          fi
           echo "hack-$kernel_version"  >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version >> $LOG_PATH/cmzj_patch.log
 
-      - name: 加载附加内核配置
+      - name: 添加turboacc fullcone所需的libnftnl、firewall4、nftables补丁 
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          kernel_version="$(sed -n '/CONFIG_LINUX_/p' $OPENWRT_ROOT_PATH/.config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g')"
-          cat $GITHUB_WORKSPACE/config/linux/config-$kernel_version >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version || echo "未加载附加内核配置"
+          if [ "$(grep -c "^CONFIG_PACKAGE_kmod-nft-fullcone=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_NFT_FULLCONE=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
+            kernel_version="$(sed -n '/CONFIG_LINUX_/p' $OPENWRT_ROOT_PATH/.config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g')"
+            echo kernel_version=$kernel_version
+            echo "::notice ::检测到nft-fullcone设为编译进固件,添加fullcone所需libnftnl、firewall4、nftables补丁"
+            rm -rf $OPENWRT_ROOT_PATH/package/libs/libnftnl
+            rm -rf $OPENWRT_ROOT_PATH/package/network/config/firewall4
+            rm -rf $OPENWRT_ROOT_PATH/package/network/utils/nftables
+            mkdir -p $OPENWRT_ROOT_PATH/package/network/config/firewall4
+            mkdir -p $OPENWRT_ROOT_PATH/package/libs/libnftnl
+            mkdir -p $OPENWRT_ROOT_PATH/package/network/utils/nftables
+            cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4 $OPENWRT_ROOT_PATH/package/network/config/firewall4
+            cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl $OPENWRT_ROOT_PATH/package/libs/libnftnl
+            cp -RT $CMZJ_PATCH_ROOT_PATH/nftables $OPENWRT_ROOT_PATH/package/network/utils/nftables
+            echo "cmzj_patch" >> $LOG_PATH/cmzj_patch.log
+            ls $CMZJ_PATCH_ROOT_PATH >> $LOG_PATH/cmzj_patch.log
+            echo "libnftnl-file" >> $LOG_PATH/cmzj_patch.log
+            ls $OPENWRT_ROOT_PATH/package/libs/libnftnl >> $LOG_PATH/cmzj_patch.log
+            echo "firewall4-file" >> $LOG_PATH/cmzj_patch.log
+            ls $OPENWRT_ROOT_PATH/package/network/config/firewall4 >> $LOG_PATH/cmzj_patch.log
+            echo "nftables-file" >> $LOG_PATH/cmzj_patch.log
+            ls $OPENWRT_ROOT_PATH/package/network/utils/nftables >> $LOG_PATH/cmzj_patch.log
+            echo "firewall4-patches" >> $LOG_PATH/cmzj_patch.log
+            ls $OPENWRT_ROOT_PATH/package/network/config/firewall4/patches/ >> $LOG_PATH/cmzj_patch.log
+            echo "libnftnl-patches" >> $LOG_PATH/cmzj_patch.log
+            ls $OPENWRT_ROOT_PATH/package/libs/libnftnl/patches/ >> $LOG_PATH/cmzj_patch.log
+            echo "nftables-patches" >> $LOG_PATH/cmzj_patch.log
+            ls $OPENWRT_ROOT_PATH/package/network/utils/nftables/patches/ >> $LOG_PATH/cmzj_patch.log
+          else
+            echo "::notice ::未检测到nft-fullcone设为编译进固件,跳过添加。"
+          fi
+
+      - name: 为openwrt-22.03/v22.03.*升级dnsmasq与libubox
+        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        run: |
+          openwrt_tag_branche=$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
+          if [ "$openwrt_tag_branche" = "openwrt-22.03" ] || [[ "$openwrt_tag_branche" =~ ^v22.03.* ]] ; then
+            echo "::notice ::检测到openwrt-22.03分支/v22.03.*版本升级dnsmasq与libubox"
+            rm -rf $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+            rm -rf $OPENWRT_ROOT_PATH/package/libs/libubox
+            mkdir -p $OPENWRT_ROOT_PATH/package/libs/libubox
+            mkdir -p $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+            cp -RT $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
+            cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+          else
+            echo "::notice ::检测到非openwrt-22.03分支/v22.03.*版本,跳过升级。"
+          fi
+
+      - name: 检查到软件包依赖
+        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        run: |
+          TMPDIR=$(mktemp -d) || exit 1
+          PACKAGEDEPWARNING=$TMPDIR/packagedepwarning.log
+          gmake -s prepare-tmpinfo
+          ./scripts/package-metadata.pl mk tmp/.packageinfo > tmp/.packagedeps 2>$PACKAGEDEPWARNING || { rm -f tmp/.packagedeps; false; } 
+          if [ -n "$(cat $PACKAGEDEPWARNING)" ]; then
+            echo "::error ::检查到软件包依赖问题,这极有可能导致编译错误，请前往build1检查到软件包依赖步骤查看详情。"
+            cat $PACKAGEDEPWARNING
+          fi
+          [[ -d $TMPDIR ]] && rm -rf "$TMPDIR"
 
       - name: 下载AdGuardHome核心与DNS名单
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -513,7 +584,7 @@ jobs:
               ;;
               esac
               if [ "$Arch" != 1 ];then
-                echo AdGuardHome架构为$Arch,开始下载AdGuardHome
+                echo "::notice ::检测到luci-app-adguardhome配置为编译进固件,AdGuardHome架构为$Arch开始下载"
                 mkdir -p ./files/usr/bin/AdGuardHome/tmp
                 rm -rf ./files/usr/bin/AdGuardHome/tmp/*
                 latest_ver="$(curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
@@ -577,11 +648,11 @@ jobs:
                 echo "files"
                 ls -la $(find $OPENWRT_ROOT_PATH/files/ -type d)
               else
-                echo "AdGuardHome核心不支持此架构,退出执行。"
+                echo "::warning ::AdGuardHome核心不支持此架构,退出执行下载AdGuardHome核心与DNS名单。"
                 rm -rf $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist\(by\ cmzj\).yaml $OPENWRT_ROOT_PATH/files/etc/AdGuardHome.yaml $OPENWRT_ROOT_PATH/files/AdGuardHome
               fi
           else
-            echo "未检测到luci-app-adguardhome配置为编译进固件,退出执行。"
+            echo "::notice ::未检测到luci-app-adguardhome配置为编译进固件,退出执行。"
             rm -rf $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist\(by\ cmzj\).yaml $OPENWRT_ROOT_PATH/files/etc/AdGuardHome.yaml $OPENWRT_ROOT_PATH/files/AdGuardHome
           fi
           
@@ -657,11 +728,11 @@ jobs:
                 echo "files"
                 ls -la $(find $OPENWRT_ROOT_PATH/files/ -type d)
               else
-                echo openclash内核不支持此架构,退出执行。
+                echo "::warning ::openclash内核不支持此架构,退出执行下载openclash内核。"
                 rm -rf $OPENWRT_ROOT_PATH/files/etc/openclash
               fi
           else
-            echo "未检测到luci-app-openclash配置为编译进固件,退出执行。"
+            echo "::notice ::未检测到luci-app-openclash配置为编译进固件,退出执行下载openclash内核。"
             rm -rf $OPENWRT_ROOT_PATH/files/etc/openclash
           fi
           
@@ -900,11 +971,12 @@ jobs:
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' >> .config
+          kmod_compile_exclude_list=$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//' -e 's/,$//g' -e 's#^#\\(#' -e "s#,#\\\|#g" -e "s/$/\\\)/g" )
+          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' | sed "s/\($kmod_compile_exclude_list\)=m/\1=n/g" >> .config
           make defconfig
-          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' >> .config
+          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' | sed "s/\($kmod_compile_exclude_list\)=m/\1=n/g" >> .config
           make defconfig
-          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'|sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g' >> .config
+          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' | sed "s/\($kmod_compile_exclude_list\)=m/\1=n/g" >> .config
           make defconfig
           sed -i -n '/CONFIG_PACKAGE_kmod/p' .config
           echo CONFIG_IB=y >> .config

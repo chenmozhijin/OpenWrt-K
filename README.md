@@ -78,6 +78,8 @@
 
 + LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
 
+> + 以上软件包可以都在Releases中的package.zip文件中，可下载使用。
+
 <details>
  <summary>网卡驱动</summary>
 
@@ -243,7 +245,7 @@ config_build_tool.sh --- OpenWrt-k配置构建工具
 #### 3.1修改openwrt编译所用的分支或tag
 
 + 直接修改OpenWrt-K.Config中```openwrt_tag/branche=```一行```=```后面的分支或tag
-+ 注：建议使用较新的分支或tag（至少使用firewall4），paswall在v22.03.5中无法正常运行需升级dnsmasq与其依赖libubox（可参考[ce2e34e](https://github.com/chenmozhijin/OpenWrt-K/commit/ce2e34e88483f292451ae8078a44559218713d3e)被注释掉的部分）
++ 注：建议使用较新的分支或tag（至少使用firewall4），paswall在v22.03.5中无法正常运行需升级dnsmasq与其依赖libubox~~（可参考[ce2e34e](https://github.com/chenmozhijin/OpenWrt-K/commit/ce2e34e88483f292451ae8078a44559218713d3e)被注释掉的部分）~~（已支持自动升级）
 
 #### 3.2修改openwrt固件编译配置
 >
@@ -271,7 +273,6 @@ luci.config       --- 存储LuCI APP配置（对应Menuconfig中的LuCI）
 network.config    --- 存储网络相关软件包配置（对应Menuconfig中的Network）
 utilities.config  --- 存储工具类软件包配置（对应Menuconfig中的Utilities）
 other.config      --- openwrt剩余的所有配置
-linux/config-x.xx --- 添加进linux内核配置的配置（OpenWrt-k配置构建工具不生成）
 OpenWrt-K/extpackages.config --- 存放拓展软件包配置
 ```
 
@@ -438,30 +439,9 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
     插入到/files/etc/uci-defaults/zzz-chenmozhijin的第二行
 
 2. 如果你fork了此仓库，则编译出的固件的固件版本与页脚中的```Compiled by 沉默の金```中的沉默の金会被修改为你的github名称，你可以在[settings/Public profile](https://github.com/settings/profile) Name一栏中修改
-3. 部分软件包对firewall4的兼容不是很好，不建议编译。具体列表见openwrt/openwrt#11614
+3. 部分软件包对firewall4的兼容不是很好，不建议编译。具体列表见 [openwrt/openwrt#16818](https://github.com/openwrt/packages/issues/16818)
 4. 工作流中“下载AdGuardHome核心与DNS名单”与“下载openclash内核”两个步骤会根据你在配置文件中是否将luci-app-adguardhome或luci-app-openclash配置为编译进固件决定下载或清除残留文件，请配置好配置文件。
-5. 不建议编译sfe，如需编译请删除
-[build-openwrt.yml中```#cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version```](https://github.com/chenmozhijin/OpenWrt-K/blob/06af48fd0cdcc21525d96061fa65c111ae462c56/.github/workflows/build-openwrt.yml#LL438C11-L438C174)
-的注释并删除build-openwrt.yml中的所有
-
-    ```bash
-    |sed 's/kmod-shortcut-fe=m/kmod-shortcut-fe=n/g' 
-    ```
-
-    与build-openwrt.yml中所有的
-
-    ```bash
-    |sed 's/kmod-shortcut-fe-cm=m/kmod-shortcut-fe-cm=n/g'
-    ```
-
-    或
-
-    ```bash
-    |sed 's/kmod-fast-classifier=m/kmod-fast-classifier=n/g'
-    ```
-
-    > 注:kmod-shortcut-fe-cm与kmod-fast-classifier无法同时编译，上面删除仅删除要编译的即可。
-
+5. 默认不编译sfe，Releases allkmod.zip也没有如果需要修改openwrt固件编译配置时添加即可（必须设为添加进固件）。注意:kmod-shortcut-fe-cm与kmod-fast-classifier无法同时编译，同时编译会报不兼容。
 6. 如你在编译与使用过程中遇到问题欢迎提[issue](https://github.com/chenmozhijin/OpenWrt-K/issues)。
 
 ## 感谢
