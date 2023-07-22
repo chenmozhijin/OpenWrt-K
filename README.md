@@ -439,7 +439,7 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
     插入到/files/etc/uci-defaults/zzz-chenmozhijin的第二行
 
 2. 如果你fork了此仓库，则编译出的固件的固件版本与页脚中的```Compiled by 沉默の金```中的沉默の金会被修改为你的github名称，你可以在[settings/Public profile](https://github.com/settings/profile) Name一栏中修改
-3. 部分软件包对firewall4的兼容不是很好，不建议编译。具体列表见openwrt/openwrt#11614
+3. 部分软件包对firewall4的兼容不是很好，不建议编译。具体列表见openwrt/openwrt#16818
 4. 工作流中“下载AdGuardHome核心与DNS名单”与“下载openclash内核”两个步骤会根据你在配置文件中是否将luci-app-adguardhome或luci-app-openclash配置为编译进固件决定下载或清除残留文件，请配置好配置文件。
 5. 默认不编译sfe，Releases allkmod.zip也没有如果需要修改openwrt固件编译配置时添加即可（必须设为添加进固件）。注意:kmod-shortcut-fe-cm与kmod-fast-classifier无法同时编译，同时编译会报不兼容。
 6. 如你在编译与使用过程中遇到问题欢迎提[issue](https://github.com/chenmozhijin/OpenWrt-K/issues)。
