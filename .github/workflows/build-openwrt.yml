@@ -652,11 +652,11 @@ jobs:
                 ls -la $(find $OPENWRT_ROOT_PATH/files/ -type d)
               else
                 echo "::warning ::AdGuardHome核心不支持此架构,退出执行下载AdGuardHome核心与DNS名单。"
-                rm -rf $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist\(by\ cmzj\).yaml $OPENWRT_ROOT_PATH/files/etc/AdGuardHome.yaml $OPENWRT_ROOT_PATH/files/AdGuardHome
+                rm -rf $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist\(by\ cmzj\).yaml $OPENWRT_ROOT_PATH/files/etc/AdGuardHome.yaml $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome
               fi
           else
             echo "::notice ::未检测到luci-app-adguardhome配置为编译进固件,退出执行。"
-            rm -rf $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist\(by\ cmzj\).yaml $OPENWRT_ROOT_PATH/files/etc/AdGuardHome.yaml $OPENWRT_ROOT_PATH/files/AdGuardHome
+            rm -rf $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist\(by\ cmzj\).yaml $OPENWRT_ROOT_PATH/files/etc/AdGuardHome.yaml $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome
           fi
           
       - name: 下载openclash内核
