@@ -9,8 +9,10 @@ sleep 5
 if [ "$( opkg list-installed 2>/dev/null| grep -c "^luci-app-passwall - ")" -ne '0' ];then
 uci set passwall.@global[0].dns_mode='dns2tcp'
 uci set passwall.@global[0].tcp_proxy_mode='gfwlist'
-uci set passwall.@global[0].tcp_node_socks_port='1070'
-uci set passwall.@global[0].remote_dns='127.0.0.1:1745'
+if [ "$( opkg list-installed 2>/dev/null| grep -c "^luci-app-adguardhome")" -ne '0' ];then
+    uci set passwall.@global[0].tcp_node_socks_port='1070'
+    uci set passwall.@global[0].remote_dns='127.0.0.1:1745'
+fi
 uci set passwall.@global[0].when_chnroute_default_dns='chinadns_ng'
 uci set passwall.@global[0].udp_proxy_mode='chnroute'
 uci set passwall.@global_forwarding[0].use_nft='1'
