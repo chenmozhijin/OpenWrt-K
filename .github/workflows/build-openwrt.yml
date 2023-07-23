@@ -446,8 +446,8 @@ jobs:
           fi
           if [ $sfe = true ];then
             echo "::notice ::添加sfe所需补丁与附加内核配置"
-            cp -f $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch ./target/linux/generic/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch
-            cp -f $CMZJ_PATCH_ROOT_PATH/pending-$kernel_version/613-netfilter_optional_tcp_window_check.patch ./target/linux/generic/pending-$kernel_version/613-netfilter_optional_tcp_window_check.patch
+            cp -f $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version/
+            cp -f $CMZJ_PATCH_ROOT_PATH/pending-$kernel_version/613-netfilter_optional_tcp_window_check.patch $OPENWRT_ROOT_PATH/target/linux/generic/pending-$kernel_version/
             echo "#  CONFIG_SHORTCUT_FE is not set" >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version
           fi          
           if [ $sfe = true ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-nft-fullcone=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_NFT_FULLCONE=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
