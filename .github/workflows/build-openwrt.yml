@@ -448,8 +448,8 @@ jobs:
             echo "::notice ::添加sfe所需补丁与附加内核配置"
             cp -f $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version/
             cp -f $CMZJ_PATCH_ROOT_PATH/pending-$kernel_version/613-netfilter_optional_tcp_window_check.patch $OPENWRT_ROOT_PATH/target/linux/generic/pending-$kernel_version/
-            echo "#  CONFIG_SHORTCUT_FE is not set" >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version
-          fi          
+            echo "# CONFIG_SHORTCUT_FE is not set" >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version
+          fi 
           if [ $sfe = true ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-nft-fullcone=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_NFT_FULLCONE=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
             if  [ "$kernel_version" = "6.1" ] || [ "$kernel_version" = "5.15" ]; then
               echo "::notice ::添加sfe/fullcone所需补丁与附加内核配置"
@@ -461,7 +461,7 @@ jobs:
               echo "::error ::OpenWrt-K不支持为5.10以下内核打补丁，如需编译请删除此步骤与turboacc的相关的步骤"
               exti 1
             fi
-            echo "#  CONFIG_NF_CONNTRACK_CHAIN_EVENTS is not set" >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version
+            echo "# CONFIG_NF_CONNTRACK_CHAIN_EVENTS is not set" >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version
           fi
           echo "hack-$kernel_version"  >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version >> $LOG_PATH/cmzj_patch.log
