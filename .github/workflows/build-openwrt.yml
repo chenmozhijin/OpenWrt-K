@@ -59,7 +59,7 @@ jobs:
           sudo timedatectl set-timezone "Asia/Shanghai"
           starttime=$(date +"%y.%m.%d-%H")
           echo starttime=$starttime >> "$GITHUB_OUTPUT"
-          echo "::notice ::编译开始时间$starttime"
+          echo "::notice ::编译开始时间为：$starttime"
 
       - name: 准备环境
         run: |
@@ -513,7 +513,7 @@ jobs:
             cp -RT $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
             cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
           else
-            echo "::notice ::检测到非openwrt-22.03分支/v22.03.*版本,跳过升级。"
+            echo "::notice ::检测到非openwrt-22.03分支/v22.03.*版本,跳过升级dnsmasq与libubox。"
           fi
 
       - name: 检查到软件包依赖
@@ -587,7 +587,7 @@ jobs:
               ;;
               esac
               if [ "$Arch" != 1 ];then
-                echo "::notice ::检测到luci-app-adguardhome配置为编译进固件,AdGuardHome架构为$Arch开始下载"
+                echo "::notice ::检测到luci-app-adguardhome配置为编译进固件,下载DNS名单与架构为$Arch的AdGuardHome核心"
                 mkdir -p ./files/usr/bin/AdGuardHome/tmp
                 rm -rf ./files/usr/bin/AdGuardHome/tmp/*
                 latest_ver="$(curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
@@ -695,7 +695,7 @@ jobs:
               		CORE_ARCH="1"
               		;;
               esac
-              echo $CORE_ARCH
+              echo "::notice ::检测到luci-app-openclash配置为编译进固件,下载架构为$CORE_ARCH的openclash内核"
               if [ "$CORE_ARCH" != 1 ];then
                 OpenClashTMPDIR=$WORKSPACE_ROOT_PATH/tmp/openclash
                 dev_core_path="$OPENWRT_ROOT_PATH/files/etc/openclash/core/clash"
@@ -976,7 +976,7 @@ jobs:
         run: |
           if [ -n "$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')" ];then
             kmod_compile_exclude_list=$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//' -e 's/,$//g' -e 's#^#\\(#' -e "s#,#\\\|#g" -e "s/$/\\\)/g" )
-            echo "::notice ::kmod编译排除列表：$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')"
+            echo "::notice ::kmod编译排除列表为：$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')"
           else
             echo "::warning ::kmod编译排除列表无法获取或为空，这很有可能导致编译失败。"
           fi
