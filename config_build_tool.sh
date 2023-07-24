@@ -147,25 +147,61 @@ function input_parameters() {
         fi
     done
     # 提示用户输入OpenWrt-K存储库地址，并保存到OpenWrt_K_url变量
-    inputbox="输入OpenWrt-K存储库地址"
-    OpenWrt_K_url="$(whiptail --title "Enter the repository address" --inputbox "$inputbox" 10 60 https://github.com/chenmozhijin/OpenWrt-K 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
-    exitstatus=$?
-    if [ $exitstatus = 0 ]; then
-        if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
-            build_dir=$(grep "^build_dir=" buildconfig.config|sed -e "s/build_dir=//")
+    while true; do
+        inputbox="输入OpenWrt-K存储库地址"
+        OpenWrt_K_url="$(whiptail --title "Enter the repository address" --inputbox "$inputbox" 10 60 https://github.com/chenmozhijin/OpenWrt-K 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
+        exitstatus=$?
+        if [ $exitstatus != 0 ]; then
+            echo "你选择了退出"
+            exit 0
+        elif [ -z "$OpenWrt_K_url" ]; then
+            whiptail --title "错误" --msgbox "OpenWrt-K存储库不能为空" 10 60
+        elif [ "$(echo "$OpenWrt_K_url"|grep -c "[!$^*+\`~\'\"\(\) ]")" -ne '0' ];then
+            whiptail --title "错误" --msgbox "OpenWrt-K存储库中有非法字符" 10 60
+        elif [ "$(echo "$OpenWrt_K_url"|grep -c "^http[s]\{0,1\}://")" -eq '0' ]  || [ "$(echo "$OpenWrt_K_url"|grep -c ".")" -eq '0' ] ;then
+            whiptail --title "错误" --msgbox "OpenWrt-K存储库链接不正常" 10 60
+        else
+            error_msg=$(git ls-remote --exit-code "$OpenWrt_K_url" 2>&1)
+            if [ $? -ne 0 ]; then
+                whiptail --title "错误" --msgbox "无效的OpenWrt-K存储库链接，错误信息：\n$error_msg" 10 60
+            else
+                NEW_EXT_PKG_REPOSITORIE=$(echo "$OpenWrt_K_url"|sed "s/\.git$//g" )
+                break
+            fi
         fi
-        whiptail --title "完成" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCH\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url" 10 80
-        echo "警告：请勿手动修改本文件" > buildconfig.config 
-        echo OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH >> buildconfig.config
-        echo OpenWrt_K_url=$OpenWrt_K_url >> buildconfig.config
-        if [ -n "$build_dir" ];then
-            echo build_dir=$build_dir >> buildconfig.config
-            rm -rf $build_dir/OpenWrt-K
-            whiptail --title "提示" --msgbox "请重新准备运行环境" 10 80
+    done
+    # 提示用户输入OpenWrt-K分支
+    while true; do
+            OpenWrt_K_branch=$(whiptail --title "输入分支" --inputbox "输入OpenWrt-K存储库分支" 10 60 $(curl -s -L --retry 3 https://api.github.com/repos/$(echo $OpenWrt_K_url|sed -e "s/https:\/\/github.com\///" -e "s/\/$//" )|grep "\"default_branch\": \""|grep "\","| sed -e "s/  \"default_branch\": \"//g" -e "s/\",//g" ) 3>&1 1>&2 2>&3)
+            exitstatus=$?
+        if [ $exitstatus != 0 ]; then
+            echo "你选择了退出"
+            exit 0
+        elif [ "$(echo "$OpenWrt_K_branch"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
+            whiptail --title "错误" --msgbox "拓展软件包所在分支中有非法字符" 10 60
+        elif [ -z "$OpenWrt_K_branch" ]; then
+            break
+        else
+    # 检查远程仓库是否有该分支
+            if git ls-remote --exit-code --heads "$OpenWrt_K_url" "refs/heads/$OpenWrt_K_branch" 2>&1; then
+                break
+            else
+                whiptail --title "错误" --msgbox "这个拓展软件包存储库地址不含有分支 '$OpenWrt_K_branch'。" 10 60
+            fi
         fi
-    else
-        echo "你选择了退出"
-        exit 0
+    done
+    if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
+        build_dir=$(grep "^build_dir=" buildconfig.config|sed -e "s/build_dir=//")
+    fi
+    whiptail --title "完成" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCH\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url\n选择的OpenWrt-K存储库分支为: $OpenWrt_K_branch" 10 80
+    echo "警告：请勿手动修改本文件" > buildconfig.config 
+    echo OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH >> buildconfig.config
+    echo OpenWrt_K_url=$OpenWrt_K_url >> buildconfig.config
+    echo OpenWrt_K_branch=$OpenWrt_K_branch >> buildconfig.config
+    if [ -n "$build_dir" ];then
+        echo build_dir=$build_dir >> buildconfig.config
+        rm -rf $build_dir/OpenWrt-K
+        whiptail --title "提示" --msgbox "请重新准备运行环境" 10 80
     fi
     # 调用config_ext_packages函数进行后续配置
     config_ext_packages
@@ -188,8 +224,8 @@ function import_ext_packages_config() {
         # 从配置文件buildconfig.config中提取OpenWrt-K仓库的URL
         OpenWrt_K_url=$(grep "^OpenWrt_K_url=" buildconfig.config|sed  "s/OpenWrt_K_url=//")
         OpenWrt_K_repo=$(echo $OpenWrt_K_url|sed -e "s/https:\/\/github.com\///" -e "s/\/$//" )
-        # 从GitHub API获取OpenWrt-K仓库的默认分支
-        branch=$(curl -s -L --retry 3 https://api.github.com/repos/$OpenWrt_K_repo|grep "\"default_branch\": \""|grep "\","| sed -e "s/  \"default_branch\": \"//g" -e "s/\",//g" )
+        # 获取OpenWrt-K仓库的分支
+        branch=$(grep "^OpenWrt_K_branch=" buildconfig.config|sed  "s/OpenWrt_K_branch=//")
         [[ -z "$branch" ]] && echo "错误获取分支失败" && exit 1
         DOWNLOAD_URL=https://raw.githubusercontent.com/$OpenWrt_K_repo/$branch/config/OpenWrt-K/extpackages.config
     else
@@ -545,7 +581,7 @@ function menu() {
     "4" "载入OpenWrt-K默认config" \
     "5" "清除所有openwrt配置" \
     "6" "清除运行环境" \
-    "7" "重新配置OpenWrt-K存储库地址、OpenWrt branch或tag与拓展软件包" \
+    "7" "重新配置OpenWrt-K存储库地址\分支、OpenWrt branch或tag与拓展软件包" \
     "8" "配置拓展软件包" \
     "9" "重新载入拓展软件包" \
     "10" "关于" 3>&1 1>&2 2>&3)
@@ -663,12 +699,13 @@ function prepare() {
     # 获取OpenWrt-K的存储库URL、OpenWrt-K所在目录和选择的OPENWRT分支/标签
     OpenWrt_K_url=$(grep "^OpenWrt_K_url=" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_url=//")
     OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g" -e "s/\ .*//g")
+    OpenWrt_K_branch=$(grep "^OpenWrt_K_branch=" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_branch=//")
     OPENWRT_TAG_BRANCH=$(grep "^OPENWRT_TAG_BRANCH=" $build_dir/../buildconfig.config|sed  "s/OPENWRT_TAG_BRANCH=//")
     # 检查OpenWrt-K目录是否已存在，若存在则执行git pull更新，否则执行git clone克隆
     if [ -d "$OpenWrt_K_dir" ]; then
         git -C $OpenWrt_K_dir pull || return 4
     else
-        git clone $OpenWrt_K_url $OpenWrt_K_dir || return 4
+        git clone $OpenWrt_K_url $OpenWrt_K_dir -b $OpenWrt_K_branch || return 4
     fi
     # 检查openwrt目录是否已存在，若存在则执行git pull更新并检查分支/标签，否则执行git clone克隆
     if [ -d "$openwrt_dir" ]; then
