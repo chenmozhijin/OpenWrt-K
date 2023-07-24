@@ -266,9 +266,9 @@ jobs:
           export WORKSPACE_ROOT_PATH="$(pwd)/workspace"
           echo "WORKSPACE_ROOT_PATH=$WORKSPACE_ROOT_PATH" >> $GITHUB_ENV
           mkdir -p $WORKSPACE_ROOT_PATH/{cmzj_package,cmzj_patch,log}
-          export CMZJ_PACKAGE_ROOT_PATH="$(pwd/cmzj_package)"
-          export CMZJ_PATCH_ROOT_PATH="$(pwd/cmzj_patch)"
-          export LOG_PATH="$(pwd/log)"
+          export CMZJ_PACKAGE_ROOT_PATH="$(pwd)/cmzj_package"
+          export CMZJ_PATCH_ROOT_PATH="$(pwd)/cmzj_patch"
+          export LOG_PATH="$(pwd)/log"
           echo "CMZJ_PACKAGE_ROOT_PATH=$CMZJ_PACKAGE_ROOT_PATH" >> $GITHUB_ENV
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
           echo "LOG_PATH=$LOG_PATH" >> $GITHUB_ENV
