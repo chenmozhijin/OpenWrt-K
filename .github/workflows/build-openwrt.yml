@@ -117,13 +117,13 @@ jobs:
           n=1
           while [ "$n" -le $NUMBER_OF_PKGS ]; do
               EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              EXT_PKG_BRANCHE=$(grep "^EXT_PACKAGES_BRANCHE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              echo "REPOSITORIE=$EXT_PKG_REPOSITORIE BRANCHE=$EXT_PKG_BRANCHE" >> $EXT_PKGS_PREP_PATH/extpackagesbr.config
+              EXT_PKG_BRANCH=$(grep "^EXT_PACKAGES_BRANCH\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
+              echo "REPOSITORIE=$EXT_PKG_REPOSITORIE BRANCH=$EXT_PKG_BRANCH" >> $EXT_PKGS_PREP_PATH/extpackagesbr.config
               n=$(( n+1 ))
           done
           sort $EXT_PKGS_PREP_PATH/extpackagesbr.config|uniq > $EXT_PKGS_PREP_PATH/clone.config
-          sed -i -e "s/BRANCHE=$//g" $EXT_PKGS_PREP_PATH/clone.config
-          sed -i -e "s/BRANCHE=/--branch /g" $EXT_PKGS_PREP_PATH/clone.config
+          sed -i -e "s/BRANCH=$//g" $EXT_PKGS_PREP_PATH/clone.config
+          sed -i -e "s/BRANCH=/--branch /g" $EXT_PKGS_PREP_PATH/clone.config
           NUMBER_OF_CLONES=$(grep -c "REPOSITORIE=" $EXT_PKGS_PREP_PATH/clone.config)
           sed -i "s/^REPOSITORIE=//g" $EXT_PKGS_PREP_PATH/clone.config
           echo "开始克隆拓展软件包仓库"
@@ -152,13 +152,13 @@ jobs:
               EXT_PKG_NAME=$(grep "^EXT_PACKAGES_NAME\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
               EXT_PKG_PATH=$(grep "^EXT_PACKAGES_PATH\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
               EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              EXT_PKG_BRANCHE=$(grep "^EXT_PACKAGES_BRANCHE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
+              EXT_PKG_BRANCH=$(grep "^EXT_PACKAGES_BRANCH\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
               EXT_PKG_REPO_PATH=$(echo "$EXT_PKG_REPOSITORIE" | sed -e 's/[[:space:]]*$//' -e "s/\.git$//g" -e "s/ .*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")
-              if [ -z "$EXT_PKG_BRANCHE" ];then
-                  EXT_PKG_BRANCHE="default_branch"
+              if [ -z "$EXT_PKG_BRANCH" ];then
+                  EXT_PKG_BRANCH="default_branch"
               fi
               mkdir -p $EXT_PKGS_PATH/$EXT_PKG_NAME
-              cp -RT $EXT_PKGS_DL_PATH/$EXT_PKG_BRANCHE/$EXT_PKG_REPO_PATH/$EXT_PKG_PATH $EXT_PKGS_PATH/$EXT_PKG_NAME
+              cp -RT $EXT_PKGS_DL_PATH/$EXT_PKG_BRANCH/$EXT_PKG_REPO_PATH/$EXT_PKG_PATH $EXT_PKGS_PATH/$EXT_PKG_NAME
               n=$(( n+1 ))
           done
           cp -RT $EXT_PKGS_PATH $CMZJ_PACKAGE_ROOT_PATH
@@ -330,8 +330,8 @@ jobs:
       - name: 切换标签/分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          git checkout $(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
-          echo "::notice ::你编译的标签/分支为$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
+          git checkout $(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
+          echo "::notice ::你编译的标签/分支为$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
 
       - name: 复制cmzj_package
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
@@ -400,11 +400,11 @@ jobs:
           cat $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin | grep 'Compiled by'
           echo "::notice ::编译者已替换为$compiler"
           #添加编译信息
-          export OPENWRT_TAG_BRANCHE="$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
+          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
           echo "COMPILE_START_TIME=\"${{ needs.prepare.outputs.starttime }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "COMPILER=\"$compiler\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "RELEASE_NAME=\"OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCHE]\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "RELEASE_TAG_NAME=\"v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCHE)\""  >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "RELEASE_NAME=\"OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "RELEASE_TAG_NAME=\"v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCH)\""  >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "REPOSITORY_URL=\"https://github.com/${{ github.repository }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "$OPENWRT_ROOT_PATH/files/etc/openwrt-k_info"
           cat $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
@@ -503,8 +503,8 @@ jobs:
       - name: 为openwrt-22.03/v22.03.*升级dnsmasq与libubox
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          openwrt_tag_branche=$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
-          if [ "$openwrt_tag_branche" = "openwrt-22.03" ] || [[ "$openwrt_tag_branche" =~ ^v22.03.* ]] ; then
+          openwrt_tag_branch=$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
+          if [ "$openwrt_tag_branch" = "openwrt-22.03" ] || [[ "$openwrt_tag_branch" =~ ^v22.03.* ]] ; then
             echo "::notice ::检测到openwrt-22.03分支/v22.03.*版本升级dnsmasq与libubox"
             rm -rf $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
             rm -rf $OPENWRT_ROOT_PATH/package/libs/libubox
@@ -1285,11 +1285,11 @@ jobs:
       - name: 生成 release 所需变量
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
         run: |
-          export OPENWRT_TAG_BRANCHE="$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
-          echo "OPENWRT_TAG_BRANCHE=$OPENWRT_TAG_BRANCHE" >> $GITHUB_ENV
-          export RELEASE_NAME="OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCHE]"
+          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
+          echo "OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH" >> $GITHUB_ENV
+          export RELEASE_NAME="OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          export RELEASE_TAG_NAME="v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCHE)"
+          export RELEASE_TAG_NAME="v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCH)"
           echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
           
       - name: 下载固件
@@ -1320,12 +1320,12 @@ jobs:
       - name: 整理包生成 release body
         run: |
           echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
-          echo "编译的openwrt版本/分支: " $OPENWRT_TAG_BRANCHE >> $UPLOAD_ROOT_PATH/release.txt
-          latest_ver="$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
+          echo "编译的openwrt版本/分支: " $OPENWRT_TAG_BRANCH >> $UPLOAD_ROOT_PATH/release.txt
+          latest_ver="$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCH)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
           echo latest_ver=$latest_ver
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
-          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || exit 0
-          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || exit 0
+          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCH)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || exit 0
+          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCH)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
           unzip package.zip
           unzip allkmod.zip

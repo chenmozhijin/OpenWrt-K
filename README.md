@@ -244,7 +244,7 @@ config_build_tool.sh --- OpenWrt-k配置构建工具
 
 #### 3.1修改openwrt编译所用的分支或tag
 
-+ 直接修改OpenWrt-K.Config中```openwrt_tag/branche=```一行```=```后面的分支或tag
++ 直接修改OpenWrt-K.Config中```openwrt_tag/branch=```一行```=```后面的分支或tag
 + 注：建议使用较新的分支或tag（至少使用firewall4），paswall在v22.03.5中无法正常运行需升级dnsmasq与其依赖libubox~~（可参考[ce2e34e](https://github.com/chenmozhijin/OpenWrt-K/commit/ce2e34e88483f292451ae8078a44559218713d3e)被注释掉的部分）~~（已支持自动升级）
 
 #### 3.2修改openwrt固件编译配置
@@ -365,7 +365,7 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
         EXT_PACKAGES_NAME[30]="luci-app-lucky"
         EXT_PACKAGES_PATH[30]=""
         EXT_PACKAGES_REPOSITORIE[30]="https://github.com/sirpdboy/luci-app-lucky"
-        EXT_PACKAGES_BRANCHE[30]=""
+        EXT_PACKAGES_BRANCH[30]=""
         ```
 
     2. 在luci.config中插入以下行
@@ -387,7 +387,7 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
         EXT_PACKAGES_NAME[30]="luci-app-ramfree"
         EXT_PACKAGES_PATH[30]="applications/luci-app-ramfree"
         EXT_PACKAGES_REPOSITORIE[30]="https://github.com/coolsnowwolf/luci"
-        EXT_PACKAGES_BRANCHE[30]=""
+        EXT_PACKAGES_BRANCH[30]=""
         ```
 
     2. 在luci.config中插入以下行
@@ -401,7 +401,7 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
 > EXT_PACKAGES_NAME -- 拓展软件包名用于创建包存放文件夹，请勿输入空格斜杠或与其他软件包重名  
 > EXT_PACKAGES_PATH -- 拓展软件包在存储库中的目录(包与存储库的相对位置)，例如一个包在存储库根目录的luci-app-xxx文件夹下则输入luci-app-xxx，如果包就在根目录着可以留空。  
 > EXT_PACKAGES_REPOSITORIE -- 拓展软件包所在存储库，https的存储库地址，无需加“.git”，例如："`https://github.com/chenmozhijin/turboacc`"
-> EXT_PACKAGES_BRANCHE -- 拓展软件包所在分支,一般不输入默认留空使用默认分支即可
+> EXT_PACKAGES_BRANCH -- 拓展软件包所在分支,一般不输入默认留空使用默认分支即可
 
 </details>
 
