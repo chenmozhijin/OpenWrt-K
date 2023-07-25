@@ -48,8 +48,8 @@ permissions:
 jobs:
   prepare:
     outputs:
-      target: ${{ steps.target.outputs.target }}
-      subtarget: ${{ steps.target.outputs.subtarget }}
+      target: ${{ steps.info.outputs.target }}
+      subtarget: ${{ steps.info.outputs.subtarget }}
       starttime: ${{ steps.time.outputs.starttime }}
     runs-on: ubuntu-22.04
     steps:
@@ -65,46 +65,30 @@ jobs:
         run: |
           sudo -E apt update
           sudo apt install -y curl git rsync unzip wget sed tar || sudo apt install -y curl git rsync unzip wget sed tar
-      
+
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
-              
+
       - name: 建立工作文件夹
         run: |
-          cd $GITHUB_WORKSPACE
-          mkdir -p download
-          cd download
-          export DOWNLOAD_ROOT_PATH="$(pwd)"
+          mkdir -p download cmzj_package cmzj_patch
+          export DOWNLOAD_ROOT_PATH="$(pwd)/download"
+          export CMZJ_PACKAGE_ROOT_PATH="$(pwd)/cmzj_package"
+          export CMZJ_PATCH_ROOT_PATH="$(pwd)/cmzj_patch"
           echo "DOWNLOAD_ROOT_PATH=$DOWNLOAD_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p lede Lienol immortalwrt wongsyrone passwall turboacc other
-          cd $GITHUB_WORKSPACE
-          mkdir -p cmzj_package
-          cd cmzj_package
-          export CMZJ_PACKAGE_ROOT_PATH="$(pwd)"
           echo "CMZJ_PACKAGE_ROOT_PATH=$CMZJ_PACKAGE_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p turboacc r8125
-          cd $GITHUB_WORKSPACE
-          mkdir -p cmzj_patch
-          cd cmzj_patch
-          export CMZJ_PATCH_ROOT_PATH="$(pwd)"
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/firewall4/patches/ $CMZJ_PATCH_ROOT_PATH/libnftnl/patches/ $CMZJ_PATCH_ROOT_PATH/nftables/patches/ $CMZJ_PATCH_ROOT_PATH/hack-5.10 $CMZJ_PATCH_ROOT_PATH/hack-5.15 $CMZJ_PATCH_ROOT_PATH/hack-6.1 $CMZJ_PATCH_ROOT_PATH/dnsmasq $CMZJ_PATCH_ROOT_PATH/libubox $CMZJ_PATCH_ROOT_PATH/netdata
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/pending-5.10/ $CMZJ_PATCH_ROOT_PATH/pending-5.15/ $CMZJ_PATCH_ROOT_PATH/pending-6.1/
+          mkdir -p $CMZJ_PATCH_ROOT_PATH/{firewall4,libnftnl,nftables}/patches/
+          mkdir -p $CMZJ_PATCH_ROOT_PATH/{dnsmasq,libubox,netdata}
+          mkdir -p $CMZJ_PATCH_ROOT_PATH/{hack,pending}-{5.10,5.15,6.1}
 
       - name: 克隆补丁所需源代码
-        working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}
         run: |
-          cd lede
-          git clone https://github.com/coolsnowwolf/lede
-          cd $DOWNLOAD_ROOT_PATH        
-          cd immortalwrt
-          git clone https://github.com/immortalwrt/packages
-          cd $DOWNLOAD_ROOT_PATH
-          cd turboacc
-          git clone https://github.com/chenmozhijin/turboacc -b package
-          cd $DOWNLOAD_ROOT_PATH
-          git clone https://git.openwrt.org/openwrt/openwrt.git
-          
+          git clone --depth=1 --single-branch https://github.com/coolsnowwolf/lede $DOWNLOAD_ROOT_PATH/patch/lede
+          git clone --depth=1 --single-branch https://github.com/immortalwrt/packages $DOWNLOAD_ROOT_PATH/patch/immortalwrt-packages
+          git clone --depth=1 --single-branch https://github.com/chenmozhijin/turboacc -b package $DOWNLOAD_ROOT_PATH/patch/turboacc
+          git clone https://git.openwrt.org/openwrt/openwrt.git $DOWNLOAD_ROOT_PATH/openwrt
+
       - name: 导入拓展软件包
         run: |
           TMPDIR=$(mktemp -d) || exit 1
@@ -117,13 +101,13 @@ jobs:
           n=1
           while [ "$n" -le $NUMBER_OF_PKGS ]; do
               EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              EXT_PKG_BRANCHE=$(grep "^EXT_PACKAGES_BRANCHE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              echo "REPOSITORIE=$EXT_PKG_REPOSITORIE BRANCHE=$EXT_PKG_BRANCHE" >> $EXT_PKGS_PREP_PATH/extpackagesbr.config
+              EXT_PKG_BRANCH=$(grep "^EXT_PACKAGES_BRANCH\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
+              echo "REPOSITORIE=$EXT_PKG_REPOSITORIE BRANCH=$EXT_PKG_BRANCH" >> $EXT_PKGS_PREP_PATH/extpackagesbr.config
               n=$(( n+1 ))
           done
           sort $EXT_PKGS_PREP_PATH/extpackagesbr.config|uniq > $EXT_PKGS_PREP_PATH/clone.config
-          sed -i -e "s/BRANCHE=$//g" $EXT_PKGS_PREP_PATH/clone.config
-          sed -i -e "s/BRANCHE=/--branch /g" $EXT_PKGS_PREP_PATH/clone.config
+          sed -i -e "s/BRANCH=$//g" $EXT_PKGS_PREP_PATH/clone.config
+          sed -i -e "s/BRANCH=/--branch /g" $EXT_PKGS_PREP_PATH/clone.config
           NUMBER_OF_CLONES=$(grep -c "REPOSITORIE=" $EXT_PKGS_PREP_PATH/clone.config)
           sed -i "s/^REPOSITORIE=//g" $EXT_PKGS_PREP_PATH/clone.config
           echo "开始克隆拓展软件包仓库"
@@ -152,13 +136,13 @@ jobs:
               EXT_PKG_NAME=$(grep "^EXT_PACKAGES_NAME\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
               EXT_PKG_PATH=$(grep "^EXT_PACKAGES_PATH\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
               EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              EXT_PKG_BRANCHE=$(grep "^EXT_PACKAGES_BRANCHE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
+              EXT_PKG_BRANCH=$(grep "^EXT_PACKAGES_BRANCH\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
               EXT_PKG_REPO_PATH=$(echo "$EXT_PKG_REPOSITORIE" | sed -e 's/[[:space:]]*$//' -e "s/\.git$//g" -e "s/ .*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")
-              if [ -z "$EXT_PKG_BRANCHE" ];then
-                  EXT_PKG_BRANCHE="default_branch"
+              if [ -z "$EXT_PKG_BRANCH" ];then
+                  EXT_PKG_BRANCH="default_branch"
               fi
               mkdir -p $EXT_PKGS_PATH/$EXT_PKG_NAME
-              cp -RT $EXT_PKGS_DL_PATH/$EXT_PKG_BRANCHE/$EXT_PKG_REPO_PATH/$EXT_PKG_PATH $EXT_PKGS_PATH/$EXT_PKG_NAME
+              cp -RT $EXT_PKGS_DL_PATH/$EXT_PKG_BRANCH/$EXT_PKG_REPO_PATH/$EXT_PKG_PATH $EXT_PKGS_PATH/$EXT_PKG_NAME
               n=$(( n+1 ))
           done
           cp -RT $EXT_PKGS_PATH $CMZJ_PACKAGE_ROOT_PATH
@@ -166,11 +150,11 @@ jobs:
           cd $CMZJ_PACKAGE_ROOT_PATH
           echo "CMZJ_PACKAGE_ROOT_PATH"
           ls -la $(find $CMZJ_PACKAGE_ROOT_PATH -type d)
-          
+
       - name: 修改Makefile文件
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' $(find ./ -type f -name "Makefile")
-          
+
       - name: 创建符号链接以修复中文支持
         working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
         run: |
@@ -197,35 +181,35 @@ jobs:
               n=$(( n+1 ))
           done
           [[ -d $TMPDIR ]] && rm -rf "$TMPDIR"
-          
+
       - name: 复制到cmzj_patch
         run: |
-          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
-          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
-          cp $DOWNLOAD_ROOT_PATH/turboacc/turboacc/hack-5.15/952-add-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-5.15/
-          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-5.15/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-5.15/
-          cp $DOWNLOAD_ROOT_PATH/turboacc/turboacc/hack-6.1/952-add-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-6.1/
-          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/hack-6.1/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-6.1/
-          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/firewall4-$(grep -o 'FIREWALL4_VERSION=.*' $DOWNLOAD_ROOT_PATH/turboacc/turboacc/version | cut -d '=' -f 2)/firewall4 $CMZJ_PATCH_ROOT_PATH/firewall4
-          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/libnftnl-$(grep -o 'LIBNFTN_VERSION=.*' $DOWNLOAD_ROOT_PATH/turboacc/turboacc/version | cut -d '=' -f 2)/libnftnl $CMZJ_PATCH_ROOT_PATH/libnftnl
-          cp -RT $DOWNLOAD_ROOT_PATH/turboacc/turboacc/nftables-$(grep -o 'NFTABLES_VERSION=.*' $DOWNLOAD_ROOT_PATH/turboacc/turboacc/version | cut -d '=' -f 2)/nftables $CMZJ_PATCH_ROOT_PATH/nftables
+          cp $DOWNLOAD_ROOT_PATH/patch/lede/target/linux/generic/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
+          cp $DOWNLOAD_ROOT_PATH/patch/lede/target/linux/generic/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
+          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/hack-5.15/952-add-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-5.15/
+          cp $DOWNLOAD_ROOT_PATH/patch/lede/target/linux/generic/hack-5.15/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-5.15/
+          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/hack-6.1/952-add-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-6.1/
+          cp $DOWNLOAD_ROOT_PATH/patch/lede/target/linux/generic/hack-6.1/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-6.1/
+          cp -RT $DOWNLOAD_ROOT_PATH/patch/turboacc/firewall4-$(grep -o 'FIREWALL4_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)/firewall4 $CMZJ_PATCH_ROOT_PATH/firewall4
+          cp -RT $DOWNLOAD_ROOT_PATH/patch/turboacc/libnftnl-$(grep -o 'LIBNFTN_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)/libnftnl $CMZJ_PATCH_ROOT_PATH/libnftnl
+          cp -RT $DOWNLOAD_ROOT_PATH/patch/turboacc/nftables-$(grep -o 'NFTABLES_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)/nftables $CMZJ_PATCH_ROOT_PATH/nftables
           cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/network/services/dnsmasq $CMZJ_PATCH_ROOT_PATH/dnsmasq
           cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/libubox
-          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/pending-5.10/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-5.10/
-          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/pending-5.15/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-5.15/
-          cp $DOWNLOAD_ROOT_PATH/lede/lede/target/linux/generic/pending-6.1/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-6.1/
-          cp -RT $DOWNLOAD_ROOT_PATH/immortalwrt/packages/admin/netdata $CMZJ_PATCH_ROOT_PATH/netdata
-          echo "FIREWALL4_VERSION=firewall4-$(grep -o 'FIREWALL4_VERSION=.*' $DOWNLOAD_ROOT_PATH/turboacc/turboacc/version | cut -d '=' -f 2)"
-          echo "NFTABLES_VERSION=libnftnl-$(grep -o 'NFTABLES_VERSION=.*' $DOWNLOAD_ROOT_PATH/turboacc/turboacc/version | cut -d '=' -f 2)"
-          echo "LIBNFTN_VERSION=nftables-$(grep -o 'LIBNFTN_VERSION=.*' $DOWNLOAD_ROOT_PATH/turboacc/turboacc/version | cut -d '=' -f 2)"
-          
+          cp $DOWNLOAD_ROOT_PATH/patch/lede/target/linux/generic/pending-5.10/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-5.10/
+          cp $DOWNLOAD_ROOT_PATH/patch/lede/target/linux/generic/pending-5.15/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-5.15/
+          cp $DOWNLOAD_ROOT_PATH/patch/lede/target/linux/generic/pending-6.1/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-6.1/
+          cp -RT $DOWNLOAD_ROOT_PATH/patch/immortalwrt-packages/admin/netdata $CMZJ_PATCH_ROOT_PATH/netdata
+          echo "FIREWALL4_VERSION=firewall4-$(grep -o 'FIREWALL4_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)"
+          echo "NFTABLES_VERSION=libnftnl-$(grep -o 'NFTABLES_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)"
+          echo "LIBNFTN_VERSION=nftables-$(grep -o 'LIBNFTN_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)"
+
       - name: 压缩
         run: |
           cd $CMZJ_PACKAGE_ROOT_PATH
           tar cvpzf $GITHUB_WORKSPACE/cmzj_package.tgz *
           cd $CMZJ_PATCH_ROOT_PATH
           tar cvpzf $GITHUB_WORKSPACE/cmzj_patch.tgz *
-          
+
       - name: 上传 cmzj_package
         uses: actions/upload-artifact@v3
         with:
@@ -239,14 +223,20 @@ jobs:
           path: cmzj_patch.tgz
 
       - name: 读取架构信息
-        id: target
+        id: info
         working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}/openwrt
         run: |
+          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')"
+          git checkout $OPENWRT_TAG_BRANCH
           cat $GITHUB_WORKSPACE/config/target.config >> $DOWNLOAD_ROOT_PATH/openwrt/.config
           make defconfig
-          echo target=$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//') >> "$GITHUB_OUTPUT"
-          echo subtarget=$(sed -n '/CONFIG_TARGET_SUBTARGET/p' .config | sed -e 's/CONFIG_TARGET_SUBTARGET\=\"//' -e 's/\"//') >> "$GITHUB_OUTPUT"
-          echo "::notice ::你编译的架构为$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')，子架构为$(sed -n '/CONFIG_TARGET_SUBTARGET/p' .config | sed -e 's/CONFIG_TARGET_SUBTARGET\=\"//' -e 's/\"//')"
+          target=$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')
+          subtarget=$(sed -n '/CONFIG_TARGET_SUBTARGET/p' .config | sed -e 's/CONFIG_TARGET_SUBTARGET\=\"//' -e 's/\"//')
+          echo target=$target >> "$GITHUB_OUTPUT"
+          echo subtarget=$subtarget >> "$GITHUB_OUTPUT"
+          echo "::notice ::Release名：OpenWrt-K_V$starttime ($target-$subtarget)-[$OPENWRT_TAG_BRANCH]"
+          echo "::notice ::你编译的架构为$target，子架构为$subtarget"
+          echo "::notice ::你编译的标签/分支为$OPENWRT_TAG_BRANCH"
 
   build1:
     runs-on: ubuntu-22.04
@@ -258,43 +248,32 @@ jobs:
       - name: 输出运行器硬件信息
         run: |
           bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
-          
+
       - name: 安装编译依赖
         run: |
           bash $GITHUB_WORKSPACE/scripts/install_compilation_dependencies.sh
-          
+
       - name: 合并磁盘
         run: |
           bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
-          
+
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
-      
+
       - name: 建立工作文件夹
         run: |
-          cd $GITHUB_WORKSPACE
-          sudo mkdir -p workspace
-          sudo chown $USER:$GROUPS workspace
-          cd workspace
-          export WORKSPACE_ROOT_PATH="$(pwd)"
+          mkdir -p workspace
+          export WORKSPACE_ROOT_PATH="$(pwd)/workspace"
           echo "WORKSPACE_ROOT_PATH=$WORKSPACE_ROOT_PATH" >> $GITHUB_ENV
-          cd $WORKSPACE_ROOT_PATH
-          mkdir -p cmzj_package
-          cd cmzj_package
-          export CMZJ_PACKAGE_ROOT_PATH="$(pwd)"
+          mkdir -p $WORKSPACE_ROOT_PATH/{cmzj_package,cmzj_patch,log}
+          export CMZJ_PACKAGE_ROOT_PATH="$WORKSPACE_ROOT_PATH/cmzj_package"
+          export CMZJ_PATCH_ROOT_PATH="$WORKSPACE_ROOT_PATH/cmzj_patch"
+          export LOG_PATH="$WORKSPACE_ROOT_PATH/log"
           echo "CMZJ_PACKAGE_ROOT_PATH=$CMZJ_PACKAGE_ROOT_PATH" >> $GITHUB_ENV
-          cd $WORKSPACE_ROOT_PATH
-          mkdir -p cmzj_patch
-          cd cmzj_patch
-          export CMZJ_PATCH_ROOT_PATH="$(pwd)"
           echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
-          cd $WORKSPACE_ROOT_PATH
-          mkdir -p log
-          cd log
-          export LOG_PATH="$(pwd)"
           echo "LOG_PATH=$LOG_PATH" >> $GITHUB_ENV
-          cd $GITHUB_WORKSPACE && cat $GITHUB_ENV >> build1_ENV
-          
+          cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
+
       - name: 下载cmzj_package
         uses: actions/download-artifact@v3
         with:
@@ -325,13 +304,11 @@ jobs:
           cd openwrt
           export OPENWRT_ROOT_PATH="$(pwd)"
           echo "OPENWRT_ROOT_PATH=$OPENWRT_ROOT_PATH" >> $GITHUB_ENV
-          cd $GITHUB_WORKSPACE && cat $GITHUB_ENV >> build1_ENV
-          
+          cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
+
       - name: 切换标签/分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          git checkout $(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
-          echo "::notice ::你编译的标签/分支为$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
+        run: git checkout $(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')
 
       - name: 复制cmzj_package
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
@@ -340,7 +317,6 @@ jobs:
           echo "cmzj_package" >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/package/cmzj_package >> $LOG_PATH/cmzj_patch.log
 
-      
       - name: 修复问题
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -348,17 +324,16 @@ jobs:
           sed -i 's/^	dnsmasq \\$/	dnsmasq-full \\/g' ./include/target.mk
           sed -i 's/256/1024/' ./target/linux/${{ needs.prepare.outputs.target }}/image/Makefile
           sed -i 's/^	b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/	$(TOPDIR)\/tools\/b43-tools\/files\/b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/' ./package/kernel/mac80211/broadcom.mk
-      
-      - name: 更新 feeds 
+
+      - name: 更新 feeds
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-      
+
       - name: 更新smartdns、netdata
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          WORKINGDIR="`pwd`/feeds/packages/net/smartdns"
+          WORKINGDIR="$OPENWRT_ROOT_PATH/feeds/packages/net/smartdns"
           mkdir $WORKINGDIR -p
           rm $WORKINGDIR/* -fr
           wget https://github.com/pymumu/openwrt-smartdns/archive/master.zip -O $WORKINGDIR/master.zip
@@ -366,8 +341,8 @@ jobs:
           mv $WORKINGDIR/openwrt-smartdns-master/* $WORKINGDIR/
           rmdir $WORKINGDIR/openwrt-smartdns-master
           rm $WORKINGDIR/master.zip
-          LUCIBRANCH="master" #更换此变量
-          WORKINGDIR="`pwd`/feeds/luci/applications/luci-app-smartdns"
+          LUCIBRANCH="master"
+          WORKINGDIR="$OPENWRT_ROOT_PATH/feeds/luci/applications/luci-app-smartdns"
           mkdir $WORKINGDIR -p
           rm $WORKINGDIR/* -fr
           wget https://github.com/pymumu/luci-app-smartdns/archive/${LUCIBRANCH}.zip -O $WORKINGDIR/${LUCIBRANCH}.zip
@@ -375,20 +350,20 @@ jobs:
           mv $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}/* $WORKINGDIR/
           rmdir $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}
           rm $WORKINGDIR/${LUCIBRANCH}.zip
-          WORKINGDIR="`pwd`/feeds/packages/admin/netdata"
+          WORKINGDIR="$OPENWRT_ROOT_PATH/feeds/packages/admin/netdata"
           mkdir $WORKINGDIR -p
           rm $WORKINGDIR/* -fr
           cp -RT $CMZJ_PATCH_ROOT_PATH/netdata $WORKINGDIR
-      
-      - name: 安装 feeds 
+
+      - name: 安装 feeds
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: ./scripts/feeds install -a
 
       - name: 复制自定义文件并添加编译信息
         run: |
           cp -r files $OPENWRT_ROOT_PATH/files
-          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
-          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin-passwall
+          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/*
+          chmod 755 $OPENWRT_ROOT_PATH/files/usr/share/cmzj/openwrt-k_tool.sh
           #替换编译者
           if [ "$(curl -s https://api.github.com/users/$(echo ${{ github.repository }} | sed "s/\/.*//g") 2>/dev/null|grep -c "^  \"name\": null,$")" -ne '0' ];then
             compiler=$(echo ${{ github.repository }} | sed "s/\/.*//g")
@@ -400,11 +375,11 @@ jobs:
           cat $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin | grep 'Compiled by'
           echo "::notice ::编译者已替换为$compiler"
           #添加编译信息
-          export OPENWRT_TAG_BRANCHE="$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
+          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')"
           echo "COMPILE_START_TIME=\"${{ needs.prepare.outputs.starttime }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "COMPILER=\"$compiler\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "RELEASE_NAME=\"OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCHE]\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "RELEASE_TAG_NAME=\"v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCHE)\""  >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "RELEASE_NAME=\"OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "RELEASE_TAG_NAME=\"v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCH)\""  >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "REPOSITORY_URL=\"https://github.com/${{ github.repository }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "$OPENWRT_ROOT_PATH/files/etc/openwrt-k_info"
           cat $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
@@ -412,13 +387,7 @@ jobs:
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          cat $GITHUB_WORKSPACE/config/target.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/luci.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/utilities.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/network.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/other.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/kmod.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/{target,luci,utilities,network,other,kmod,image}.config >> $OPENWRT_ROOT_PATH/.config
           make defconfig
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/build1-diffconfig.log
@@ -429,27 +398,23 @@ jobs:
           kernel_version="$(sed -n '/CONFIG_LINUX_/p' $OPENWRT_ROOT_PATH/.config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g')"
           echo kernel_version=$kernel_version
           if [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_SHORTCUT_FE_DRV=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-shortcut-fe-drv=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
-            echo "::notice ::检测到sfe设为编译进固件"
             sfe=true
           elif [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_SHORTCUT_FE_CM=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-shortcut-fe-cm=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
-            echo "::notice ::检测到sfe设为编译进固件"
             sfe=true
           elif [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_SHORTCUT_FE=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-fast-classifier=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
-            echo "::notice ::检测到sfe设为编译进固件"
             sfe=true
           elif [ "$(grep -c "^CONFIG_PACKAGE_kmod-shortcut-fe=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
-            echo "::notice ::检测到sfe设为编译进固件"
             sfe=true
           else
             echo "::notice ::未检测到sfe设为编译进固件"
             sfe=false
           fi
           if [ $sfe = true ];then
-            echo "::notice ::添加sfe所需补丁与附加内核配置"
+            echo "::notice ::检测到sfe设为编译进固件，添加sfe所需补丁与附加内核配置"
             cp -f $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version/
             cp -f $CMZJ_PATCH_ROOT_PATH/pending-$kernel_version/613-netfilter_optional_tcp_window_check.patch $OPENWRT_ROOT_PATH/target/linux/generic/pending-$kernel_version/
             echo "# CONFIG_SHORTCUT_FE is not set" >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version
-          fi 
+          fi
           if [ $sfe = true ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-nft-fullcone=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_NFT_FULLCONE=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
             if  [ "$kernel_version" = "6.1" ] || [ "$kernel_version" = "5.15" ]; then
               echo "::notice ::添加sfe/fullcone所需补丁与附加内核配置"
@@ -466,19 +431,15 @@ jobs:
           echo "hack-$kernel_version"  >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version >> $LOG_PATH/cmzj_patch.log
 
-      - name: 添加turboacc fullcone所需的libnftnl、firewall4、nftables补丁 
+      - name: 添加turboacc fullcone所需的libnftnl、firewall4、nftables补丁
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           if [ "$(grep -c "^CONFIG_PACKAGE_kmod-nft-fullcone=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_NFT_FULLCONE=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
             kernel_version="$(sed -n '/CONFIG_LINUX_/p' $OPENWRT_ROOT_PATH/.config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g')"
             echo kernel_version=$kernel_version
             echo "::notice ::检测到nft-fullcone设为编译进固件,添加fullcone所需libnftnl、firewall4、nftables补丁"
-            rm -rf $OPENWRT_ROOT_PATH/package/libs/libnftnl
-            rm -rf $OPENWRT_ROOT_PATH/package/network/config/firewall4
-            rm -rf $OPENWRT_ROOT_PATH/package/network/utils/nftables
-            mkdir -p $OPENWRT_ROOT_PATH/package/network/config/firewall4
-            mkdir -p $OPENWRT_ROOT_PATH/package/libs/libnftnl
-            mkdir -p $OPENWRT_ROOT_PATH/package/network/utils/nftables
+            rm -rf $OPENWRT_ROOT_PATH/package/{libs/libnftnl,network/config/firewall4,network/utils/nftables}
+            mkdir -p $OPENWRT_ROOT_PATH/package/{libs/libnftnl,network/config/firewall4,network/utils/nftables}
             cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4 $OPENWRT_ROOT_PATH/package/network/config/firewall4
             cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl $OPENWRT_ROOT_PATH/package/libs/libnftnl
             cp -RT $CMZJ_PATCH_ROOT_PATH/nftables $OPENWRT_ROOT_PATH/package/network/utils/nftables
@@ -503,13 +464,11 @@ jobs:
       - name: 为openwrt-22.03/v22.03.*升级dnsmasq与libubox
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          openwrt_tag_branche=$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
-          if [ "$openwrt_tag_branche" = "openwrt-22.03" ] || [[ "$openwrt_tag_branche" =~ ^v22.03.* ]] ; then
+          openwrt_tag_branch=$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')
+          if [ "$openwrt_tag_branch" = "openwrt-22.03" ] || [[ "$openwrt_tag_branch" =~ ^v22.03.* ]] ; then
             echo "::notice ::检测到openwrt-22.03分支/v22.03.*版本升级dnsmasq与libubox"
-            rm -rf $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-            rm -rf $OPENWRT_ROOT_PATH/package/libs/libubox
-            mkdir -p $OPENWRT_ROOT_PATH/package/libs/libubox
-            mkdir -p $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+            rm -rf $OPENWRT_ROOT_PATH/package/{network/services/dnsmasq,libs/libubox}
+            mkdir -p $OPENWRT_ROOT_PATH/package/{network/services/dnsmasq,libs/libubox}
             cp -RT $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
             cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
           else
@@ -522,7 +481,7 @@ jobs:
           TMPDIR=$(mktemp -d) || exit 1
           PACKAGEDEPWARNING=$TMPDIR/packagedepwarning.log
           gmake -s prepare-tmpinfo
-          ./scripts/package-metadata.pl mk tmp/.packageinfo > tmp/.packagedeps 2>$PACKAGEDEPWARNING || { rm -f tmp/.packagedeps; false; } 
+          ./scripts/package-metadata.pl mk tmp/.packageinfo > tmp/.packagedeps 2>$PACKAGEDEPWARNING || { rm -f tmp/.packagedeps; false; }
           if [ -n "$(cat $PACKAGEDEPWARNING)" ]; then
             echo "::error ::检查到软件包依赖问题,这极有可能导致编译错误，请前往build1检查到软件包依赖步骤查看详情。"
             cat $PACKAGEDEPWARNING
@@ -550,7 +509,7 @@ jobs:
               "mips64el")
               Arch="mips64le"
               Arch="mipsle"
-              echo -e "mips64el use $Arch may have bug" 
+              echo -e "mips64el use $Arch may have bug"
               ;;
               "mips")
               Arch="mips"
@@ -558,7 +517,7 @@ jobs:
               "mips64")
               Arch="mips64"
               Arch="mips"
-              echo -e "mips64 use $Arch may have bug" 
+              echo -e "mips64 use $Arch may have bug"
               ;;
               "arm")
               if [ "$(grep -c "CONFIG_arm_" .config)" -ne '0' ];then
@@ -574,15 +533,15 @@ jobs:
               "powerpc")
               Arch="ppc"
               Arch=1
-              echo -e "error not support $Archt" 
+              echo -e "error not support $Archt"
               ;;
               "powerpc64")
               Arch="ppc64"
               Arch=1
-              echo -e "error not support $Archt" 
+              echo -e "error not support $Archt"
               ;;
               *)
-              echo -e "error not support $Archt if you can use offical release please issue a bug" 
+              echo -e "error not support $Archt if you can use offical release please issue a bug"
               Arch=1
               ;;
               esac
@@ -620,7 +579,7 @@ jobs:
                 curl -o 1677875739.txt https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt -s -L --retry 3
                 curl -o 1677875740.txt https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt -s -L --retry 3
                 ls
-                echo "制作AdGuardHome上游 DNS 服务器规则" 
+                echo "制作AdGuardHome上游 DNS 服务器规则"
                 cd  $WORKSPACE_ROOT_PATH
                 mkdir -p tmp
                 cd $WORKSPACE_ROOT_PATH/tmp
@@ -658,7 +617,7 @@ jobs:
             echo "::notice ::未检测到luci-app-adguardhome配置为编译进固件,退出执行。"
             rm -rf $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist\(by\ cmzj\).yaml $OPENWRT_ROOT_PATH/files/etc/AdGuardHome.yaml $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome
           fi
-          
+
       - name: 下载openclash内核
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -738,13 +697,13 @@ jobs:
             echo "::notice ::未检测到luci-app-openclash配置为编译进固件,退出执行下载openclash内核。"
             rm -rf $OPENWRT_ROOT_PATH/files/etc/openclash
           fi
-          
-      - name: 更新BT Tracker 
+
+      - name: 更新BT Tracker
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
          export bt_tracker="$(curl  -s -L --retry 3 https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt || curl  -s -L --retry 3 https://cf.trackerslist.com/all_aria2.txt)"
          sed -i "s#^uci set aria2.main.bt_tracker=.*#uci set aria2.main.bt_tracker=\'$bt_tracker\'#g"  $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
-         
+
       - name: 设置时区与主机名
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: sed -i -e "s/set system.@system\[-1].hostname='OpenWrt'/set system.@system\[-1].hostname='OpenWrt-k'/g" -e "s/set system.@system\[-1].timezone='UTC'/set system.@system\[-1].timezone='CST-8'/g" -e "/set system.@system\[-1].timezone='CST-8'/i\		set system.@system\[-1].zonename='Asia/Shanghai'" $OPENWRT_ROOT_PATH/package/base-files/files/bin/config_generate
@@ -756,7 +715,7 @@ jobs:
           echo "======================="
           df --total  -Th
           echo "======================="
-      
+
       - name: 下载 dl 库
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -764,7 +723,7 @@ jobs:
           find dl -size -1024c -exec ls -l {} \;
           find dl -size -1024c -exec rm -f {} \;
           make download -j16 || make download -j1 V=s
-      
+
       - name: 构建工具
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -774,7 +733,7 @@ jobs:
           echo "======================="
           df --total  -Th
           echo "======================="
-  
+
       - name: 构建工具链
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -796,7 +755,7 @@ jobs:
           cp $OPENWRT_ROOT_PATH/.config $OPENWRT_ROOT_PATH/build1.config
           cd $OPENWRT_ROOT_PATH/files
           tar cvpzf $GITHUB_WORKSPACE/openwrt_files.tgz *
-          
+
       - name: 上传 build1_WORKSPACE
         uses: actions/upload-artifact@v3
         with:
@@ -818,8 +777,8 @@ jobs:
       - name: 收集日志
         if: failure()
         run: |
-          mkdir -p openwrt-logs
-          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
+          mkdir -p $LOG_PATH/openwrt-logs
+          cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
           ls -la $(find $OPENWRT_ROOT_PATH/files/ -type d)  >> $LOG_PATH/files.list
 
@@ -836,19 +795,19 @@ jobs:
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
-        
+
       - name: 输出运行器硬件信息
         run: |
           bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
-          
+
       - name: 清理空间
         run: |
           bash $GITHUB_WORKSPACE/scripts/clear_space.sh
-          
+
       - name: 安装编译依赖
         run: |
           bash $GITHUB_WORKSPACE/scripts/install_compilation_dependencies.sh
-          
+
       - name: 合并磁盘
         run: |
           bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
@@ -857,10 +816,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build1_WORKSPACE
-          
+
       - name: 解压
         run: |
-          sudo mv $GITHUB_WORKSPACE/build1_WORKSPACE.tgz /build1_WORKSPACE.tgz 
+          sudo mv $GITHUB_WORKSPACE/build1_WORKSPACE.tgz /build1_WORKSPACE.tgz
           tar xvpfz /build1_WORKSPACE.tgz  -C $GITHUB_WORKSPACE
           sudo rm -rf /build1_WORKSPACE.tgz
           cat build1_ENV
@@ -910,7 +869,7 @@ jobs:
           cp -rf $(find ./bin/targets/ -type f -name "*.ipk") ./artifact/package/
           rm -rf $(find ./bin/targets/ -type d -name "packages")
           cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
-          rm -rf $(find ./artifact/package/ -type f -name "kmod-*") 
+          rm -rf $(find ./artifact/package/ -type f -name "kmod-*")
 
       - name: 上传 package
         uses: actions/upload-artifact@v3
@@ -921,10 +880,10 @@ jobs:
       - name: 收集日志
         if: success() || failure()
         run: |
-          mkdir -p openwrt-logs
-          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
+          mkdir -p $LOG_PATH/openwrt-logs
+          cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
-        
+
       - name: 上传日志
         if: success() || failure()
         uses: actions/upload-artifact@v3
@@ -938,19 +897,19 @@ jobs:
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
-        
+
       - name: 输出运行器硬件信息
         run: |
           bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
-          
+
       - name: 清理空间
         run: |
           bash $GITHUB_WORKSPACE/scripts/clear_space.sh
-          
+
       - name: 安装编译依赖
         run: |
           bash $GITHUB_WORKSPACE/scripts/install_compilation_dependencies.sh
-          
+
       - name: 合并磁盘
         run: |
           bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
@@ -959,10 +918,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build1_WORKSPACE
-          
+
       - name: 解压
         run: |
-          sudo mv $GITHUB_WORKSPACE/build1_WORKSPACE.tgz /build1_WORKSPACE.tgz 
+          sudo mv $GITHUB_WORKSPACE/build1_WORKSPACE.tgz /build1_WORKSPACE.tgz
           tar xvpfz /build1_WORKSPACE.tgz  -C $GITHUB_WORKSPACE
           sudo rm -rf /build1_WORKSPACE.tgz
           cat build1_ENV
@@ -974,9 +933,9 @@ jobs:
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          if [ -n "$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')" ];then
-            kmod_compile_exclude_list=$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//' -e 's/,$//g' -e 's#^#\\(#' -e "s#,#\\\|#g" -e "s/$/\\\)/g" )
-            echo "::notice ::kmod编译排除列表为：$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')"
+          if [ -n "$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')" ];then
+            kmod_compile_exclude_list=$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//' -e 's/,$//g' -e 's#^#\\(#' -e "s#,#\\\|#g" -e "s/$/\\\)/g" )
+            echo "::notice ::kmod编译列表：$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')"
           else
             echo "::warning ::kmod编译排除列表无法获取或为空，这很有可能导致编译失败。"
           fi
@@ -989,8 +948,7 @@ jobs:
           sed -i -n '/CONFIG_PACKAGE_kmod/p' .config
           echo CONFIG_IB=y >> .config
           echo CONFIG_IB_STANDALONE=y >> .config
-          cat $GITHUB_WORKSPACE/config/target.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/{target,image}.config >> $OPENWRT_ROOT_PATH/.config
           make defconfig
           sed -i -e  "/^CONFIG_[a-zA-Z0-9]\{1,99\}_IMAGES=y$/s/=y/=cmzjnot/g" -e "/^CONFIG_GRUB_IMAGES=cmzjnot$/s/=cmzjnot/=y/g" -e "/^CONFIG_[a-zA-Z0-9]\{1,99\}_IMAGES=cmzjnot$/s/=cmzjnot/=n/g" .config
           sed -i -e  "/^CONFIG_TARGET_ROOTFS_TARGZ=y$/s/=y/=n/g" .config
@@ -1024,7 +982,7 @@ jobs:
           echo "======================="
           df --total  -Th
           echo "======================="
-      
+
       - name: 清理包
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -1048,7 +1006,7 @@ jobs:
           du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
           du -h --max-depth=1 ./build_dir
           du -h --max-depth=1 ./bin
-          
+
       - name: 制作Image Builder包
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -1061,7 +1019,7 @@ jobs:
           du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
           du -h --max-depth=1 ./build_dir
           du -h --max-depth=1 ./bin
-         
+
       - name: 制作包索引、镜像概述信息并计算校验和
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -1080,9 +1038,7 @@ jobs:
       - name: 准备 artifact
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          mkdir -p ./artifact/package
-          mkdir -p ./artifact/kmod
-          mkdir -p ./artifact/buildinfo
+          mkdir -p ./artifact/{package,kmod,buildinfo}
           echo "artifact-/bin" >> $LOG_PATH/cmzj_package.log
           ls -l ./bin/** >> $LOG_PATH/cmzj_package.log
           ls -l ./bin/targets/${{ needs.prepare.outputs.target }}/${{ needs.prepare.outputs.subtarget }}/** >> $LOG_PATH/Image_Builder-bin.log
@@ -1106,10 +1062,10 @@ jobs:
       - name: 收集日志
         if: success() || failure()
         run: |
-          mkdir -p openwrt-logs
-          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
+          mkdir -p $LOG_PATH/openwrt-logs
+          cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
-        
+
       - name: 上传日志
         if: success() || failure()
         uses: actions/upload-artifact@v3
@@ -1123,19 +1079,19 @@ jobs:
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
-        
+
       - name: 输出运行器硬件信息
         run: |
           bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
-          
+
       - name: 清理空间
         run: |
           bash $GITHUB_WORKSPACE/scripts/clear_space.sh
-          
+
       - name: 安装编译依赖
         run: |
           bash $GITHUB_WORKSPACE/scripts/install_compilation_dependencies.sh
-          
+
       - name: 合并磁盘
         run: |
           bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
@@ -1158,11 +1114,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build1_openwrt_config
-          
+
       - name: 下载 files
         uses: actions/download-artifact@v3
         with:
-          name: build1_openwrt_files          
+          name: build1_openwrt_files
 
       - name: 建立日志文件夹
         run: |
@@ -1181,7 +1137,7 @@ jobs:
           mkdir -p $IMAGE_BUILDER_ROOT_PATH/files
           cd $GITHUB_WORKSPACE
           tar xvpfz $GITHUB_WORKSPACE/openwrt_files.tgz  -C $IMAGE_BUILDER_ROOT_PATH/files
-          
+
       - name: 环境变量
         run: env
 
@@ -1244,10 +1200,10 @@ jobs:
       - name: 收集日志
         if: success() || failure()
         run: |
-          mkdir -p openwrt-logs
+          mkdir -p $LOG_PATH/openwrt-logs
           cp -r $IMAGE_BUILDER_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $IMAGE_BUILDER_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
-        
+
       - name: 上传日志
         if: success() || failure()
         uses: actions/upload-artifact@v3
@@ -1265,15 +1221,10 @@ jobs:
       - name: 建立工作文件夹
         run: |
           cd $GITHUB_WORKSPACE
-          sudo mkdir -p upload
-          sudo chown $USER:$GROUPS upload
-          cd upload
-          export UPLOAD_ROOT_PATH="$(pwd)"
+          mkdir -p upload packagecompare
+          export UPLOAD_ROOT_PATH="$(pwd)/upload"
+          export PACKAGECOMPARE_ROOT_PATH="$(pwd)/packagecompare"
           echo "UPLOAD_ROOT_PATH=$UPLOAD_ROOT_PATH" >> $GITHUB_ENV
-          cd $GITHUB_WORKSPACE
-          mkdir -p packagecompare
-          cd packagecompare
-          export PACKAGECOMPARE_ROOT_PATH="$(pwd)"
           echo "PACKAGECOMPARE_ROOT_PATH=$PACKAGECOMPARE_ROOT_PATH" >> $GITHUB_ENV
 
       - name: 初始化环境
@@ -1285,47 +1236,47 @@ jobs:
       - name: 生成 release 所需变量
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
         run: |
-          export OPENWRT_TAG_BRANCHE="$(sed -n '/openwrt_tag\/branche/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
-          echo "OPENWRT_TAG_BRANCHE=$OPENWRT_TAG_BRANCHE" >> $GITHUB_ENV
-          export RELEASE_NAME="OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCHE]"
+          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')"
+          echo "OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH" >> $GITHUB_ENV
+          export RELEASE_NAME="OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          export RELEASE_TAG_NAME="v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCHE)"
+          export RELEASE_TAG_NAME="v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCH)"
           echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
-          
+
       - name: 下载固件
         uses: actions/download-artifact@v3
         with:
           name: OpenWrt-firmware
           path: ${{ env.UPLOAD_ROOT_PATH }}
-          
+
       - name: 下载包
         uses: actions/download-artifact@v3
         with:
           name: OpenWrt-package
           path: ${{ env.UPLOAD_ROOT_PATH }}/package
-      
+
       - name: 下载内核模块
         uses: actions/download-artifact@v3
         with:
           name: OpenWrt-kmod
           path: ${{ env.UPLOAD_ROOT_PATH }}/kmod
-          
+
       - name: 整理包
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
         run: |
           mkdir package-upload
           zip -r ./package-upload/package.zip package
           zip -r ./package-upload/allkmod.zip kmod
-      
+
       - name: 整理包生成 release body
         run: |
           echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
-          echo "编译的openwrt版本/分支: " $OPENWRT_TAG_BRANCHE >> $UPLOAD_ROOT_PATH/release.txt
-          latest_ver="$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
+          echo "编译的openwrt版本/分支: " $OPENWRT_TAG_BRANCH >> $UPLOAD_ROOT_PATH/release.txt
+          latest_ver="$(curl -s -L --retry 3 https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCH)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
           echo latest_ver=$latest_ver
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
-          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv || exit 0
-          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || wget https://github.com/${{ github.repository }}/releases/download/$(curl -s https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCHE)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv || exit 0
+          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv  || exit 0
+          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv  || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
           unzip package.zip
           unzip allkmod.zip
@@ -1334,8 +1285,7 @@ jobs:
           cp -rf oldkmod/* oldpackage/
           ls $PACKAGECOMPARE_ROOT_PATH/oldpackage/|sort| uniq >oldpackage.list
           sed -i -e "s/_${{ needs.prepare.outputs.target }}_${{ needs.prepare.outputs.subtarget }}.ipk//g" -e "s/_all.ipk//g" oldpackage.list
-          rm -rf $PACKAGECOMPARE_ROOT_PATH/package.zip
-          rm -rf $PACKAGECOMPARE_ROOT_PATH/allkmod.zip
+          rm -rf $PACKAGECOMPARE_ROOT_PATH/package.zip $PACKAGECOMPARE_ROOT_PATH/allkmod.zip
           cp -f $UPLOAD_ROOT_PATH/package-upload/package.zip $PACKAGECOMPARE_ROOT_PATH/package.zip
           cp -f $UPLOAD_ROOT_PATH/package-upload/allkmod.zip $PACKAGECOMPARE_ROOT_PATH/allkmod.zip
           unzip package.zip
@@ -1349,7 +1299,7 @@ jobs:
           echo "包更改/版本升级列表" >> $UPLOAD_ROOT_PATH/release.txt
           diff oldpackage.list newpackage.list -y -W 80 -B -b |grep -E '[\|><]' >diff.temp && echo "Compare complete" || echo "没有包新增删除或版本升级" >> $UPLOAD_ROOT_PATH/release.txt
           sed -e "/</s/^/delete:/g" -e "/|/s/^/update:/g" -e "/>/s/^/Add:/g" -e 's/[[:space:]]//g' -e 's/<//g' -e 's/>//g' -e 's/|/ > /g' -e 's/> [a-zA-Z0-9\-]*_/> /g' -e 's/_/ /g' diff.temp >> $UPLOAD_ROOT_PATH/release.txt || echo "没有包新增删除或版本升级"
-          
+
       - name: 上传固件到 Release
         id: firmware-release
         uses: softprops/action-gh-release@v0.1.15
