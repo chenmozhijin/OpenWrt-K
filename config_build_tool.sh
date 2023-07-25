@@ -198,6 +198,7 @@ function input_parameters() {
     echo OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH >> buildconfig.config
     echo OpenWrt_K_url=$OpenWrt_K_url >> buildconfig.config
     echo OpenWrt_K_branch=$OpenWrt_K_branch >> buildconfig.config
+    echo "kmod_compile_exclude_list=kmod-shortcut-fe-cm,kmod-shortcut-fe,kmod-fast-classifier" >> buildconfig.config
     if [ -n "$build_dir" ];then
         echo build_dir=$build_dir >> buildconfig.config
         rm -rf $build_dir/OpenWrt-K
@@ -584,7 +585,8 @@ function menu() {
     "7" "重新配置OpenWrt-K存储库地址\分支、OpenWrt branch或tag与拓展软件包" \
     "8" "配置拓展软件包" \
     "9" "重新载入拓展软件包" \
-    "10" "关于" 3>&1 1>&2 2>&3)
+    "10" "修改内核模块(kmod)编译排除列表" \
+    "11" "关于" 3>&1 1>&2 2>&3)
     exitstatus=$?
     if [ $exitstatus = 0 ]; then
         if [ "$OPTION" = "1" ]; then
@@ -614,6 +616,10 @@ function menu() {
             config_ext_packages
             return 6
         elif [ "$OPTION" = "10" ]; then
+            # 配置内核模块(kmod)编译排除列表选项
+            config_kmod_compile_exclude_list
+            return 6
+        elif [ "$OPTION" = "11" ]; then
             # 关于选项
             about
             return 6
@@ -990,6 +996,14 @@ function clearrunningenvironment() {
     sed -i  "/^build_dir=/d" buildconfig.config
 }
 
+function config_kmod_compile_exclude_list() {
+    kmod_compile_exclude_list=$(whiptail --title "输入内核模块(kmod)编译排除列表" --inputbox "输入内核模块包名，不同包名之间用逗号分隔。" 10 120 $(grep "^kmod_compile_exclude_list=" buildconfig.config|sed  "s/kmod_compile_exclude_list=//") 3>&1 1>&2 2>&3)
+    exitstatus=$?
+    if [ $exitstatus = 0 ]; then
+        sed -i  "/^kmod_compile_exclude_list=/s/=.*/=$kmod_compile_exclude_list/g" buildconfig.config
+    fi
+}
+
 # 显示关于信息
 function about() {
     whiptail --title "关于" --msgbox "这是一个用于生成OpenWrt-K配置文件的脚本\n\
@@ -1105,6 +1119,8 @@ function build () {
     fi
     cat diffconfig2.config > $outputdir/other.config
     sed -n "/^EXT_PACKAGES/p" $build_dir/../buildconfig.config > $outputdir/OpenWrt-K/extpackages.config
+    echo "openwrt_tag/branch=$(grep "^OPENWRT_TAG_BRANCH=" $build_dir/../buildconfig.config|sed  "s/OPENWRT_TAG_BRANCH=//")" > $outputdir/OpenWrt-K/compile.config
+    echo "kmod_compile_exclude_list=$(grep "^kmod_compile_exclude_list=" $build_dir/../buildconfig.config|sed  "s/kmod_compile_exclude_list=//")" >> $outputdir/OpenWrt-K/compile.config
     # 输出配置文件
     [[ -d $build_dir/../config/ ]] && rm -rf $build_dir/../config/
     mkdir -p $build_dir/../config/
@@ -1113,8 +1129,7 @@ function build () {
     # 显示成功消息框
     whiptail --title "成功" --msgbox "OpenWrt-K配置文件构建完成\n\
     输出目录：$(pwd)\n\
-    如果你修改了OpenWrt branch或tag请在OpenWrt-K.Config做相应修改\n\
-    其他生成的配置文件请在config文件夹做相应修改\n\
+    生成的配置文件请在config文件夹做相应修改\n\
     选择ok以返回菜单" 13 90
     cd $build_dir/..
 }
