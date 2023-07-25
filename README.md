@@ -226,7 +226,6 @@
 config  --- 存储openwrt编译配置，会在编译过程中程合并成```.config```文件
 files   --- openwrt固件自定义文件
 scripts --- 编译时所用的部分脚本
-OpenWrt-K.Config --- 用于定义openwrt编译所用的分支或tag（仅官方源）与配置kmod编译排除列表
 config_build_tool.sh --- OpenWrt-k配置构建工具
 ```
 
@@ -244,7 +243,7 @@ config_build_tool.sh --- OpenWrt-k配置构建工具
 
 #### 3.1修改openwrt编译所用的分支或tag
 
-+ 直接修改OpenWrt-K.Config中```openwrt_tag/branch=```一行```=```后面的分支或tag
++ 直接修改config/OpenWrt-K/compile.config中```openwrt_tag/branch=```一行```=```后面的分支或tag
 + 注：建议使用较新的分支或tag（至少使用firewall4），paswall在v22.03.5中无法正常运行需升级dnsmasq与其依赖libubox~~（可参考[ce2e34e](https://github.com/chenmozhijin/OpenWrt-K/commit/ce2e34e88483f292451ae8078a44559218713d3e)被注释掉的部分）~~（已支持自动升级）
 
 #### 3.2修改openwrt固件编译配置
@@ -274,6 +273,7 @@ network.config    --- 存储网络相关软件包配置（对应Menuconfig中的
 utilities.config  --- 存储工具类软件包配置（对应Menuconfig中的Utilities）
 other.config      --- openwrt剩余的所有配置
 OpenWrt-K/extpackages.config --- 存放拓展软件包配置
+OpenWrt-K/compile.config --- 用于定义openwrt编译所用的分支或tag（仅官方源）与配置kmod编译排除列表
 ```
 
 ##### 3.2.1使用OpenWrt-k配置构建工具
@@ -443,7 +443,7 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
 4. 工作流中“下载AdGuardHome核心与DNS名单”与“下载openclash内核”两个步骤会根据你在配置文件中是否将luci-app-adguardhome或luci-app-openclash配置为编译进固件决定下载或清除残留文件，请配置好配置文件。
 5. 默认不编译sfe，Releases allkmod.zip也没有如果需要修改openwrt固件编译配置时添加即可（必须设为添加进固件）。注意:kmod-shortcut-fe-cm与kmod-fast-classifier无法同时编译，同时编译会报不兼容。
 6. 现在main/master分支部分架构升级到了6.1内核部分内核模块(kmod)可能有bug导致无法编译成功,而本仓库默认编译所有内核模块(kmod)导致编译失败。现在可以使用内核模块(kmod)编译排除列表排除那些内核模块(kmod)。
-    > 注：内核模块(kmod)编译排除列表在仓库根目录的OpenWrt-K.Config中，不同内核模块(kmod)名之间用```,```(英文逗号)分隔，支持通字符```.*```。  
+    > 注：内核模块(kmod)编译排除列表在仓库根目录的config/OpenWrt-K/compile.config中，不同内核模块(kmod)名之间用```,```(英文逗号)分隔，支持通字符```.*```。  
     > 例：如果build-Image_Builder中编译并生成安装包步骤遇到dahdi相关的错误，如：```base.c:45:10: fatal error: stdbool.h: No such file or directory```可以添加```,kmod-dahdi.*```到内核模块(kmod)编译排除列表。
 7. 如你在编译与使用过程中遇到问题欢迎提[issue](https://github.com/chenmozhijin/OpenWrt-K/issues)。
 

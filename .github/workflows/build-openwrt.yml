@@ -226,7 +226,7 @@ jobs:
         id: info
         working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}/openwrt
         run: |
-          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
+          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')"
           git checkout $OPENWRT_TAG_BRANCH
           cat $GITHUB_WORKSPACE/config/target.config >> $DOWNLOAD_ROOT_PATH/openwrt/.config
           make defconfig
@@ -308,7 +308,7 @@ jobs:
 
       - name: 切换标签/分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: git checkout $(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
+        run: git checkout $(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')
 
       - name: 复制cmzj_package
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
@@ -375,7 +375,7 @@ jobs:
           cat $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin | grep 'Compiled by'
           echo "::notice ::编译者已替换为$compiler"
           #添加编译信息
-          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
+          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')"
           echo "COMPILE_START_TIME=\"${{ needs.prepare.outputs.starttime }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "COMPILER=\"$compiler\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "RELEASE_NAME=\"OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
@@ -387,13 +387,7 @@ jobs:
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          cat $GITHUB_WORKSPACE/config/target.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/luci.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/utilities.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/network.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/other.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/kmod.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/{target,luci,utilities,network,other,kmod,image}.config >> $OPENWRT_ROOT_PATH/.config
           make defconfig
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/build1-diffconfig.log
@@ -444,12 +438,8 @@ jobs:
             kernel_version="$(sed -n '/CONFIG_LINUX_/p' $OPENWRT_ROOT_PATH/.config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g')"
             echo kernel_version=$kernel_version
             echo "::notice ::检测到nft-fullcone设为编译进固件,添加fullcone所需libnftnl、firewall4、nftables补丁"
-            rm -rf $OPENWRT_ROOT_PATH/package/libs/libnftnl
-            rm -rf $OPENWRT_ROOT_PATH/package/network/config/firewall4
-            rm -rf $OPENWRT_ROOT_PATH/package/network/utils/nftables
-            mkdir -p $OPENWRT_ROOT_PATH/package/network/config/firewall4
-            mkdir -p $OPENWRT_ROOT_PATH/package/libs/libnftnl
-            mkdir -p $OPENWRT_ROOT_PATH/package/network/utils/nftables
+            rm -rf $OPENWRT_ROOT_PATH/package/{libs/libnftnl,network/config/firewall4,network/utils/nftables}
+            mkdir -p $OPENWRT_ROOT_PATH/package/{libs/libnftnl,network/config/firewall4,network/utils/nftables}
             cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4 $OPENWRT_ROOT_PATH/package/network/config/firewall4
             cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl $OPENWRT_ROOT_PATH/package/libs/libnftnl
             cp -RT $CMZJ_PATCH_ROOT_PATH/nftables $OPENWRT_ROOT_PATH/package/network/utils/nftables
@@ -474,13 +464,11 @@ jobs:
       - name: 为openwrt-22.03/v22.03.*升级dnsmasq与libubox
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          openwrt_tag_branch=$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')
+          openwrt_tag_branch=$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')
           if [ "$openwrt_tag_branch" = "openwrt-22.03" ] || [[ "$openwrt_tag_branch" =~ ^v22.03.* ]] ; then
             echo "::notice ::检测到openwrt-22.03分支/v22.03.*版本升级dnsmasq与libubox"
-            rm -rf $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-            rm -rf $OPENWRT_ROOT_PATH/package/libs/libubox
-            mkdir -p $OPENWRT_ROOT_PATH/package/libs/libubox
-            mkdir -p $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
+            rm -rf $OPENWRT_ROOT_PATH/package/{network/services/dnsmasq,libs/libubox}
+            mkdir -p $OPENWRT_ROOT_PATH/package/{network/services/dnsmasq,libs/libubox}
             cp -RT $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
             cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
           else
@@ -789,8 +777,8 @@ jobs:
       - name: 收集日志
         if: failure()
         run: |
-          mkdir -p openwrt-logs
-          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
+          mkdir -p $LOG_PATH/openwrt-logs
+          cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
           ls -la $(find $OPENWRT_ROOT_PATH/files/ -type d)  >> $LOG_PATH/files.list
 
@@ -892,8 +880,8 @@ jobs:
       - name: 收集日志
         if: success() || failure()
         run: |
-          mkdir -p openwrt-logs
-          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
+          mkdir -p $LOG_PATH/openwrt-logs
+          cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
 
       - name: 上传日志
@@ -945,9 +933,9 @@ jobs:
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          if [ -n "$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')" ];then
-            kmod_compile_exclude_list=$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//' -e 's/,$//g' -e 's#^#\\(#' -e "s#,#\\\|#g" -e "s/$/\\\)/g" )
-            echo "::notice ::kmod编译列表：$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')"
+          if [ -n "$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')" ];then
+            kmod_compile_exclude_list=$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//' -e 's/,$//g' -e 's#^#\\(#' -e "s#,#\\\|#g" -e "s/$/\\\)/g" )
+            echo "::notice ::kmod编译列表：$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')"
           else
             echo "::warning ::kmod编译排除列表无法获取或为空，这很有可能导致编译失败。"
           fi
@@ -960,8 +948,7 @@ jobs:
           sed -i -n '/CONFIG_PACKAGE_kmod/p' .config
           echo CONFIG_IB=y >> .config
           echo CONFIG_IB_STANDALONE=y >> .config
-          cat $GITHUB_WORKSPACE/config/target.config >> $OPENWRT_ROOT_PATH/.config
-          cat $GITHUB_WORKSPACE/config/image.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/{target,image}.config >> $OPENWRT_ROOT_PATH/.config
           make defconfig
           sed -i -e  "/^CONFIG_[a-zA-Z0-9]\{1,99\}_IMAGES=y$/s/=y/=cmzjnot/g" -e "/^CONFIG_GRUB_IMAGES=cmzjnot$/s/=cmzjnot/=y/g" -e "/^CONFIG_[a-zA-Z0-9]\{1,99\}_IMAGES=cmzjnot$/s/=cmzjnot/=n/g" .config
           sed -i -e  "/^CONFIG_TARGET_ROOTFS_TARGZ=y$/s/=y/=n/g" .config
@@ -1051,9 +1038,7 @@ jobs:
       - name: 准备 artifact
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          mkdir -p ./artifact/package
-          mkdir -p ./artifact/kmod
-          mkdir -p ./artifact/buildinfo
+          mkdir -p ./artifact/{package,kmod,buildinfo}
           echo "artifact-/bin" >> $LOG_PATH/cmzj_package.log
           ls -l ./bin/** >> $LOG_PATH/cmzj_package.log
           ls -l ./bin/targets/${{ needs.prepare.outputs.target }}/${{ needs.prepare.outputs.subtarget }}/** >> $LOG_PATH/Image_Builder-bin.log
@@ -1077,8 +1062,8 @@ jobs:
       - name: 收集日志
         if: success() || failure()
         run: |
-          mkdir -p openwrt-logs
-          cp -r $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
+          mkdir -p $LOG_PATH/openwrt-logs
+          cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
 
       - name: 上传日志
@@ -1215,7 +1200,7 @@ jobs:
       - name: 收集日志
         if: success() || failure()
         run: |
-          mkdir -p openwrt-logs
+          mkdir -p $LOG_PATH/openwrt-logs
           cp -r $IMAGE_BUILDER_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $IMAGE_BUILDER_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
 
@@ -1251,7 +1236,7 @@ jobs:
       - name: 生成 release 所需变量
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
         run: |
-          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/OpenWrt-K.Config | sed -e 's/.*=//')"
+          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')"
           echo "OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH" >> $GITHUB_ENV
           export RELEASE_NAME="OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
