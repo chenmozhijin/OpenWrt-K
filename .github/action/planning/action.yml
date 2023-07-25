@@ -3,7 +3,7 @@ description: '规划编译流程'
 outputs:
   matrix:
     description: "matrix参数"
-    value: ${{ steps.config-generator.outputs.config }}
+    value: ${{ steps.config-generator.outputs.matrix }}
 runs: 
   using: "composite"
   steps:
@@ -41,6 +41,7 @@ runs:
               echo "::notice ::配置$i编译的架构为$target，子架构为$subtarget"
               echo "::notice ::配置$i编译的标签/分支为$OPENWRT_TAG_BRANCH"
               echo "v$starttime($target-$subtarget)-($OPENWRT_TAG_BRANCH)" >> $TMPFILE
+              rm -rf $GITHUB_WORKSPACE/openwrt
             done
             export parameter=$parameter]}\"
             export parameter=$(echo $parameter|sed "s/},]/}]/g")
@@ -50,5 +51,7 @@ runs:
             fi
           shell: bash
         - id: config-generator
-          run: echo "matrix=$parameter" >> $GITHUB_OUTPUT
+          run: |
+            echo "matrix=$parameter" >> $GITHUB_OUTPUT
+            echo "matrix=$parameter"
           shell: bash
