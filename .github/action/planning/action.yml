@@ -27,7 +27,7 @@ runs:
           shell: bash
         - run: |         
             TMPFILE=$(mktemp)
-            export parameter=\"matrix={\'include\':[
+            export parameter=matrix={\'include\':[
             for i in $(echo $config|sed "s/,/ /g"); do
               git clone https://git.openwrt.org/openwrt/openwrt.git $GITHUB_WORKSPACE/openwrt
               cd $GITHUB_WORKSPACE/openwrt
@@ -44,7 +44,7 @@ runs:
               echo "v$starttime($target-$subtarget)-($OPENWRT_TAG_BRANCH)" >> $TMPFILE
               rm -rf $GITHUB_WORKSPACE/openwrt
             done
-            export parameter=$parameter]}\"
+            export parameter=$parameter]}
             export parameter=$(echo $parameter|sed "s/},]/}]/g")
             if sort $TMPFILE | uniq -d | grep -q . ; then
               echo "::error ::配置会生成重名的Release"
