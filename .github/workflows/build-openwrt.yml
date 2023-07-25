@@ -73,6 +73,7 @@ jobs:
     needs: planning
     strategy:
       matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
+    name: prepare-${{ matrix.config }}
     steps:
       - name: 准备环境
         run: |
@@ -240,6 +241,7 @@ jobs:
     needs: [planning,prepare]
     strategy:
       matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
+    name: build1-${{ matrix.config }}
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -793,6 +795,7 @@ jobs:
     needs: [planning,prepare,build1]
     strategy:
       matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
+    name: build-package-${{ matrix.config }}
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -897,6 +900,7 @@ jobs:
     needs: [planning,prepare,build1]
     strategy:
       matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
+    name: build-Image_Builder-${{ matrix.config }}
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -1081,6 +1085,7 @@ jobs:
     needs:  [planning,prepare,build1,build-package,build-Image_Builder]
     strategy:
       matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
+    name: build-Image-${{ matrix.config }}
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -1220,6 +1225,7 @@ jobs:
     needs: [planning,prepare,build1,build-package,build-Image_Builder,build-Image]
     strategy:
       matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
+    name: upload-${{ matrix.config }}
     runs-on: ubuntu-22.04
     steps:
       - name: 将存储库签出到运行器

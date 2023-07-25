@@ -49,6 +49,7 @@ runs:
               echo "::error ::配置会生成重名的Release"
               exti 1
             fi
+            echo parameter=$parameter >> "$GITHUB_ENV"
           shell: bash
         - id: config-generator
           run: |
