@@ -24,8 +24,7 @@ runs:
               done
             fi
           shell: bash
-        - id: config-generator
-          run: |         
+        - run: |         
             TMPFILE=$(mktemp)
             export parameter=\"matrix={\'include\':[
             for i in $(echo $config|sed "s/,/ /g"); do
