@@ -323,7 +323,7 @@ jobs:
         run: |
           sed -i 's/^  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt$/  DEPENDS:= +kmod-crypto-manager +kmod-crypto-pcbc +kmod-crypto-fcrypt +kmod-udptunnel4 +kmod-udptunnel6/' package/kernel/linux/modules/netsupport.mk #https://github.com/openwrt/openwrt/commit/ecc53240945c95bc77663b79ccae6e2bd046c9c8
           sed -i 's/^	dnsmasq \\$/	dnsmasq-full \\/g' ./include/target.mk
-          sed -i 's/256/1024/' ./target/linux/${{ needs.prepare.outputs.target }}/image/Makefile
+          sed -i 's/256/1024/' ./target/linux/${{ matrix.target }}/image/Makefile
           sed -i 's/^	b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/	$(TOPDIR)\/tools\/b43-tools\/files\/b43-fwsquash.py "$(CONFIG_B43_FW_SQUASH_PHYTYPES)" "$(CONFIG_B43_FW_SQUASH_COREREVS)"/' ./package/kernel/mac80211/broadcom.mk
 
       - name: 更新 feeds
@@ -379,8 +379,8 @@ jobs:
           export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')"
           echo "COMPILE_START_TIME=\"${{ needs.planning.outputs.starttime }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "COMPILER=\"$compiler\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "RELEASE_NAME=\"OpenWrt-K_V${{ needs.planning.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "RELEASE_TAG_NAME=\"v${{ needs.planning.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCH)\""  >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "RELEASE_NAME=\"OpenWrt-K_V${{ needs.planning.outputs.starttime }} (${{ matrix.target }}-${{ matrix.subtarget }})-[$OPENWRT_TAG_BRANCH]\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "RELEASE_TAG_NAME=\"v${{ needs.planning.outputs.starttime }}(${{ matrix.target }}-${{ matrix.subtarget }})-($OPENWRT_TAG_BRANCH)\""  >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "REPOSITORY_URL=\"https://github.com/${{ github.repository }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "$OPENWRT_ROOT_PATH/files/etc/openwrt-k_info"
           cat $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
@@ -1048,7 +1048,7 @@ jobs:
           mkdir -p ./artifact/{package,kmod,buildinfo}
           echo "artifact-/bin" >> $LOG_PATH/cmzj_package.log
           ls -l ./bin/** >> $LOG_PATH/cmzj_package.log
-          ls -l ./bin/targets/${{ needs.prepare.outputs.target }}/${{ needs.prepare.outputs.subtarget }}/** >> $LOG_PATH/Image_Builder-bin.log
+          ls -l ./bin/targets/${{ matrix.target }}/${{ matrix.subtarget }}/** >> $LOG_PATH/Image_Builder-bin.log
           cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
           cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
           cp -rf $(find ./bin/targets/ -type f -name "*.ipk") ./artifact/package/
@@ -1064,7 +1064,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: OpenWrt-Image_Builder-${{ matrix.config }}
-          path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{ needs.prepare.outputs.target }}/${{ needs.prepare.outputs.subtarget }}/openwrt-imagebuilder-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}.Linux-x86_64.tar.xz
+          path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{ matrix.target }}/${{ matrix.subtarget }}/openwrt-imagebuilder-${{ matrix.target }}-${{ matrix.subtarget }}.Linux-x86_64.tar.xz
 
       - name: 收集日志
         if: success() || failure()
@@ -1140,8 +1140,8 @@ jobs:
 
       - name: 解压
         run: |
-          tar -xvJf openwrt-imagebuilder-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}.Linux-x86_64.tar.xz
-          cd openwrt-imagebuilder-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}.Linux-x86_64
+          tar -xvJf openwrt-imagebuilder-${{ matrix.target }}-${{ matrix.subtarget }}.Linux-x86_64.tar.xz
+          cd openwrt-imagebuilder-${{ matrix.target }}-${{ matrix.subtarget }}.Linux-x86_64
           export IMAGE_BUILDER_ROOT_PATH="$(pwd)"
           echo "IMAGE_BUILDER_ROOT_PATH=$IMAGE_BUILDER_ROOT_PATH" >> $GITHUB_ENV
           mkdir -p $IMAGE_BUILDER_ROOT_PATH/files
@@ -1192,7 +1192,7 @@ jobs:
         run: |
           mkdir -p ./artifact/buildinfo
           echo "artifact-/bin" >> $LOG_PATH/cmzj_package.log
-          ls -l ./bin/targets/${{ needs.prepare.outputs.target }}/${{ needs.prepare.outputs.subtarget }}/** >> $LOG_PATH/Image_Builder-bin.log
+          ls -l ./bin/targets/${{ matrix.target }}/${{ matrix.subtarget }}/** >> $LOG_PATH/Image_Builder-bin.log
           cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
 
       - name: 上传 firmware
@@ -1218,7 +1218,7 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
-          name: build-Image-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}-logs
+          name: build-Image-${{ matrix.target }}-${{ matrix.subtarget }}-logs
           path: "${{ env.LOG_PATH }}"
 
   upload:
@@ -1251,9 +1251,9 @@ jobs:
         run: |
           export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')"
           echo "OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH" >> $GITHUB_ENV
-          export RELEASE_NAME="OpenWrt-K_V${{ needs.planning.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]"
+          export RELEASE_NAME="OpenWrt-K_V${{ needs.planning.outputs.starttime }} (${{ matrix.target }}-${{ matrix.subtarget }})-[$OPENWRT_TAG_BRANCH]"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          export RELEASE_TAG_NAME="v${{ needs.planning.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCH)"
+          export RELEASE_TAG_NAME="v${{ needs.planning.outputs.starttime }}(${{ matrix.target }}-${{ matrix.subtarget }})-($OPENWRT_TAG_BRANCH)"
           echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
 
       - name: 下载固件
@@ -1285,7 +1285,7 @@ jobs:
         run: |
           echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
           echo "编译的openwrt版本/分支: " $OPENWRT_TAG_BRANCH >> $UPLOAD_ROOT_PATH/release.txt
-          latest_ver="$(curl -s -L --retry 3 https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCH)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
+          latest_ver="$(curl -s -L --retry 3 https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ matrix.target }}-${{ matrix.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCH)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
           echo latest_ver=$latest_ver
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
           wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv  || exit 0
@@ -1297,7 +1297,7 @@ jobs:
           mv kmod oldkmod
           cp -rf oldkmod/* oldpackage/
           ls $PACKAGECOMPARE_ROOT_PATH/oldpackage/|sort| uniq >oldpackage.list
-          sed -i -e "s/_${{ needs.prepare.outputs.target }}_${{ needs.prepare.outputs.subtarget }}.ipk//g" -e "s/_all.ipk//g" oldpackage.list
+          sed -i -e "s/_${{ matrix.target }}_${{ matrix.subtarget }}.ipk//g" -e "s/_all.ipk//g" oldpackage.list
           rm -rf $PACKAGECOMPARE_ROOT_PATH/package.zip $PACKAGECOMPARE_ROOT_PATH/allkmod.zip
           cp -f $UPLOAD_ROOT_PATH/package-upload/package.zip $PACKAGECOMPARE_ROOT_PATH/package.zip
           cp -f $UPLOAD_ROOT_PATH/package-upload/allkmod.zip $PACKAGECOMPARE_ROOT_PATH/allkmod.zip
@@ -1307,7 +1307,7 @@ jobs:
           mv kmod newkmod
           cp -rf newkmod/* newpackage/
           ls $PACKAGECOMPARE_ROOT_PATH/newpackage/|sort| uniq >newpackage.list
-          sed -i -e "s/_${{ needs.prepare.outputs.target }}_${{ needs.prepare.outputs.subtarget }}.ipk//g" -e "s/_all.ipk//g" newpackage.list && echo "list complete"
+          sed -i -e "s/_${{ matrix.target }}_${{ matrix.subtarget }}.ipk//g" -e "s/_all.ipk//g" newpackage.list && echo "list complete"
           echo "内核版本: "$(sed -n '/kernel_/p' newpackage.list | sed -e 's/kernel_//') >> $UPLOAD_ROOT_PATH/release.txt
           echo "包更改/版本升级列表" >> $UPLOAD_ROOT_PATH/release.txt
           diff oldpackage.list newpackage.list -y -W 80 -B -b |grep -E '[\|><]' >diff.temp && echo "Compare complete" || echo "没有包新增删除或版本升级" >> $UPLOAD_ROOT_PATH/release.txt
@@ -1320,7 +1320,7 @@ jobs:
           name: ${{ env.RELEASE_NAME }}
           tag_name: ${{ env.RELEASE_TAG_NAME }}
           files: |
-            ${{ env.UPLOAD_ROOT_PATH }}/${{ needs.prepare.outputs.target }}/${{ needs.prepare.outputs.subtarget }}/*
+            ${{ env.UPLOAD_ROOT_PATH }}/${{ matrix.target }}/${{ matrix.subtarget }}/*
             ${{ env.UPLOAD_ROOT_PATH }}/package-upload/*
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
 
