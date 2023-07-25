@@ -190,14 +190,36 @@ function input_parameters() {
             fi
         fi
     done
+    OpenWrt_K_config="$(whiptail --title "输入配置名" --inputbox "输入要导入的配置名（就是仓库config文件夹下的配置文件夹名）" 10 60 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
+    exitstatus=$?
+    # 如果用户选择退出，则输出提示信息并退出脚本
+    if [ $exitstatus != 0 ]; then
+        echo "你选择了退出"
+        exit 0
+    fi
+    while true; do
+        OpenWrt_K_config="$(whiptail --title "输入配置名" --inputbox "输入要导入的配置名（就是仓库config文件夹下的文件夹名）" 10 60 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
+        exitstatus=$?
+        if [ $exitstatus != 0 ]; then
+            echo "你选择了退出"
+            exit 0
+        elif [ "$(echo "$OpenWrt_K_config"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
+            whiptail --title "错误" --msgbox "配置名中有非法字符，如果配置名包含空格请先删除。" 10 60
+        elif [ -z "$OpenWrt_K_config" ]; then
+            whiptail --title "错误" --msgbox "配置名为空，请输入配置名" 10 60
+        else
+            break
+        fi
+    done
     if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
         build_dir=$(grep "^build_dir=" buildconfig.config|sed -e "s/build_dir=//")
     fi
-    whiptail --title "完成" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCH\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url\n选择的OpenWrt-K存储库分支为: $OpenWrt_K_branch" 10 80
+    whiptail --title "完成" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCH\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url\n选择的OpenWrt-K存储库分支为: $OpenWrt_K_branch\n选择的配置为$OpenWrt_K_config" 10 80
     echo "警告：请勿手动修改本文件" > buildconfig.config 
     echo OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH >> buildconfig.config
     echo OpenWrt_K_url=$OpenWrt_K_url >> buildconfig.config
     echo OpenWrt_K_branch=$OpenWrt_K_branch >> buildconfig.config
+    echo OpenWrt_K_config=$OpenWrt_K_config >> buildconfig.config
     echo "kmod_compile_exclude_list=kmod-shortcut-fe-cm,kmod-shortcut-fe,kmod-fast-classifier" >> buildconfig.config
     if [ -n "$build_dir" ];then
         echo build_dir=$build_dir >> buildconfig.config
@@ -212,23 +234,24 @@ function input_parameters() {
 function import_ext_packages_config() {
     # 让用户选择导入拓展软件包配置的方式
     OPTION=$(whiptail --title "配置拓展软件包" --menu "选择导入拓展软件包配置的方式，如果你没有拓展软件包配置你将只能构建openwrt官方源码与feeds自带的软件包。你现有的拓展软件包配置会被覆盖。" 15 60 4 \
-    "1" "从原OpenWrt-K仓库导入拓展软件包配置" \
-    "2" "从你指定的OpenWrt-K仓库导入拓展软件包配置"  3>&1 1>&2 2>&3)
+    "1" "从原OpenWrt-K仓库导入默认拓展软件包配置" \
+    "2" "从你指定的OpenWrt-K仓库导入指定的拓展软件包配置"  3>&1 1>&2 2>&3)
     exitstatus=$?
     # 如果用户选择退出，则返回11（作为退出标记），否则继续执行
     if [ $exitstatus -ne 0 ]; then
         return 11
     fi
     if [ $OPTION = 1 ]; then
-        DOWNLOAD_URL=https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config/OpenWrt-K/extpackages.config
+        DOWNLOAD_URL=https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config/default-extpackages.config
     elif [ $OPTION = 2 ]; then
         # 从配置文件buildconfig.config中提取OpenWrt-K仓库的URL
         OpenWrt_K_url=$(grep "^OpenWrt_K_url=" buildconfig.config|sed  "s/OpenWrt_K_url=//")
         OpenWrt_K_repo=$(echo $OpenWrt_K_url|sed -e "s/https:\/\/github.com\///" -e "s/\/$//" )
+        OpenWrt_K_config=$(grep "^OpenWrt_K_config" buildconfig.config|sed  "s/OpenWrt_K_config=//")
         # 获取OpenWrt-K仓库的分支
         branch=$(grep "^OpenWrt_K_branch=" buildconfig.config|sed  "s/OpenWrt_K_branch=//")
         [[ -z "$branch" ]] && echo "错误获取分支失败" && exit 1
-        DOWNLOAD_URL=https://raw.githubusercontent.com/$OpenWrt_K_repo/$branch/config/OpenWrt-K/extpackages.config
+        DOWNLOAD_URL=https://raw.githubusercontent.com/$OpenWrt_K_repo/$branch/config/$OpenWrt_K_config/OpenWrt-K/extpackages.config
     else
         echo "错误的选项"
         exit 1
@@ -706,6 +729,7 @@ function prepare() {
     OpenWrt_K_url=$(grep "^OpenWrt_K_url=" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_url=//")
     OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g" -e "s/\ .*//g")
     OpenWrt_K_branch=$(grep "^OpenWrt_K_branch=" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_branch=//")
+    OpenWrt_K_config=$(grep "^OpenWrt_K_config" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_config=//")
     OPENWRT_TAG_BRANCH=$(grep "^OPENWRT_TAG_BRANCH=" $build_dir/../buildconfig.config|sed  "s/OPENWRT_TAG_BRANCH=//")
     # 检查OpenWrt-K目录是否已存在，若存在则执行git pull更新，否则执行git clone克隆
     if [ -d "$OpenWrt_K_dir" ]; then
@@ -755,13 +779,7 @@ function prepare() {
     # 删除旧的.config和tmp目录，并将OpenWrt-K中的OpenWrt配置合并到新的.config中
     [[ -d $openwrt_dir ]] && rm -rf .config
     [[ -d $openwrt_dir ]] && rm -rf $openwrt_dir/tmp
-    cat $OpenWrt_K_dir/config/target.config >> .config
-    cat $OpenWrt_K_dir/config/luci.config >> .config
-    cat $OpenWrt_K_dir/config/utilities.config >> .config
-    cat $OpenWrt_K_dir/config/network.config >> .config
-    cat $OpenWrt_K_dir/config/other.config >> .config
-    cat $OpenWrt_K_dir/config/kmod.config >> .config
-    cat $OpenWrt_K_dir/config/image.config >> .config
+    cat $OpenWrt_K_dir/config/$OpenWrt_K_config/{target,luci,utilities,network,other,kmod,image}.config >> .config
     make defconfig
     sed -i 's/256/1024/' ./target/linux/$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')/image/Makefile
     cd $build_dir/..
@@ -957,16 +975,11 @@ function importopenwrt_kconfig() {
     # 获取OpenWrt-K配置文件的URL并生成OpenWrt-K目录路径
     OpenWrt_K_url=$(grep "^OpenWrt_K_url=" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_url=//")
     OpenWrt_K_dir=$build_dir/$(echo $OpenWrt_K_url|sed -e "s/https:\/\///" -e "s/\/$//" -e "s/[.\/a-zA-Z0-9]\{1,111\}\///g" -e "s/\ .*//g")
+    OpenWrt_K_config=$(grep "^OpenWrt_K_config" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_config=//")
     # 进入OpenWrt目录，并将OpenWrt-K的配置文件合并到当前OpenWrt配置文件
     cd $openwrt_dir
     [[ -d $openwrt_dir ]] && rm -rf .config
-    cat $OpenWrt_K_dir/config/target.config >> .config
-    cat $OpenWrt_K_dir/config/luci.config >> .config
-    cat $OpenWrt_K_dir/config/utilities.config >> .config
-    cat $OpenWrt_K_dir/config/network.config >> .config
-    cat $OpenWrt_K_dir/config/other.config >> .config
-    cat $OpenWrt_K_dir/config/kmod.config >> .config
-    cat $OpenWrt_K_dir/config/image.config >> .config
+    cat $OpenWrt_K_dir/config/$OpenWrt_K_config/{target,luci,utilities,network,other,kmod,image}.config >> .config
     make defconfig
     cd $build_dir/..
 }
@@ -1015,6 +1028,7 @@ function build () {
     #准备工作
     build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
     openwrt_dir=$build_dir/openwrt
+    OpenWrt_K_config=$(grep "^OpenWrt_K_config" $build_dir/../buildconfig.config|sed  "s/OpenWrt_K_config=//")
     # 检查软件包依赖是否满足要求，如果有错误则提示用户修复
     check_packagedeps
     exitstatus=$?
@@ -1122,14 +1136,15 @@ function build () {
     echo "openwrt_tag/branch=$(grep "^OPENWRT_TAG_BRANCH=" $build_dir/../buildconfig.config|sed  "s/OPENWRT_TAG_BRANCH=//")" > $outputdir/OpenWrt-K/compile.config
     echo "kmod_compile_exclude_list=$(grep "^kmod_compile_exclude_list=" $build_dir/../buildconfig.config|sed  "s/kmod_compile_exclude_list=//")" >> $outputdir/OpenWrt-K/compile.config
     # 输出配置文件
-    [[ -d $build_dir/../config/ ]] && rm -rf $build_dir/../config/
-    mkdir -p $build_dir/../config/
-    cp -RT $outputdir/ $build_dir/../config/
-    cd $build_dir/../config/
+    [[ -d $build_dir/../config/$OpenWrt_K_config ]] && rm -rf $build_dir/../config/$OpenWrt_K_config
+    mkdir -p $build_dir/../config/$OpenWrt_K_config
+    cp -RT $outputdir/ $build_dir/../config/$OpenWrt_K_config
+    cd $build_dir/../config/$OpenWrt_K_config
     # 显示成功消息框
     whiptail --title "成功" --msgbox "OpenWrt-K配置文件构建完成\n\
     输出目录：$(pwd)\n\
-    生成的配置文件请在config文件夹做相应修改\n\
+    生成的配置文件请在删除原配置文件后上传至对应文件夹\n\
+    当然你也可以在存储库config新建一个文件夹来存放这些文件\n\
     选择ok以返回菜单" 13 90
     cd $build_dir/..
 }

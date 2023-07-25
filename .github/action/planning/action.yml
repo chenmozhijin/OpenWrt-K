@@ -1,0 +1,55 @@
+name: '规划'
+description: '规划编译流程'
+outputs:
+  matrix:
+    description: "matrix参数"
+    value: ${{ steps.config-generator.outputs.config }}
+runs: 
+  using: "composite"
+  steps:
+        - run: |
+            config=$(grep "$config=" $GITHUB_WORKSPACE/config/OpenWrt.config|sed "s/.*=//g")
+            if [ -z $config ];than
+              echo "::error ::选择的配置为空"
+              exti 1
+            elif [ "$(echo "$config"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
+              echo "::error ::选择的配置中有非法字符"
+              exti 1
+            else
+              for i in $(echo $config|sed "s/,/ /g"); do
+                if ! [ -d "$i" ]; then
+                  echo "::error ::配置$i不存在"
+                  exti 1
+                fi
+              done
+            fi
+          shell: bash
+        - id: config-generator
+          run: |         
+            TMPFILE=$(mktemp)
+            export parameter=\"matrix={\'include\':[
+            for i in $(echo $config|sed "s/,/ /g"); do
+              git clone https://git.openwrt.org/openwrt/openwrt.git $GITHUB_WORKSPACE/openwrt
+              cd $GITHUB_WORKSPACE/openwrt
+              export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/$i/OpenWrt-K/compile.config | sed -e 's/.*=//')"
+              git checkout $OPENWRT_TAG_BRANCH
+              cat $GITHUB_WORKSPACE/config/$i/target.config >> $GITHUB_WORKSPACE/openwrt/.config
+              make defconfig
+              target=$(sed -n '/CONFIG_TARGET_BOARD/p' $GITHUB_WORKSPACE/openwrt.config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')
+              subtarget=$(sed -n '/CONFIG_TARGET_SUBTARGET/p' $GITHUB_WORKSPACE/openwrt.config | sed -e 's/CONFIG_TARGET_SUBTARGET\=\"//' -e 's/\"//')
+              export parameter=$parameter\{\'config\':\'$i\',\'target\':\'$target\',\'subtarget\':\'$subtarget\'\},
+              echo "::notice ::配置$i的Release名：OpenWrt-K_V$starttime ($target-$subtarget)-[$OPENWRT_TAG_BRANCH]"
+              echo "::notice ::配置$i编译的架构为$target，子架构为$subtarget"
+              echo "::notice ::配置$i编译的标签/分支为$OPENWRT_TAG_BRANCH"
+              echo "v$starttime($target-$subtarget)-($OPENWRT_TAG_BRANCH)" >> $TMPFILE
+            done
+            export parameter=$parameter]}\"
+            export parameter=$(echo $parameter|sed "s/},]/}]/g")
+            if sort $TMPFILE | uniq -d | grep -q . ; then
+              echo "::error ::配置会生成重名的Release"
+              exti 1
+            fi
+          shell: bash
+        - id: config-generator
+          run: echo "matrix=$parameter" >> $GITHUB_OUTPUT
+          shell: bash

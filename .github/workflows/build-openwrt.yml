@@ -46,21 +46,34 @@ permissions:
   contents: write
   discussions: write
 jobs:
-  prepare:
+  planning:
     outputs:
-      target: ${{ steps.info.outputs.target }}
-      subtarget: ${{ steps.info.outputs.subtarget }}
+      matrix: ${{ steps.planning.outputs.matrix }}
       starttime: ${{ steps.time.outputs.starttime }}
     runs-on: ubuntu-22.04
     steps:
-      - name: 记录开始时间
-        id: time
-        run: |
-          sudo timedatectl set-timezone "Asia/Shanghai"
-          starttime=$(date +"%y.%m.%d-%H")
-          echo starttime=$starttime >> "$GITHUB_OUTPUT"
-          echo "::notice ::编译开始时间为：$starttime"
+    - name: 记录开始时间
+      id: time
+      run: |
+        sudo timedatectl set-timezone "Asia/Shanghai"
+        starttime=$(date +"%y.%m.%d-%H")
+        echo starttime=$starttime >> "$GITHUB_OUTPUT"
+        echo starttime=$starttime >> "$GITHUB_ENV"
+        echo "::notice ::编译开始时间为：$starttime"
 
+    - name: 将存储库签出到运行器
+      uses: actions/checkout@v3
+
+    - name: 规划编译流程
+      id: planning
+      uses: ./.github/action/planning
+
+  prepare:
+    runs-on: ubuntu-22.04
+    needs: planning
+    strategy:
+      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
+    steps:
       - name: 准备环境
         run: |
           sudo -E apt update
@@ -95,7 +108,7 @@ jobs:
           EXT_PKGS_PREP_PATH=$TMPDIR/extpackages_prepare
           EXT_PKGS_DL_PATH=$DOWNLOAD_ROOT_PATH/extpackages/dl
           EXT_PKGS_PATH=$DOWNLOAD_ROOT_PATH/extpackages/extpackages
-          EXT_PKGS_CONFIG=$GITHUB_WORKSPACE/config/OpenWrt-K/extpackages.config
+          EXT_PKGS_CONFIG=$GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/extpackages.config
           mkdir -p $EXT_PKGS_PREP_PATH $EXT_PKGS_PATH $EXT_PKGS_DL_PATH
           NUMBER_OF_PKGS=$(grep -c "^EXT_PACKAGES_NAME\[" $EXT_PKGS_CONFIG)
           n=1
@@ -213,34 +226,20 @@ jobs:
       - name: 上传 cmzj_package
         uses: actions/upload-artifact@v3
         with:
-          name: cmzj_package
+          name: cmzj_package-${{ matrix.config }}
           path: cmzj_package.tgz
 
       - name: 上传 cmzj_patch
         uses: actions/upload-artifact@v3
         with:
-          name: cmzj_patch
+          name: cmzj_patch-${{ matrix.config }}
           path: cmzj_patch.tgz
-
-      - name: 读取架构信息
-        id: info
-        working-directory:  ${{ env.DOWNLOAD_ROOT_PATH }}/openwrt
-        run: |
-          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')"
-          git checkout $OPENWRT_TAG_BRANCH
-          cat $GITHUB_WORKSPACE/config/target.config >> $DOWNLOAD_ROOT_PATH/openwrt/.config
-          make defconfig
-          target=$(sed -n '/CONFIG_TARGET_BOARD/p' .config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')
-          subtarget=$(sed -n '/CONFIG_TARGET_SUBTARGET/p' .config | sed -e 's/CONFIG_TARGET_SUBTARGET\=\"//' -e 's/\"//')
-          echo target=$target >> "$GITHUB_OUTPUT"
-          echo subtarget=$subtarget >> "$GITHUB_OUTPUT"
-          echo "::notice ::Release名：OpenWrt-K_V$starttime ($target-$subtarget)-[$OPENWRT_TAG_BRANCH]"
-          echo "::notice ::你编译的架构为$target，子架构为$subtarget"
-          echo "::notice ::你编译的标签/分支为$OPENWRT_TAG_BRANCH"
 
   build1:
     runs-on: ubuntu-22.04
-    needs: prepare
+    needs: [planning,prepare]
+    strategy:
+      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -277,12 +276,12 @@ jobs:
       - name: 下载cmzj_package
         uses: actions/download-artifact@v3
         with:
-          name: cmzj_package
+          name: cmzj_package-${{ matrix.config }}
 
       - name: 下载cmzj_patch
         uses: actions/download-artifact@v3
         with:
-          name: cmzj_patch
+          name: cmzj_patch-${{ matrix.config }}
 
       - name: 解压
         run: |
@@ -308,7 +307,7 @@ jobs:
 
       - name: 切换标签/分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: git checkout $(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')
+        run: git checkout $(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')
 
       - name: 复制cmzj_package
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
@@ -375,11 +374,11 @@ jobs:
           cat $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin | grep 'Compiled by'
           echo "::notice ::编译者已替换为$compiler"
           #添加编译信息
-          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')"
-          echo "COMPILE_START_TIME=\"${{ needs.prepare.outputs.starttime }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')"
+          echo "COMPILE_START_TIME=\"${{ needs.planning.outputs.starttime }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "COMPILER=\"$compiler\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "RELEASE_NAME=\"OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "RELEASE_TAG_NAME=\"v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCH)\""  >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "RELEASE_NAME=\"OpenWrt-K_V${{ needs.planning.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
+          echo "RELEASE_TAG_NAME=\"v${{ needs.planning.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCH)\""  >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "REPOSITORY_URL=\"https://github.com/${{ github.repository }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
           echo "$OPENWRT_ROOT_PATH/files/etc/openwrt-k_info"
           cat $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
@@ -387,7 +386,7 @@ jobs:
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          cat $GITHUB_WORKSPACE/config/{target,luci,utilities,network,other,kmod,image}.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/${{ matrix.config }}/{target,luci,utilities,network,other,kmod,image}.config >> $OPENWRT_ROOT_PATH/.config
           make defconfig
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/build1-diffconfig.log
@@ -464,7 +463,7 @@ jobs:
       - name: 为openwrt-22.03/v22.03.*升级dnsmasq与libubox
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          openwrt_tag_branch=$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')
+          openwrt_tag_branch=$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')
           if [ "$openwrt_tag_branch" = "openwrt-22.03" ] || [[ "$openwrt_tag_branch" =~ ^v22.03.* ]] ; then
             echo "::notice ::检测到openwrt-22.03分支/v22.03.*版本升级dnsmasq与libubox"
             rm -rf $OPENWRT_ROOT_PATH/package/{network/services/dnsmasq,libs/libubox}
@@ -759,19 +758,19 @@ jobs:
       - name: 上传 build1_WORKSPACE
         uses: actions/upload-artifact@v3
         with:
-          name: build1_WORKSPACE
+          name: build1_WORKSPACE-${{ matrix.config }}
           path: /build1_WORKSPACE.tgz
 
       - name: 上传 .config
         uses: actions/upload-artifact@v3
         with:
-          name: build1_openwrt_config
+          name: build1_openwrt_config-${{ matrix.config }}
           path: ${{ env.OPENWRT_ROOT_PATH }}/build1.config
 
       - name: 上传 files
         uses: actions/upload-artifact@v3
         with:
-          name: build1_openwrt_files
+          name: build1_openwrt_files-${{ matrix.config }}
           path: openwrt_files.tgz
 
       - name: 收集日志
@@ -786,12 +785,14 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v3
         with:
-          name: build1-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}-logs-
+          name: build1-logs-${{ matrix.config }}
           path: "${{ env.LOG_PATH }}"
 
   build-package:
     runs-on: ubuntu-latest
-    needs: [prepare,build1]
+    needs: [planning,prepare,build1]
+    strategy:
+      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -815,7 +816,7 @@ jobs:
       - name: 下载build1_WORKSPACE
         uses: actions/download-artifact@v3
         with:
-          name: build1_WORKSPACE
+          name: build1_WORKSPACE-${{ matrix.config }}
 
       - name: 解压
         run: |
@@ -874,7 +875,7 @@ jobs:
       - name: 上传 package
         uses: actions/upload-artifact@v3
         with:
-          name: OpenWrt-package
+          name: OpenWrt-package-${{ matrix.config }}
           path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/package/
 
       - name: 收集日志
@@ -888,12 +889,14 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
-          name: build-package-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}-logs
+          name: build-package-logs-${{ matrix.config }}
           path: "${{ env.LOG_PATH }}"
 
   build-Image_Builder:
     runs-on: ubuntu-latest
-    needs: [prepare,build1]
+    needs: [planning,prepare,build1]
+    strategy:
+      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -917,7 +920,7 @@ jobs:
       - name: 下载build1_WORKSPACE
         uses: actions/download-artifact@v3
         with:
-          name: build1_WORKSPACE
+          name: build1_WORKSPACE-${{ matrix.config }}
 
       - name: 解压
         run: |
@@ -933,9 +936,9 @@ jobs:
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          if [ -n "$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')" ];then
-            kmod_compile_exclude_list=$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//' -e 's/,$//g' -e 's#^#\\(#' -e "s#,#\\\|#g" -e "s/$/\\\)/g" )
-            echo "::notice ::kmod编译列表：$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')"
+          if [ -n "$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')" ];then
+            kmod_compile_exclude_list=$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//' -e 's/,$//g' -e 's#^#\\(#' -e "s#,#\\\|#g" -e "s/$/\\\)/g" )
+            echo "::notice ::kmod编译列表：$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')"
           else
             echo "::warning ::kmod编译排除列表无法获取或为空，这很有可能导致编译失败。"
           fi
@@ -948,7 +951,7 @@ jobs:
           sed -i -n '/CONFIG_PACKAGE_kmod/p' .config
           echo CONFIG_IB=y >> .config
           echo CONFIG_IB_STANDALONE=y >> .config
-          cat $GITHUB_WORKSPACE/config/{target,image}.config >> $OPENWRT_ROOT_PATH/.config
+          cat $GITHUB_WORKSPACE/config/${{ matrix.config }}/{target,image}.config >> $OPENWRT_ROOT_PATH/.config
           make defconfig
           sed -i -e  "/^CONFIG_[a-zA-Z0-9]\{1,99\}_IMAGES=y$/s/=y/=cmzjnot/g" -e "/^CONFIG_GRUB_IMAGES=cmzjnot$/s/=cmzjnot/=y/g" -e "/^CONFIG_[a-zA-Z0-9]\{1,99\}_IMAGES=cmzjnot$/s/=cmzjnot/=n/g" .config
           sed -i -e  "/^CONFIG_TARGET_ROOTFS_TARGZ=y$/s/=y/=n/g" .config
@@ -1050,13 +1053,13 @@ jobs:
       - name: 上传 kmod
         uses: actions/upload-artifact@v3
         with:
-          name: OpenWrt-kmod
+          name: OpenWrt-kmod-${{ matrix.config }}
           path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/kmod/
 
       - name: 上传 Image Builder
         uses: actions/upload-artifact@v3
         with:
-          name: OpenWrt-Image_Builder
+          name: OpenWrt-Image_Builder-${{ matrix.config }}
           path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{ needs.prepare.outputs.target }}/${{ needs.prepare.outputs.subtarget }}/openwrt-imagebuilder-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}.Linux-x86_64.tar.xz
 
       - name: 收集日志
@@ -1070,12 +1073,14 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
-          name: build-Image_Builder-${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }}-logs
+          name: build-Image_Builder-logs-${{ matrix.config }}
           path: "${{ env.LOG_PATH }}"
 
   build-Image:
     runs-on: ubuntu-latest
-    needs:  [prepare,build1,build-package,build-Image_Builder]
+    needs:  [planning,prepare,build1,build-package,build-Image_Builder]
+    strategy:
+      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
     steps:
       - name: 将存储库签出到运行器
         uses: actions/checkout@v3
@@ -1102,23 +1107,23 @@ jobs:
       - name: 下载Image Builder
         uses: actions/download-artifact@v3
         with:
-          name: OpenWrt-Image_Builder
+          name: OpenWrt-Image_Builder-${{ matrix.config }}
 
       - name: 下载包
         uses: actions/download-artifact@v3
         with:
-          name: OpenWrt-package
+          name: OpenWrt-package-${{ matrix.config }}
           path: ${{ github.workspace }}/package/
 
       - name: 下载build1配置文件
         uses: actions/download-artifact@v3
         with:
-          name: build1_openwrt_config
+          name: build1_openwrt_config-${{ matrix.config }}
 
       - name: 下载 files
         uses: actions/download-artifact@v3
         with:
-          name: build1_openwrt_files
+          name: build1_openwrt_files-${{ matrix.config }}
 
       - name: 建立日志文件夹
         run: |
@@ -1188,13 +1193,13 @@ jobs:
       - name: 上传 firmware
         uses: actions/upload-artifact@v3
         with:
-          name: OpenWrt-firmware
+          name: OpenWrt-firmware-${{ matrix.config }}
           path: ${{ env.IMAGE_BUILDER_ROOT_PATH }}/bin/targets/
 
       - name: 上传 buildinfo
         uses: actions/upload-artifact@v3
         with:
-          name: OpenWrt-buildinfo
+          name: OpenWrt-buildinfo-${{ matrix.config }}
           path: ${{ env.IMAGE_BUILDER_ROOT_PATH }}/artifact/buildinfo/
 
       - name: 收集日志
@@ -1212,7 +1217,9 @@ jobs:
           path: "${{ env.LOG_PATH }}"
 
   upload:
-    needs: [prepare,build1,build-package,build-Image_Builder,build-Image]
+    needs: [planning,prepare,build1,build-package,build-Image_Builder,build-Image]
+    strategy:
+      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
     runs-on: ubuntu-22.04
     steps:
       - name: 将存储库签出到运行器
@@ -1236,29 +1243,29 @@ jobs:
       - name: 生成 release 所需变量
         working-directory: ${{ env.UPLOAD_ROOT_PATH }}
         run: |
-          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/OpenWrt-K/compile.config | sed -e 's/.*=//')"
+          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')"
           echo "OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH" >> $GITHUB_ENV
-          export RELEASE_NAME="OpenWrt-K_V${{ needs.prepare.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]"
+          export RELEASE_NAME="OpenWrt-K_V${{ needs.planning.outputs.starttime }} (${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-[$OPENWRT_TAG_BRANCH]"
           echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          export RELEASE_TAG_NAME="v${{ needs.prepare.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCH)"
+          export RELEASE_TAG_NAME="v${{ needs.planning.outputs.starttime }}(${{ needs.prepare.outputs.target }}-${{ needs.prepare.outputs.subtarget }})-($OPENWRT_TAG_BRANCH)"
           echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
 
       - name: 下载固件
         uses: actions/download-artifact@v3
         with:
-          name: OpenWrt-firmware
+          name: OpenWrt-firmware-${{ matrix.config }}
           path: ${{ env.UPLOAD_ROOT_PATH }}
 
       - name: 下载包
         uses: actions/download-artifact@v3
         with:
-          name: OpenWrt-package
+          name: OpenWrt-package-${{ matrix.config }}
           path: ${{ env.UPLOAD_ROOT_PATH }}/package
 
       - name: 下载内核模块
         uses: actions/download-artifact@v3
         with:
-          name: OpenWrt-kmod
+          name: OpenWrt-kmod-${{ matrix.config }}
           path: ${{ env.UPLOAD_ROOT_PATH }}/kmod
 
       - name: 整理包
