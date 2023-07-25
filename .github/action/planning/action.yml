@@ -35,8 +35,8 @@ runs:
               git checkout $OPENWRT_TAG_BRANCH
               cat $GITHUB_WORKSPACE/config/$i/target.config >> $GITHUB_WORKSPACE/openwrt/.config
               make defconfig
-              target=$(sed -n '/CONFIG_TARGET_BOARD/p' $GITHUB_WORKSPACE/openwrt.config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')
-              subtarget=$(sed -n '/CONFIG_TARGET_SUBTARGET/p' $GITHUB_WORKSPACE/openwrt.config | sed -e 's/CONFIG_TARGET_SUBTARGET\=\"//' -e 's/\"//')
+              target=$(sed -n '/CONFIG_TARGET_BOARD/p' $GITHUB_WORKSPACE/openwrt/.config | sed -e 's/CONFIG_TARGET_BOARD\=\"//' -e 's/\"//')
+              subtarget=$(sed -n '/CONFIG_TARGET_SUBTARGET/p' $GITHUB_WORKSPACE/openwrt/.config | sed -e 's/CONFIG_TARGET_SUBTARGET\=\"//' -e 's/\"//')
               export parameter=$parameter\{\'config\':\'$i\',\'target\':\'$target\',\'subtarget\':\'$subtarget\'\},
               echo "::notice ::配置$i的Release名：OpenWrt-K_V$starttime ($target-$subtarget)-[$OPENWRT_TAG_BRANCH]"
               echo "::notice ::配置$i编译的架构为$target，子架构为$subtarget"
