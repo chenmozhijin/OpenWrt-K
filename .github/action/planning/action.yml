@@ -9,15 +9,15 @@ runs:
   steps:
         - run: |
             config=$(grep "$config=" $GITHUB_WORKSPACE/config/OpenWrt.config|sed "s/.*=//g")
-            if [ -z $config ];than
+            if [ -z $config ] ; then
               echo "::error ::选择的配置为空"
               exti 1
-            elif [ "$(echo "$config"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
+            elif [ "$(echo "$config"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ] ; then
               echo "::error ::选择的配置中有非法字符"
               exti 1
             else
               for i in $(echo $config|sed "s/,/ /g"); do
-                if ! [ -d "$i" ]; then
+                if ! [ -d "$GITHUB_WORKSPACE/config/$i" ]; then
                   echo "::error ::配置$i不存在"
                   exti 1
                 fi
