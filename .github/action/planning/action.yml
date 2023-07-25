@@ -8,7 +8,7 @@ runs:
   using: "composite"
   steps:
         - run: |
-            config=$(grep "$config=" $GITHUB_WORKSPACE/config/OpenWrt.config|sed "s/.*=//g")
+            config=$(grep "^config=" $GITHUB_WORKSPACE/config/OpenWrt.config|sed "s/.*=//g")
             if [ -z $config ] ; then
               echo "::error ::选择的配置为空"
               exti 1
