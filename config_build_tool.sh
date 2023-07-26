@@ -135,12 +135,14 @@ function install_dependencies() {
 # 检查GitHub API速率限制的函数
 function detect_github_api_rate_limit() {
 #使用curl命令获取GitHub API的请求剩余次数，并提取整数部分赋值给变量remaining_requests
-remaining_requests=$(curl -s -L -i https://api.github.com/users/octocat|sed -n "/^x-ratelimit-remaining:/p"|sed "s/.*: //"| awk '{print int($0)}') || network_error
-# 如果剩余请求次数少于3次，输出超出API速率限制的提示信息
-if [ "$remaining_requests" -lt "3" ]; then
+remaining_requests=$(curl -s -L -i https://api.github.com/users/octocat) || network_error
+remaining=$(echo "$remaining_requests"|sed -n "/^x-ratelimit-remaining:/p"|sed "s/.*: //"| awk '{print int($0)}')
+# 如果剩余请求次数少于5次，输出超出API速率限制的提示信息
+if [ "$remaining" -lt "5" ]; then
     # 使用curl命令获取GitHub API的重置时间，并将时间戳转换为格式化日期字符串
-    reset_time=$(date -d @$(curl -s -L -i https://api.github.com/users/octocat|sed -n "/^x-ratelimit-reset:/p"|sed "s/.*: //") +"%Y-%m-%d %H:%M:%S") || network_error
-    echo "超出github的 API 速率限制,请等待到"$reset_time
+    reset_time=$(date -d @$(echo "$remaining_requests" |sed -n "/^x-ratelimit-reset:/p"|sed "s/.*: //") +"%Y-%m-%d %H:%M:%S") || network_error
+    whiptail --title "错误" --msgbox "超出github的 API 速率限制,请等待到$reset_time" 12 60
+    return 6
 fi
 }
 
@@ -148,6 +150,10 @@ fi
 function input_parameters() {
     # 调用detect_github_api_rate_limit函数以检查GitHub API速率限制
     detect_github_api_rate_limit
+    exitstatus=$?
+    if [ $exitstatus = 6 ]; then
+        return 6
+    fi
     curl -s -L https://api.github.com/repos/openwrt/openwrt/tags|sed -n  '/^    "name": "/p'|sed -e 's/    "name": "//g' -e 's/",//g'> $TMPDIR/tagbranch.list || network_error
     curl -s -L https://api.github.com/repos/openwrt/openwrt/branches|sed -n  '/^    "name": "/p'|sed -e 's/    "name": "//g' -e 's/",//g'>> $TMPDIR/tagbranch.list || network_error
     # 获取最新的OpenWrt标签（tag）
@@ -196,26 +202,28 @@ function input_parameters() {
             fi
         fi
     done
+    OpenWrt_K_repo=$(echo $OpenWrt_K_url|sed -e "s/https:\/\/github.com\///" -e "s/\/$//" )
     # 提示用户输入OpenWrt-K分支
     while true; do
-            OpenWrt_K_branch=$(whiptail --title "输入分支" --inputbox "输入OpenWrt-K存储库分支" 10 60 $(curl -s -L --retry 3 https://api.github.com/repos/$(echo $OpenWrt_K_url|sed -e "s/https:\/\/github.com\///" -e "s/\/$//" )|grep "\"default_branch\": \""|grep "\","| sed -e "s/  \"default_branch\": \"//g" -e "s/\",//g" ) 3>&1 1>&2 2>&3)
+            OpenWrt_K_branch=$(whiptail --title "输入分支" --inputbox "输入OpenWrt-K存储库分支" 10 60 $(curl -s -L --retry 3 https://api.github.com/repos/$OpenWrt_K_repo|grep "\"default_branch\": \""|grep "\","| sed -e "s/  \"default_branch\": \"//g" -e "s/\",//g" ) 3>&1 1>&2 2>&3)
             exitstatus=$?
         if [ $exitstatus != 0 ]; then
             echo "你选择了退出"
             return 6
         elif [ "$(echo "$OpenWrt_K_branch"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
-            whiptail --title "错误" --msgbox "拓展软件包所在分支中有非法字符" 10 60
+            whiptail --title "错误" --msgbox "此OpenWrt-K分支中有非法字符" 10 60
         elif [ -z "$OpenWrt_K_branch" ]; then
-            break
+            whiptail --title "错误" --msgbox "OpenWrt-K存储库分支不能为空" 10 60
         else
     # 检查远程仓库是否有该分支
             if git ls-remote --exit-code --heads "$OpenWrt_K_url" "refs/heads/$OpenWrt_K_branch" 2>&1; then
                 break
             else
-                whiptail --title "错误" --msgbox "这个拓展软件包存储库地址不含有分支 '$OpenWrt_K_branch'。" 10 60
+                whiptail --title "错误" --msgbox "这个OpenWrt-K存储库地址不含有分支 $OpenWrt_K_branch。" 12 70
             fi
         fi
     done
+    # 提示用户输入OpenWrt-K配置名
     while true; do
         OpenWrt_K_config="$(whiptail --title "输入配置名" --inputbox "输入要导入的配置名（就是仓库config文件夹下的文件夹名,如：x86_64）" 10 60 3>&1 1>&2 2>&3)"
         exitstatus=$?
@@ -227,7 +235,15 @@ function input_parameters() {
         elif [ -z "$OpenWrt_K_config" ]; then
             whiptail --title "错误" --msgbox "配置名为空，请输入配置名" 10 60
         else
-            break
+            response=$(curl -s -L --retry 3 --connect-timeout 20 "https://api.github.com/repos/$OpenWrt_K_repo/contents/config?ref=$OpenWrt_K_branch")
+            if [ "$(echo "$response"|grep -c "^  \"message\": \"Not Found\"," )" -eq '1' ];then
+                whiptail --title "错误" --msgbox "未在你提供的OpenWrt-K存储库地址找到config文件夹，响应：\n$response\n点击ok退出" 14 70
+                return 6
+            elif echo "$response" | grep -q "\"name\": \"$OpenWrt_K_config\""; then
+                break
+            else
+                whiptail --title "错误" --msgbox "这个OpenWrt-K存储库不含有名为 $OpenWrt_K_config 的配置\n请检测你的配置是否存在并关注你提供OpenWrt-K存储库版本" 12 70
+            fi
         fi
     done
     if [ -e buildconfig.config ]; then
@@ -247,7 +263,7 @@ function input_parameters() {
             zonename=$(grep "^zonename=" buildconfig.config|sed -e "s/zonename=//")
         fi
     fi
-    whiptail --title "完成" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCH\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url\n选择的OpenWrt-K存储库分支为: $OpenWrt_K_branch\n选择的配置为$OpenWrt_K_config" 10 80
+    whiptail --title "完成" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCH\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url\n选择的OpenWrt-K存储库分支为: $OpenWrt_K_branch\n选择的配置为: $OpenWrt_K_config" 10 80
     echo "警告：请勿手动修改本文件" > buildconfig.config 
     echo OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH >> buildconfig.config
     echo OpenWrt_K_url=$OpenWrt_K_url >> buildconfig.config
