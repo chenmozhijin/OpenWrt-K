@@ -1,5 +1,26 @@
 #!/usr/bin/env bash
-#   Copyright (C) 2023  沉默の金
+
+#MIT License
+
+#Copyright (c) 2023 沉默の金
+
+#Permission is hereby granted, free of charge, to any person obtaining a copy
+#of this software and associated documentation files (the "Software"), to deal
+#in the Software without restriction, including without limitation the rights
+#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the Software is
+#furnished to do so, subject to the following conditions:
+
+#The above copyright notice and this permission notice shall be included in all
+#copies or substantial portions of the Software.
+
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#SOFTWARE.
 
 # 设置一个用于临时文件的目录，并在脚本退出时自动删除
 trap 'rm -rf "$TMPDIR"' EXIT
@@ -12,6 +33,10 @@ function start() {
     # 检查是否存在配置文件，如果不存在，则执行输入参数的操作
     if [ ! -e "buildconfig.config" ]; then
         input_parameters
+        exitstatus=$?
+        if [ $exitstatus -eq 6 ]; then
+            exit 0
+        fi
     fi
     # 检查拓展软件包配置是否正常
     check_ext_packages_config
@@ -72,14 +97,14 @@ function install_dependencies() {
             ;;
         *)
             # 如果不支持自动安装依赖的系统，则提示用户使用ubuntu或手动安装openwrt依赖
-            if ! (whiptail --title "Yes/No Box" --yes-button "我已安装全部依赖" --no-button "退出" --yesno "不支持自动安装依赖的系统，建议使用ubuntu或手动安装openwrt依赖。openwrt所需依赖见\nhttps://openwrt.org/docs/guide-developer/toolchain/install-buildsystem#linux_gnu-linux_distributions" 10 104) then
+            if ! (whiptail --title "确认" --yes-button "我已安装全部依赖" --no-button "退出" --yesno "不支持自动安装依赖的系统，建议使用ubuntu或手动安装openwrt依赖。openwrt所需依赖见\nhttps://openwrt.org/docs/guide-developer/toolchain/install-buildsystem#linux_gnu-linux_distributions" 10 104) then
                 exit 0
             fi
             ;;
         esac
     if [ -e "$TMPDIR/install.list" ]; then
         # 用户确认是否安装缺少的依赖包
-        if (whiptail --title "Yes/No Box" --yes-button "安装" --no-button "退出" --yesno "是否安装$(cat $TMPDIR/install.list|sed "s/ /、/g")，它们是此脚本的依赖" 10 60) then
+        if (whiptail --title "选择" --yes-button "安装" --no-button "退出" --yesno "是否安装$(cat $TMPDIR/install.list|sed "s/ /、/g")，它们是此脚本的依赖" 10 60) then
             source /etc/os-release
             case $PM in
             apt)
@@ -129,31 +154,32 @@ function input_parameters() {
     latest_tag=$(curl -s -L https://api.github.com/repos/openwrt/openwrt/tags|sed -n  '/^    "name": "/p'|sed -e 's/    "name": "//g' -e 's/",//g'| sed -n '1p')
     # 提示用户输入OpenWrt的branch或tag，并将用户输入的值保存到OPENWRT_TAG_BRANCH变量
     inputbox="输入编译的OpenWrt branch或tag例如v23.05.0-rc1或master\nEnter the compiled OpenWrt branch or tag such as v23.05.0-rc1 or master"
-    OPENWRT_TAG_BRANCH=$(whiptail --title "choose tag/branch" --inputbox "$inputbox" 10 60 $latest_tag 3>&1 1>&2 2>&3)
+    OPENWRT_TAG_BRANCH=$(whiptail --title "输入 tag/branch" --inputbox "$inputbox" 10 60 $latest_tag 3>&1 1>&2 2>&3)
     exitstatus=$?
-    # 如果用户选择退出，则输出提示信息并退出脚本
+    # 如果用户选择退出，则输出提示信息并退出函数
     if [ $exitstatus != 0 ]; then
         echo "你选择了退出"
-        exit 0
+        return 6
     fi
     # 检查用户输入的OpenWrt branch或tag是否存在，如果不存在则要求重新输入
     while [ "$(grep -c "^${OPENWRT_TAG_BRANCH}$" $TMPDIR/tagbranch.list)" -eq '0' ]; do
         whiptail --title "错误" --msgbox "输入的OpenWrt branch或tag不存在,选择ok重新输入" 10 60
-        OPENWRT_TAG_BRANCH=$(whiptail --title "choose tag/branch" --inputbox "$inputbox" 10 60 $latest_tag 3>&1 1>&2 2>&3)
+        OPENWRT_TAG_BRANCH=$(whiptail --title "输入 tag/branch" --inputbox "$inputbox" 10 60 $latest_tag 3>&1 1>&2 2>&3)
         exitstatus=$?
         if [ $exitstatus != 0 ]; then
             echo "你选择了退出"
-            exit 0
+            return 6
         fi
     done
     # 提示用户输入OpenWrt-K存储库地址，并保存到OpenWrt_K_url变量
     while true; do
         inputbox="输入OpenWrt-K存储库地址"
-        OpenWrt_K_url="$(whiptail --title "Enter the repository address" --inputbox "$inputbox" 10 60 https://github.com/chenmozhijin/OpenWrt-K 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
+        OpenWrt_K_url="$(whiptail --title "输入存储库地址" --inputbox "$inputbox" 10 60 https://github.com/chenmozhijin/OpenWrt-K 3>&1 1>&2 2>&3)"
         exitstatus=$?
+        OpenWrt_K_url=$(echo $OpenWrt_K_url|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')
         if [ $exitstatus != 0 ]; then
             echo "你选择了退出"
-            exit 0
+            return 6
         elif [ -z "$OpenWrt_K_url" ]; then
             whiptail --title "错误" --msgbox "OpenWrt-K存储库不能为空" 10 60
         elif [ "$(echo "$OpenWrt_K_url"|grep -c "[!$^*+\`~\'\"\(\) ]")" -ne '0' ];then
@@ -176,7 +202,7 @@ function input_parameters() {
             exitstatus=$?
         if [ $exitstatus != 0 ]; then
             echo "你选择了退出"
-            exit 0
+            return 6
         elif [ "$(echo "$OpenWrt_K_branch"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
             whiptail --title "错误" --msgbox "拓展软件包所在分支中有非法字符" 10 60
         elif [ -z "$OpenWrt_K_branch" ]; then
@@ -191,11 +217,11 @@ function input_parameters() {
         fi
     done
     while true; do
-        OpenWrt_K_config="$(whiptail --title "输入配置名" --inputbox "输入要导入的配置名（就是仓库config文件夹下的文件夹名,如：x86_64）" 10 60 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
+        OpenWrt_K_config="$(whiptail --title "输入配置名" --inputbox "输入要导入的配置名（就是仓库config文件夹下的文件夹名,如：x86_64）" 10 60 3>&1 1>&2 2>&3)"
         exitstatus=$?
         if [ $exitstatus != 0 ]; then
             echo "你选择了退出"
-            exit 0
+            return 6
         elif [ "$(echo "$OpenWrt_K_config"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
             whiptail --title "错误" --msgbox "配置名中有非法字符，如果配置名包含空格请先删除。" 10 60
         elif [ -z "$OpenWrt_K_config" ]; then
@@ -261,7 +287,7 @@ function import_ext_packages_config() {
     # 让用户选择导入拓展软件包配置的方式
     OPTION=$(whiptail --title "配置拓展软件包" --menu "选择导入拓展软件包配置的方式，如果你没有拓展软件包配置你将只能构建openwrt官方源码与feeds自带的软件包。你现有的拓展软件包配置会被覆盖。" 15 60 4 \
     "1" "从原OpenWrt-K仓库导入默认拓展软件包配置" \
-    "2" "从你指定的OpenWrt-K仓库导入指定的拓展软件包配置"  3>&1 1>&2 2>&3)
+    "2" "从你指定的OpenWrt-K仓库与配置导入指定的拓展软件包配置"  3>&1 1>&2 2>&3)
     exitstatus=$?
     # 如果用户选择退出，则返回11（作为退出标记），否则继续执行
     if [ $exitstatus -ne 0 ]; then
@@ -640,7 +666,7 @@ function menu() {
     if [ $exitstatus = 0 ]; then
         if [ "$OPTION" = "1" ]; then
             # 准备运行环境选项
-            if (whiptail --title "Yes/No Box" --yesno "这将会下载openwrt以及其插件的源码，请确保你拥有良好的网络环境。选择yes继续no返回菜单。" 10 60) then
+            if (whiptail --title "确认" --yesno "这将会下载openwrt以及其插件的源码，请确保你拥有良好的网络环境。选择yes继续no返回菜单。" 10 60) then
                 prepare
                 exitstatus=$?
                 if [ $exitstatus = 4 ]; then
@@ -654,7 +680,7 @@ function menu() {
             return 6
         elif [ "$OPTION" = "6" ]; then
             # 清除运行环境选项
-            if  (whiptail --title "Yes/No Box" --yesno "这将会删除你未生成的配置与下载的文件。选择yes继续no返回菜单。" 10 60) then
+            if  (whiptail --title "确认" --yesno "这将会删除你未生成的配置与下载的文件。选择yes继续no返回菜单。" 10 60) then
                 clearrunningenvironment
             fi
             return 6
@@ -692,28 +718,28 @@ function menu() {
                       ;;
                     3)
                     # 构建配置选项
-                        if  (whiptail --title "Yes/No Box" --yesno "这将会覆盖你已生成的配置。选择yes继续no返回菜单。" 10 60) then
+                        if  (whiptail --title "确认" --yesno "这将会覆盖你已生成的配置。选择yes继续no返回菜单。" 10 60) then
                             build
                         fi
                         return 6
                       ;;
                     4)
                     # 载入OpenWrt-K默认config选项
-                        if  (whiptail --title "Yes/No Box" --yesno "这将会覆盖你的现有配置。选择yes继续no返回菜单。" 10 60) then
+                        if  (whiptail --title "确认" --yesno "这将会覆盖你的现有配置。选择yes继续no返回菜单。" 10 60) then
                             importopenwrt_kconfig
                         fi
                         return 6
                         ;;
                     5)
                     # 清除所有openwrt配置选项
-                        if  (whiptail --title "Yes/No Box" --yesno "这将会删除你的现有配置。选择yes继续no返回菜单。" 10 60) then
+                        if  (whiptail --title "确认" --yesno "这将会删除你的现有配置。选择yes继续no返回菜单。" 10 60) then
                             clearconfig
                         fi
                         return 6
                         ;;
                     9)
                     # 重新载入拓展软件包选项
-                        if (whiptail --title "Yes/No Box" --yesno "这将会重新下载拓展软件包源码，请确保你拥有良好的网络环境。选择yes继续no返回菜单。" 10 60) then
+                        if (whiptail --title "确认" --yesno "这将会重新下载拓展软件包源码，请确保你拥有良好的网络环境。选择yes继续no返回菜单。" 10 60) then
                             build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
                             import_ext_packages
                             if [ $exitstatus = 4 ]; then
@@ -958,7 +984,7 @@ function menuconfig() {
     # 获取build_dir目录路径
     build_dir=$(grep "^build_dir=" buildconfig.config|sed  "s/build_dir=//")
     # 提示用户是否要修改OpenWrt的TARGET配置
-    if (whiptail --title "Yes/No Box" --yesno "你是否要修改openwrt的TARGET配置？（若未修改存储库则默认为x86_64）" 10 60) then
+    if (whiptail --title "选择" --yesno "你是否要修改openwrt的TARGET配置？" 10 60) then
         targetconfig
     else
         echo "You chose No. Exit status was $?."
@@ -1155,8 +1181,16 @@ openwrt_extension_config() {
 
 # 显示关于信息
 function about() {
-    whiptail --title "关于" --msgbox "这是一个用于生成OpenWrt-K配置文件的脚本\n\
-    Copyright (C) 2023  沉默の金, All rights reserved.\n" 10 60
+    whiptail --title "关于" --msgbox "\
+OpenWrt-k配置构建工具\n\
+\n\
+版本：v1.0\n\
+Copyright © 2023 沉默の金\n\
+\n\
+本软件基于MIT开源协议发布。你可以在MIT协议的允许范围内自由使用、修改和分发本软件。\n\
+\n\
+MIT开源协议的完整文本可以在以下位置找到：https://github.com/chenmozhijin/OpenWrt-K/blob/main/LICENSE\n\
+更多关于本软件的信息和源代码可以在我的代码仓库找到：https://github.com/chenmozhijin/OpenWrt-K" 20 110
 }
 
 # 构建OpenWrt-K配置文件
