@@ -705,9 +705,15 @@ jobs:
          export bt_tracker="$(curl  -s -L --retry 3 https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt || curl  -s -L --retry 3 https://cf.trackerslist.com/all_aria2.txt)"
          sed -i "s#^uci set aria2.main.bt_tracker=.*#uci set aria2.main.bt_tracker=\'$bt_tracker\'#g"  $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
 
-      - name: 设置时区与主机名
+      - name: 设置时区、主机名与IP
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: sed -i -e "s/set system.@system\[-1].hostname='OpenWrt'/set system.@system\[-1].hostname='OpenWrt-k'/g" -e "s/set system.@system\[-1].timezone='UTC'/set system.@system\[-1].timezone='CST-8'/g" -e "/set system.@system\[-1].timezone='CST-8'/i\		set system.@system\[-1].zonename='Asia/Shanghai'" $OPENWRT_ROOT_PATH/package/base-files/files/bin/config_generate
+        run: |
+          ipaddr=$(grep "^ipaddr=" $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/openwrtext.config|sed -e "s/ipaddr=//" -e "s/ //g")
+          timezone=$(grep "^timezone=" $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/openwrtext.config|sed -e "s/timezone=//" -e "s/ //g")
+          zonename=$(grep "^zonename=" $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/openwrtext.config|sed -e "s/zonename=//" -e "s/ //g")
+          echo "::notice ::设置openwrt默认ip为$ipaddr,时区为$timezone,时区区域名称为$zonename"
+          sed -i -e "s/set system.@system\[-1].hostname='OpenWrt'/set system.@system\[-1].hostname='OpenWrt-k'/g" -e "s/set system.@system\[-1].timezone='UTC'/set system.@system\[-1].timezone=\'$timezone\'/g" -e "/set system.@system\[-1].timezone='CST-8'/i\		set system.@system\[-1].zonename=\'$zonename\'" $OPENWRT_ROOT_PATH/package/base-files/files/bin/config_generate
+          sed -i "s#^uci set network.lan.ipaddr=.*#uci set network.lan.ipaddr=\"$ipaddr\"#g"  $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
 
       - name: 检查剩余空间
         run: |

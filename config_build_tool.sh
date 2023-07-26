@@ -204,8 +204,22 @@ function input_parameters() {
             break
         fi
     done
-    if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
-        build_dir=$(grep "^build_dir=" buildconfig.config|sed -e "s/build_dir=//")
+    if [ -e buildconfig.config ]; then
+        if [ "$(grep -c "^build_dir=" buildconfig.config)" -eq '1' ];then
+            build_dir=$(grep "^build_dir=" buildconfig.config|sed -e "s/build_dir=//")
+        fi
+        if [ "$(grep -c "^kmod_compile_exclude_list=" buildconfig.config)" -eq '1' ];then
+            kmod_compile_exclude_list=$(grep "^kmod_compile_exclude_list=" buildconfig.config|sed -e "s/kmod_compile_exclude_list=//")
+        fi
+        if [ "$(grep -c "^network.lan.ipaddr=" buildconfig.config)" -eq '1' ];then
+            ipaddr=$(grep "^ipaddr=" buildconfig.config|sed -e "s/ipaddr=//")
+        fi
+        if [ "$(grep -c "^timezone=" buildconfig.config)" -eq '1' ];then
+            timezone=$(grep "^timezone=" buildconfig.config|sed -e "s/timezone=//")
+        fi
+        if [ "$(grep -c "^zonename=" buildconfig.config)" -eq '1' ];then
+            zonename=$(grep "^zonename=" buildconfig.config|sed -e "s/zonename=//")
+        fi
     fi
     whiptail --title "完成" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCH\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url\n选择的OpenWrt-K存储库分支为: $OpenWrt_K_branch\n选择的配置为$OpenWrt_K_config" 10 80
     echo "警告：请勿手动修改本文件" > buildconfig.config 
@@ -213,7 +227,26 @@ function input_parameters() {
     echo OpenWrt_K_url=$OpenWrt_K_url >> buildconfig.config
     echo OpenWrt_K_branch=$OpenWrt_K_branch >> buildconfig.config
     echo OpenWrt_K_config=$OpenWrt_K_config >> buildconfig.config
-    echo "kmod_compile_exclude_list=kmod-shortcut-fe-cm,kmod-shortcut-fe,kmod-fast-classifier" >> buildconfig.config
+    if [ -n "$kmod_compile_exclude_list" ];then
+        echo "kmod_compile_exclude_list=$kmod_compile_exclude_list" >> buildconfig.config
+    else
+        echo "kmod_compile_exclude_list=kmod-shortcut-fe-cm,kmod-shortcut-fe,kmod-fast-classifier" >> buildconfig.config
+    fi
+    if [ -n "$ipaddr" ];then
+        echo ipaddr=$ipaddr >> buildconfig.config
+    else
+        echo ipaddr=192.168.1.1 >> buildconfig.config
+    fi
+    if [ -n "$timezone" ];then
+        echo timezone=$timezone >> buildconfig.config
+    else
+        echo timezone=CST-8 >> buildconfig.config
+    fi
+    if [ -n "$zonename" ];then
+        echo zonename=$zonename >> buildconfig.config
+    else
+        echo zonename=Asia/Shanghai >> buildconfig.config
+    fi
     if [ -n "$build_dir" ];then
         echo build_dir=$build_dir >> buildconfig.config
         rm -rf $build_dir/OpenWrt-K
@@ -591,7 +624,7 @@ function network_error() {
 
 function menu() {
     # 使用whiptail显示主菜单，让用户选择执行哪个步骤或退出
-    OPTION=$(whiptail --title "OpenWrt-k配置构建工具" --menu "选择你要执行的步骤或选择Cancel退出" 16 80 10 \
+    OPTION=$(whiptail --title "OpenWrt-k配置构建工具" --menu "选择你要执行的步骤或选择Cancel退出" 20 90 11 \
     "1" "准备运行环境" \
     "2" "打开openwrt配置菜单" \
     "3" "构建配置" \
@@ -601,7 +634,7 @@ function menu() {
     "7" "重新配置OpenWrt-K存储库地址\分支、OpenWrt branch或tag与拓展软件包" \
     "8" "配置拓展软件包" \
     "9" "重新载入拓展软件包" \
-    "10" "修改内核模块(kmod)编译排除列表" \
+    "10" "openwrt-K拓展配置(kmod编译排除列表、IP、时区等)" \
     "11" "关于" 3>&1 1>&2 2>&3)
     exitstatus=$?
     if [ $exitstatus = 0 ]; then
@@ -611,8 +644,10 @@ function menu() {
                 prepare
                 exitstatus=$?
                 if [ $exitstatus = 4 ]; then
+                    cd $build_dir/..
                     whiptail --title "错误" --msgbox "下载失败,请检查你的网络环境是否正常、OpenWrt-K与拓展软件包存储库地址是否正确。如果不是第一次准备请尝试清除运行环境" 10 60
                 elif [ $exitstatus = 7 ]; then
+                    cd $build_dir/..
                     whiptail --title "错误" --msgbox "git checkot执行失败，请尝试清除运行环境" 10 60
                 fi
             fi
@@ -632,8 +667,15 @@ function menu() {
             config_ext_packages
             return 6
         elif [ "$OPTION" = "10" ]; then
-            # 配置内核模块(kmod)编译排除列表选项
-            config_kmod_compile_exclude_list
+            # openwrt拓展配置选项
+            while true; do
+                # 调用openwrt_extension_config函数显示拓展配置的菜单
+                openwrt_extension_config
+                exitstatus=$?
+                if [ $exitstatus -ne 6 ]; then
+                    break
+                fi
+            done
             return 6
         elif [ "$OPTION" = "11" ]; then
             # 关于选项
@@ -1002,12 +1044,113 @@ function clearrunningenvironment() {
     sed -i  "/^build_dir=/d" buildconfig.config
 }
 
-function config_kmod_compile_exclude_list() {
-    kmod_compile_exclude_list=$(whiptail --title "输入内核模块(kmod)编译排除列表" --inputbox "输入内核模块包名，不同包名之间用逗号分隔。" 10 120 $(grep "^kmod_compile_exclude_list=" buildconfig.config|sed  "s/kmod_compile_exclude_list=//") 3>&1 1>&2 2>&3)
+openwrt_extension_config() {
+    # 使用whiptail显示菜单，让用户选择修改哪个配置或退出
+    ipaddr=$(grep "^ipaddr=" buildconfig.config|sed -e "s/ipaddr=//")
+    timezone=$(grep "^timezone=" buildconfig.config|sed -e "s/timezone=//")
+    zonename=$(grep "^zonename=" buildconfig.config|sed -e "s/zonename=//")
+    OPTION=$(whiptail --title "OpenWrt-k配置构建工具-拓展配置" --menu "选择你要修改的内容或选择Cancel退出" 16 80 8 \
+    "1" "修改IP地址: $ipaddr" \
+    "2" "修改时区：$timezone" \
+    "3" "修改时区区域名称: $zonename" \
+    "4" "修改内核模块(kmod)编译排除列表" \
+    "5" "恢复默认拓展配置"  3>&1 1>&2 2>&3)
     exitstatus=$?
-    if [ $exitstatus = 0 ]; then
-        sed -i  "/^kmod_compile_exclude_list=/s/=.*/=$kmod_compile_exclude_list/g" buildconfig.config
+    if [ "$exitstatus" = "1" ]; then
+        echo "你选择了退出"
+        return 0
     fi
+    case "${OPTION}" in
+        1)
+            # 编辑ip地址
+            while true; do
+                NEW_IPADDR=$(whiptail --title "修改IP地址" --inputbox "默认IP：192，168.1.1容易与光猫路由器冲突，这可能导致无法访问openwrt或互联网，你可以在这里修改openwrt默认ip" 10 60 $ipaddr 3>&1 1>&2 2>&3)
+                exitstatus=$?
+                if [ $exitstatus != 0 ]; then
+                    echo "你选择了退出"
+                    return 6
+                elif [ -z "$NEW_IPADDR" ]; then
+                    whiptail --title "错误" --msgbox "ip地址不能为空" 10 60
+                elif [ "$(echo "$NEW_IPADDR"|grep -c "[A-Za-z!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ];then
+                    whiptail --title "错误" --msgbox "ip地址中有非法字符" 10 60
+                else
+                    break
+                fi
+            done
+            # 修改ip地址的配置
+            sed -i "/^ipaddr/s/=.*/=$NEW_IPADDR/g" buildconfig.config
+            return 6
+            ;;
+        2)
+             # 修改时区
+            while true; do
+                NEW_TIMEZONE=$(whiptail --title "修改时区" --inputbox "默认为东八区(CST-8),中国地区无需修改" 10 60 $timezone 3>&1 1>&2 2>&3)
+                exitstatus=$?
+                if [ $exitstatus != 0 ]; then
+                    echo "你选择了退出"
+                    return 6
+                elif [ -z "$NEW_TIMEZONE" ]; then
+                    whiptail --title "错误" --msgbox "时区不能为空" 10 60
+                elif [ "$(echo "$NEW_TIMEZONE"|grep -c "[!@#$%^&:*=+\`~\'\"\(\) ]")" -ne '0' ];then
+                    whiptail --title "错误" --msgbox "时区中有非法字符" 10 60
+                else
+                    break
+                fi
+            done
+            # 修改时区的配置
+            sed -i "/^timezone=/s/=.*/=$NEW_TIMEZONE/g" buildconfig.config
+            return 6
+            ;;
+        3)
+            # 修改时区区域名称
+            while true; do
+                NEW_ZONENAME=$(whiptail --title "修改时区区域名称" --inputbox "默认为Asia/Shanghai,中国大陆地区无需修改" 10 60 $zonename 3>&1 1>&2 2>&3)
+                exitstatus=$?
+                if [ $exitstatus != 0 ]; then
+                    echo "你选择了退出"
+                    return 6
+                elif [ -z "$NEW_ZONENAME" ]; then
+                    whiptail --title "错误" --msgbox "时区区域不能为空" 10 60
+                elif [ "$(echo "$NEW_ZONENAME"|grep -c "[!@#$%^&:*=+\`~'\" ]")" -ne '0' ];then
+                    whiptail --title "错误" --msgbox "时区区域中有非法字符" 10 60
+                else
+                    break
+                fi
+            done
+            # 修改时区区域名称的配置
+            sed -i "/^zonename=/s#=.*#=$NEW_ZONENAME#g" buildconfig.config
+            return 6
+            ;;
+        4)
+            # 修改内核模块(kmod)编译排除列表
+            while true; do
+                kmod_compile_exclude_list=$(whiptail --title "修改内核模块(kmod)编译排除列表" --inputbox "修改内核模块包名，不同包名之间用英语逗号分隔，支持通字符.*。" 10 120 $(grep "^kmod_compile_exclude_list=" buildconfig.config|sed  "s/kmod_compile_exclude_list=//") 3>&1 1>&2 2>&3)
+                exitstatus=$?
+                if [ $exitstatus != 0 ]; then
+                    echo "你选择了退出"
+                    return 6
+                elif [ "$(echo "$kmod_compile_exclude_list"|grep -c "[!@#$%^&:=+\`~'\" ]")" -ne '0' ];then
+                    whiptail --title "错误" --msgbox "内核模块(kmod)编译排除列表中有非法字符" 10 60
+                else
+                    break
+                fi
+            done
+            # 修改内核模块(kmod)编译排除列表
+            sed -i  "/^kmod_compile_exclude_list=/s/=.*/=$kmod_compile_exclude_list/g" buildconfig.config
+            return 6
+            ;;
+        5)
+            sed -i "/^ipaddr/s/=.*/=192.168.1.1/g" buildconfig.config
+            sed -i "/^timezone=/s/=.*/=CST-8/g" buildconfig.config
+            sed -i "/^zonename=/s#=.*#=Asia/Shanghai#g" buildconfig.config
+            sed -i  "/^kmod_compile_exclude_list=/s/=.*/=kmod-shortcut-fe-cm,kmod-shortcut-fe,kmod-fast-classifier/g" buildconfig.config
+            return 6
+            ;;
+        *)
+            echo "错误：未知的选项"
+            exit 1
+            ;;
+    esac
 }
 
 # 显示关于信息
@@ -1128,6 +1271,9 @@ function build () {
     sed -n "/^EXT_PACKAGES/p" $build_dir/../buildconfig.config > $outputdir/OpenWrt-K/extpackages.config
     echo "openwrt_tag/branch=$(grep "^OPENWRT_TAG_BRANCH=" $build_dir/../buildconfig.config|sed  "s/OPENWRT_TAG_BRANCH=//")" > $outputdir/OpenWrt-K/compile.config
     echo "kmod_compile_exclude_list=$(grep "^kmod_compile_exclude_list=" $build_dir/../buildconfig.config|sed  "s/kmod_compile_exclude_list=//")" >> $outputdir/OpenWrt-K/compile.config
+    echo "ipaddr=$(grep "^ipaddr=" $build_dir/../buildconfig.config|sed -e "s/ipaddr=//")" > $outputdir/OpenWrt-K/openwrtext.config
+    echo "timezone=$(grep "^timezone=" $build_dir/../buildconfig.config|sed -e "s/timezone=//")" >> $outputdir/OpenWrt-K/openwrtext.config
+    echo "zonename=$(grep "^zonename=" $build_dir/../buildconfig.config|sed -e "s/zonename=//")" >> $outputdir/OpenWrt-K/openwrtext.config
     # 输出配置文件
     [[ -d $build_dir/../config/$OpenWrt_K_config ]] && rm -rf $build_dir/../config/$OpenWrt_K_config
     mkdir -p $build_dir/../config/$OpenWrt_K_config
