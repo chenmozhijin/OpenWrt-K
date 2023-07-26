@@ -190,15 +190,8 @@ function input_parameters() {
             fi
         fi
     done
-    OpenWrt_K_config="$(whiptail --title "输入配置名" --inputbox "输入要导入的配置名（就是仓库config文件夹下的配置文件夹名）" 10 60 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
-    exitstatus=$?
-    # 如果用户选择退出，则输出提示信息并退出脚本
-    if [ $exitstatus != 0 ]; then
-        echo "你选择了退出"
-        exit 0
-    fi
     while true; do
-        OpenWrt_K_config="$(whiptail --title "输入配置名" --inputbox "输入要导入的配置名（就是仓库config文件夹下的文件夹名）" 10 60 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
+        OpenWrt_K_config="$(whiptail --title "输入配置名" --inputbox "输入要导入的配置名（就是仓库config文件夹下的文件夹名,如：x86_64）" 10 60 3>&1 1>&2 2>&3|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')"
         exitstatus=$?
         if [ $exitstatus != 0 ]; then
             echo "你选择了退出"
@@ -1144,8 +1137,9 @@ function build () {
     whiptail --title "成功" --msgbox "OpenWrt-K配置文件构建完成\n\
     输出目录：$(pwd)\n\
     生成的配置文件请在删除原配置文件后上传至对应文件夹\n\
-    当然你也可以在存储库config新建一个文件夹来存放这些文件\n\
-    选择ok以返回菜单" 13 90
+    当然你也可以在存储库config新建一个文件夹来存放这些文件,然后你的配置名就是新文件夹名\n\
+    如果你想使用新的配置编译请在仓库config/OpenWrt.config文件中设置\n\
+    选择ok以返回菜单" 13 100
     cd $build_dir/..
 }
 
