@@ -43,6 +43,7 @@ runs:
               echo "::notice ::配置$i编译的标签/分支为$OPENWRT_TAG_BRANCH"
               echo "v$starttime($target-$subtarget)-($OPENWRT_TAG_BRANCH)" >> $TMPFILE
               rm -rf $GITHUB_WORKSPACE/openwrt
+              cd $GITHUB_WORKSPACE
             done
             export parameter=$parameter]}
             export parameter=$(echo $parameter|sed "s/},]/}]/g")
