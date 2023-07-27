@@ -9,9 +9,9 @@
 ## 目录
 
 1. [固件介绍](https://github.com/chenmozhijin/OpenWrt-K#%E5%9B%BA%E4%BB%B6%E4%BB%8B%E7%BB%8D)
-2. [固件使用方法](https://github.com/chenmozhijin/OpenWrt-K#%E5%9B%BA%E4%BB%B6%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)
-3. [定制编译 OpenWrt 固件](https://github.com/chenmozhijin/OpenWrt-K#%E5%AE%9A%E5%88%B6%E7%BC%96%E8%AF%91-openwrt-%E5%9B%BA%E4%BB%B6)
-4. [更新日志](https://github.com/chenmozhijin/OpenWrt-K#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97)
+2. [更新日志](https://github.com/chenmozhijin/OpenWrt-K#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97)
+
++  固件使用方法/仓库基本介绍/定制编译OpenWrt固件等内容见[Wiki页面](https://github.com/chenmozhijin/OpenWrt-K/wiki)
 
 ## 固件介绍
 
@@ -26,8 +26,7 @@
 ### 内置功能
 
 已内置以下软件包：
-<details>
- <summary>LuCI插件</summary>
+LuCI插件：
 
 + [luci-app-adguardhome](https://github.com/rufengsuixing/luci-app-adguardhome) :AdGuardHome广告屏蔽工具的luci设置界面
 + [luci-app-argon-config](https://github.com/jerrykuku/luci-app-argon-config):Argon 主题设置
@@ -59,9 +58,8 @@
 + luci-app-wol：网络唤醒
 + luci-app-zerotier：ZeroTier虚拟局域网
 
-</details>
-<details>
- <summary>其他部分软件包</summary>
+
+其他部分软件包：
 
 + ethtool-full：网卡工具用于查询及设置网卡参数
 + sudo：sudo命令支持
@@ -74,14 +72,11 @@
 + usbutils：USB 设备列出工具
 + [cloudflared](https://github.com/cloudflare/cloudflared)：Cloudflare 隧道客户端
 
-</details>
-
-+ LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
+LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
 
 > + 以上软件包可以都在Releases中的package.zip文件中，可下载使用。
 
-<details>
- <summary>网卡驱动</summary>
+网卡驱动：
 
 + kmod-8139cp
 + kmod-8139too
@@ -117,12 +112,9 @@
 + kmod-via-velocity
 + kmod-vmxnet3
 
-</details>
 
 ### 固件预览
 
-<details>
- <summary>点击展开预览</summary>
 
 ### 概览
 
@@ -165,297 +157,10 @@
 
 ![概览](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/10.webp)
 
-</details>
 
-## 固件使用方法
 
-<details>
- <summary>点击展开使用方法</summary>
 
-#### 1. 下载固件
 
-1. 点击右侧的```"Releases"```
-2. 点击```"Show all xx assetss"```展开
-3. 下载需要的固件（x86_64架构pve/exsi建议下载openwrt-x86-64-generic-squashfs-combined-efi.vmdk）
-
-#### 2. 安装固件
-
-##### 1. pve安装
-
-1. 点击创建虚拟机输入一个名称记下VMID点击下一步
-2. 操作系统选项系统类别选```Linux```版本选```6.x - 2.6 Kernel```并选择```不使用任何介质```
-3. 系统选项BIOS选```OVMF (UEFI)```，取消勾选```添加EFI磁盘```其他默认（如果下载的固件名不含```-efi```则默认即可）
-4. 磁盘选项删除所有磁盘（磁盘一会直接上传）
-5. CPU选项根据自己机器的性能选（这里的核心数应该是线程数）
-6. 内存选项根据自己机器的性能选（一般1024mib或512mib）
-7. 网络选项模型建议选```VMware vmxnet3```，因为半虚拟化在我这里丢包严重（访问nas中的图片图片都损坏）
-8. 确认完成后将固件传送到pve的```/var/lib/vz/images/你刚记的VMID/```目录下，在终端输入
-
-    ```bash
-    qm importdisk 你刚记的VMID "/var/lib/vz/images/你刚记的VMID/你下载的固件" local --format=qcow2
-    ```
-
-    然后回车，你会发现你刚创建的虚拟机的硬件菜单下会多一个未使用的磁盘
-
-9. 选中未使用的磁盘点上面的编辑在点添加
-10. 点击选项菜单双击引导顺序，仅给刚添加的磁盘打勾然后点ok，现在你可以启动虚拟机了
-
-### 2. 固件配置
-
-1. 进入openwrt web界面，一般访问```192.168.1.1```即可
-
-    > 注：此ip容易与光猫路由器冲突，这可能导致无法访问openwrt或互联网，你可以修改它们的ip或修改openwrt ip
-
-2. 第一次访问没有密码直接登录即可，第一次开机会运行大量脚本建议开机后等几分钟在开始设置
-3. 设置密码：访问[```系统/管理权```](http://192.168.1.1/cgi-bin/luci/admin/system/admin)中设置密码
-4. 配置PPPoE：上网访问[```网络/接口```](http://192.168.1.1/cgi-bin/luci/admin/network/network)找到```wan```点编辑，协议选择```PPPoE```点```切换协议```输入```PAP/CHAP 用户名```与```PAP/CHAP 密码```再点击保存点击保存并应用即可
-5. 配置lan口：访问[```网络/接口```](http://192.168.1.1/cgi-bin/luci/admin/network/network)点击上面的```设备```找到```br-lan```点配置，在网桥端口为你需要作为lan口的网口打勾再点击保存点击保存并应用即可
-6. SmartDNS与AdGuardHome默认就是启用并设置好的（AdGuardHome默认密码：```password```），访问[```服务/AdGuard Home```](http://192.168.1.1/cgi-bin/luci/admin/services/AdGuardHome)点下面的更多选项选择```改变网页登录密码```点添加，找到改变网页登录密码输入密码后按载入计算模块然后计算最后点下面的保存并应用
-7. 使用openclash：本固件中以默认将openclash的DNS设置设置为AdGuardHome如需使用openclash请将[```服务/AdGuard Home```](http://192.168.1.1/cgi-bin/luci/admin/services/AdGuardHome)中的1745重定向设置为```无```，并在订阅配置后在规则附加选项中全部点all找到有```代理规则(by 沉默の金)```的一项将策略组改为你代理用的策略组
-8. 使用PassWall：本固件中以默认将PassWal的DNS设置为AdGuardHome，请不要修改DNS设置并保持[```服务/AdGuard Home```](http://192.168.1.1/cgi-bin/luci/admin/services/AdGuardHome)中的1745重定向设置为```作为dnsmasq的上游服务器```
-
-</details>
-
-## 定制编译 OpenWrt 固件
->
-> 如果你有其他需求可以fork此仓库进行自定义
-
-### 1.仓库基本结构
-
-```text
-config  --- 存储openwrt编译配置与OpenWrt-k额外的配置
-files   --- openwrt固件自定义文件
-scripts --- 编译时所用的部分脚本
-config_build_tool.sh --- OpenWrt-k配置构建工具
-```
-
-### 2.编译流程
-
-1. planning：根据config/OpenWrt.config定义不同作业配置的[矩阵](https://docs.github.com/zh/actions/using-jobs/using-a-matrix-for-your-jobs)
-2. prepare：准备编译移植包所需的源码与一些参数
-3. build1: 根据配置打内核补丁、修改部分源码、根据配置添加openclash内核与AdGuardHome核心并编译工具链
-4. build-package：编译固件所需的软件包
-5. build-Image_Builder：编译Image_Builder与所有kmod（除sfe）
-6. 使用4编译的Image Builderkmod添加3编译软件包（除kmod）与4编译的kmod（除sfe）构建镜像
-
-+ 注：3与4同时进行，拆成5个job是因为github限制一个job只能运行6小时软件包多点就超时了，除planning外job名后还跟着```-$配置名```
-
-### 3. 修改openwrt编译配置
-
-#### 3.1修改openwrt编译所用的分支或tag
-
-+ 直接修改config/OpenWrt-K/compile.config中```openwrt_tag/branch=```一行```=```后面的分支或tag
-+ 注：建议使用较新的分支或tag（至少使用firewall4），paswall在v22.03.5中无法正常运行需升级dnsmasq与其依赖libubox（已支持自动升级）
-
-#### 3.2修改openwrt固件编译配置
->
-> 如果你想新增或删减编译软件包，或修改固件编译的架构设备等都需要修改.config
-> 你可以手动修改config文件夹下的文件，但我建议使用OpenWrt-k配置构建工具
-
-+ 因为：
-
-1. 你可以使用构建系统配置接口（Menuconfig）
-2. 能避免许多人为造成的错误
-3. 能以菜单的形式修改拓展软件包配置
-
-#### 3.2.0关于此仓库的配置文件
->
-> 本仓库的config文件夹中的*.config文件为配置差异文件制作而来，它好处是这些文件可以在下游项目中进行版本控制。它也较少受到上游更新的影响，因为它只包含更改（见openwrt官网[使用配置文件差异文件进行配置](https://openwrt.org/zh/docs/guide-developer/build-system/use-buildsystem#configure_using_config_diff_file)），
-> 编译时config文件夹中的*.config文件回被合并拓展为完整的config文件（拓展过程中会添加默认软件包与配置，也会添加软件包依赖）
-
-+ config 文件夹中不同.config的作用
-
-    ```text
-    default-extpackages.config --- 供OpenWrt-k配置构建工具下载默认拓展软件包配置使用
-    OpenWrt.config             --- 目前仅用于定义工作流要编译的配置
-    ```
-
-+ config/$配置名 文件夹中不同.config的作用
-
-    ```text
-    image.config      --- 存储镜像的分区大小生成镜像的类型系统启动等待时间等配置（对应Menuconfig中的Target Images）
-    target.config     --- 存储编译固件的架构设备等（对应Menuconfig中的Target System、Subtarget、Target Profile、Target Devices）
-    kmod.config       --- 存储内核模块（驱动）配置（对应Menuconfig中的Kernel modules）
-    luci.config       --- 存储LuCI APP配置（对应Menuconfig中的LuCI）
-    network.config    --- 存储网络相关软件包配置（对应Menuconfig中的Network）
-    utilities.config  --- 存储工具类软件包配置（对应Menuconfig中的Utilities）
-    other.config      --- openwrt剩余的所有配置
-    OpenWrt-K/extpackages.config --- 存放拓展软件包配置
-    OpenWrt-K/openwrtext.config --- 存放openwrt拓展配置，如：IP、时区等
-    OpenWrt-K/compile.config --- 用于定义openwrt编译所用的分支或tag（仅官方源）与配置kmod编译排除列表
-    ```
-
-##### 3.2.1使用OpenWrt-k配置构建工具
-
-<details>
- <summary>点击展开工具图片</summary>
-
-![OpenWrt-k配置构建工具](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/01.webp)
-
-</details>
-
-###### 1. 准备环境
-
-1. 你需要准备一个linux系统（wsl也可以，不支持openwrt，建议使用ubuntu）并安装[依赖](https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem#linux_gnu-linux_distributions)
-2. 准备良好的网络环境
-
-###### 2. 下载工具
-
-```bash
-curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_build_tool.sh && chmod +x config_build_tool.sh
-```
-
-> 注意：如果已下载旧版工具，为防止出错请先删除工具与其生成的```config```、```buildconfig.config```、```OpenWrt-K_config_build_dir```文件/文件夹
-###### 3. 运行工具
-
-```bash
-./config_build_tool.sh
-```
-
-1. 填写openwrt编译所用的分支或tag
-2. 填写你fork的openwrt-k编译仓库地址（如果你想以本仓库的配置为基础修改就默认即可）
-3. 选择导入的OpenWrt-K配置
-4. 选择一种选择导入拓展软件包配置的方式
-5. 配置拓展软件包（你也可以返回主菜单稍后配置）
-6. 准备运行环境（请确保你拥有良好的网络环境）
-7. 打开openwrt配置菜单自定义你的配置
-8. 修改openwrt-K拓展配置(kmod编译排除列表、IP、时区等)
-9. 构建配置
-
-> 注：OpenWrt-k配置构建工具内到处都是介绍跟着一步步做就行  
-> 注意：修改拓展软件包配置后需重新载入拓展软件包，一般不删除拓展软件包，不想编译的软件包修改openwrt配置即可。不要重复添加拓展软件包，也不要```忘记添加依赖```或```删除其他包的依赖```。
-
-###### 4. 上传
-
-1. 删除fork仓库的config文件夹中刚刚生成的同名配置文件（进入要删除文件夹右上角三个点```Delete directory```）
-2. 上传生成```config/$配置名```配置文件夹到config文件夹中
-
-> 注：你可以修改生成的配置文件夹名再上传，这样新文件夹名就是配置名，你可以到config/OpenWrt.config设置工作流要编译的配置(文件夹名请勿出现任何括号)
-
-##### 3.2.2手动修改config
-
-<details>
- <summary>点击展开</summary>
-
-1. 进入到你fork的仓库config/$配置名文件夹中
-2. 修改镜像大小（默认偏大）：修改image.config
-
-    > ```CONFIG_TARGET_KERNEL_PARTSIZE=```后面是内核分区大小  
-    > ```CONFIG_TARGET_ROOTFS_PARTSIZE=```后面是根目录大小  
-    > 单位为MiB
-
-3. 修改架构：如需要修改架构建议使用OpenWrt-k配置构建工具，除非你熟知配置。
-4. 新增精简软件包：按类别修改kmod.config luci.config  network.config  utilities.configother.config  
-例：
-
-   + 删除passwall：直接删除luci.config中的以下内容
-
-        ```text
-        CONFIG_PACKAGE_luci-app-passwall=y
-        #
-        # Configuration
-        #
-        CONFIG_PACKAGE_luci-app-passwall_Nftables_Transparent_Proxy=y
-        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Brook=y
-        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Hysteria=y
-        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy=y
-        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client=y
-        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Server=y
-        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_ShadowsocksR_Libev_Server=y
-        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Trojan_GO=y
-        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata=y
-        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray_Plugin=y
-        # end of Configuration
-        ```
-
-   + 添加transmission：直接在luci.config中插入以下行
-
-    ```text
-    CONFIG_PACKAGE_luci-app-transmission=y
-    ```
-
-   + 添加官方openwrt源码与feeds没有的软件包，例：
-     + 例1：添加luci-app-lucky
-        1. 在config/OpenWrt-K/extpackages.config添加：
-
-            ```text
-            EXT_PACKAGES_NAME[30]="luci-app-lucky"
-            EXT_PACKAGES_PATH[30]=""
-            EXT_PACKAGES_REPOSITORIE[30]="https://github.com/sirpdboy/luci-app-lucky"
-            EXT_PACKAGES_BRANCH[30]=""
-            ```
-
-        2. 在luci.config中插入以下行
-
-            ```text
-            CONFIG_PACKAGE_luci-app-lucky=y
-            ```
-
-        3. 在network.config中插入以下行
-
-            ```text
-            CONFIG_PACKAGE_lucky=y
-            ```
-
-   + 例2：添加luci-app-ramfree
-    1. 在config/OpenWrt-K/extpackages.config添加：
-
-        ```text
-        EXT_PACKAGES_NAME[30]="luci-app-ramfree"
-        EXT_PACKAGES_PATH[30]="applications/luci-app-ramfree"
-        EXT_PACKAGES_REPOSITORIE[30]="https://github.com/coolsnowwolf/luci"
-        EXT_PACKAGES_BRANCH[30]=""
-        ```
-
-    2. 在luci.config中插入以下行
-
-        ```text
-        CONFIG_PACKAGE_luci-app-ramfree=y
-        ```
-
-5. 修改IP、时区：修改OpenWrt-K/openwrtext.config，不要加引号
-
-> 注：1. 方括号中的数字仅供参考，请以实际为准。  
-> 2. 请不要重复添加拓展软件包，也不要```忘记添加依赖```或```删除其他包```的依赖。  
-> EXT_PACKAGES_NAME -- 拓展软件包名用于创建包存放文件夹，请勿输入空格斜杠或与其他软件包重名  
-> EXT_PACKAGES_PATH -- 拓展软件包在存储库中的目录(包与存储库的相对位置)，例如一个包在存储库根目录的luci-app-xxx文件夹下则输入luci-app-xxx，如果包就在根目录着可以留空。  
-> EXT_PACKAGES_REPOSITORIE -- 拓展软件包所在存储库，https的存储库地址，无需加“.git”，例如："`https://github.com/chenmozhijin/turboacc`"
-> EXT_PACKAGES_BRANCH -- 拓展软件包所在分支,一般不输入默认留空使用默认分支即可
-
-</details>
-
-### 4. 运行编译工作流
-
-> 此仓库在UTC 4：00即UTC+8 12：00自动运行，若不需要请删除[这两行](https://github.com/chenmozhijin/OpenWrt-K/blob/main/.github/workflows/build-openwrt.yml#LL27C1-L28C24)
-
-1. 进入你fork的仓库
-2. 点击上方的```"Actions"```
-3. 点击左侧的```"Build OpenWrt-K"```（可能需要先开启GitHub Actions才能看到）
-4. 然后点击```"Run workflow"```在点击绿色的```"Run workflow"```（可能需要先开启你fork的仓库GitHub Actions才能看到）
-5. 刷新一下你将看到你运行的工作流，然后去做点别的是事过几个小时在来看看
-
-> 注：你可以在build1的“加载自定义配置并生成配置文件”步骤检查你的配置
-
-### 5. 下载固件
-
-> 请确保你工作流运行成功
-
-1. 进入你fork的仓库的```"Code"```页面
-2. 点击右侧的```"Releases"```
-3. 点击```"Show all xx assetss"```展开（生成的文件较少则无此按钮）
-4. 下载你需要的镜像（校验信息在sha256sums中）
-
-### 6.注意事项
-
-1. 如果你fork了此仓库，则编译出的固件的固件版本与页脚中的```Compiled by 沉默の金```中的沉默の金会被修改为你的github名称，你可以在[settings/Public profile](https://github.com/settings/profile) Name一栏中修改
-2. 部分软件包对firewall4的兼容不是很好，不建议编译。具体列表见 [openwrt/openwrt#16818](https://github.com/openwrt/packages/issues/16818)
-3. 工作流中“下载AdGuardHome核心与DNS名单”与“下载openclash内核”两个步骤会根据你在配置文件中是否将luci-app-adguardhome或luci-app-openclash配置为编译进固件决定下载或清除残留文件，请配置好配置文件。
-4. 默认不编译sfe，Releases allkmod.zip也没有如果需要修改openwrt固件编译配置时添加即可（必须设为添加进固件）。注意:kmod-shortcut-fe-cm与kmod-fast-classifier无法同时编译，同时编译会报不兼容。
-5. 现在main/master分支部分架构升级到了6.1内核部分内核模块(kmod)可能有bug导致无法编译成功,而本仓库默认编译所有内核模块(kmod)导致编译失败。现在可以使用内核模块(kmod)编译排除列表排除那些内核模块(kmod)。
-    > 注：内核模块(kmod)编译排除列表在仓库根目录的config/$配置名OpenWrt-K/compile.config中，不同内核模块(kmod)名之间用```,```(英文逗号)分隔，支持通字符```.*```。  
-    > 例：如果build-Image_Builder中编译并生成安装包步骤遇到dahdi相关的错误，如：```base.c:45:10: fatal error: stdbool.h: No such file or directory```可以添加```,kmod-dahdi.*```到内核模块(kmod)编译排除列表。
-6. rpi4b配置生成的固件未经测试，谨慎使用
-7. 如你在编译与使用过程中遇到问题欢迎提[issue](https://github.com/chenmozhijin/OpenWrt-K/issues)或[discussions](https://github.com/chenmozhijin/OpenWrt-K/discussions)。
 
 ## 更新日志
 
