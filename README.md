@@ -6,7 +6,6 @@
 [![GitHub last commit (by committer)](https://img.shields.io/github/last-commit/chenmozhijin/OpenWrt-K)](https://github.com/chenmozhijin/OpenWrt-K/commits)
 [![Workflow Status](https://github.com/chenmozhijin/OpenWrt-K/actions/workflows/build-openwrt.yml/badge.svg)](https://github.com/chenmozhijin/OpenWrt-K/actions)
 > OpenWRT软件包与固件自动云编译
->
 ## 目录
 
 1. [固件介绍](https://github.com/chenmozhijin/OpenWrt-K#%E5%9B%BA%E4%BB%B6%E4%BB%8B%E7%BB%8D)
@@ -223,7 +222,7 @@
 ### 1.仓库基本结构
 
 ```text
-config  --- 存储openwrt编译配置，会在编译过程中程合并成```.config```文件
+config  --- 存储openwrt编译配置与OpenWrt-k额外的配置
 files   --- openwrt固件自定义文件
 scripts --- 编译时所用的部分脚本
 config_build_tool.sh --- OpenWrt-k配置构建工具
@@ -231,13 +230,14 @@ config_build_tool.sh --- OpenWrt-k配置构建工具
 
 ### 2.编译流程
 
-1. prepare：准备编译移植包所需的源码与一些参数
-2. build1: 修改部分源码按需添加openclash内核与AdGuardHome核心并编译工具链
-3. build-package：编译固件所需的软件包
-4. build-Image_Builder：编译Image_Builder与所有kmod（除sfe）
-5. 使用4编译的Image Builderkmod添加3编译软件包（除kmod）与4编译的kmod（除sfe）构建镜像
+1. planning：根据config/OpenWrt.config定义不同作业配置的[矩阵](https://docs.github.com/zh/actions/using-jobs/using-a-matrix-for-your-jobs)
+2. prepare：准备编译移植包所需的源码与一些参数
+3. build1: 根据配置打内核补丁、修改部分源码、根据配置添加openclash内核与AdGuardHome核心并编译工具链
+4. build-package：编译固件所需的软件包
+5. build-Image_Builder：编译Image_Builder与所有kmod（除sfe）
+6. 使用4编译的Image Builderkmod添加3编译软件包（除kmod）与4编译的kmod（除sfe）构建镜像
 
-+ 注：3与4同时进行，拆成5个job是因为github限制一个job只能运行6小时软件包多点就超时了
++ 注：3与4同时进行，拆成5个job是因为github限制一个job只能运行6小时软件包多点就超时了，除planning外job名后还跟着```-$配置名```
 
 ### 3. 修改openwrt编译配置
 
@@ -262,19 +262,27 @@ config_build_tool.sh --- OpenWrt-k配置构建工具
 > 本仓库的config文件夹中的*.config文件为配置差异文件制作而来，它好处是这些文件可以在下游项目中进行版本控制。它也较少受到上游更新的影响，因为它只包含更改（见openwrt官网[使用配置文件差异文件进行配置](https://openwrt.org/zh/docs/guide-developer/build-system/use-buildsystem#configure_using_config_diff_file)），
 > 编译时config文件夹中的*.config文件回被合并拓展为完整的config文件（拓展过程中会添加默认软件包与配置，也会添加软件包依赖）
 
-+ config文件夹中不同.config存储的配置对应关系
++ config 文件夹中不同.config的作用
 
-```text
-image.config      --- 存储镜像的分区大小生成镜像的类型系统启动等待时间等配置（对应Menuconfig中的Target Images）
-target.config     --- 存储编译固件的架构设备等（对应Menuconfig中的Target System、Subtarget、Target Profile、Target Devices）
-kmod.config       --- 存储内核模块（驱动）配置（对应Menuconfig中的Kernel modules）
-luci.config       --- 存储LuCI APP配置（对应Menuconfig中的LuCI）
-network.config    --- 存储网络相关软件包配置（对应Menuconfig中的Network）
-utilities.config  --- 存储工具类软件包配置（对应Menuconfig中的Utilities）
-other.config      --- openwrt剩余的所有配置
-OpenWrt-K/extpackages.config --- 存放拓展软件包配置
-OpenWrt-K/compile.config --- 用于定义openwrt编译所用的分支或tag（仅官方源）与配置kmod编译排除列表
-```
+    ```text
+    default-extpackages.config --- 供OpenWrt-k配置构建工具下载默认拓展软件包配置使用
+    OpenWrt.config             --- 目前仅用于定义工作流要编译的配置
+    ```
+
++ config/$配置名 文件夹中不同.config的作用
+
+    ```text
+    image.config      --- 存储镜像的分区大小生成镜像的类型系统启动等待时间等配置（对应Menuconfig中的Target Images）
+    target.config     --- 存储编译固件的架构设备等（对应Menuconfig中的Target System、Subtarget、Target Profile、Target Devices）
+    kmod.config       --- 存储内核模块（驱动）配置（对应Menuconfig中的Kernel modules）
+    luci.config       --- 存储LuCI APP配置（对应Menuconfig中的LuCI）
+    network.config    --- 存储网络相关软件包配置（对应Menuconfig中的Network）
+    utilities.config  --- 存储工具类软件包配置（对应Menuconfig中的Utilities）
+    other.config      --- openwrt剩余的所有配置
+    OpenWrt-K/extpackages.config --- 存放拓展软件包配置
+    OpenWrt-K/openwrtext.config --- 存放openwrt拓展配置，如：IP、时区等
+    OpenWrt-K/compile.config --- 用于定义openwrt编译所用的分支或tag（仅官方源）与配置kmod编译排除列表
+    ```
 
 ##### 3.2.1使用OpenWrt-k配置构建工具
 
@@ -285,7 +293,10 @@ OpenWrt-K/compile.config --- 用于定义openwrt编译所用的分支或tag（�
 
 </details>
 
-###### 1. 准备环境：你需要准备一个linux系统并安装[依赖](https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem#linux_gnu-linux_distributions)
+###### 1. 准备环境
+
+1. 你需要准备一个linux系统（wsl也可以，不支持openwrt，建议使用ubuntu）并安装[依赖](https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem#linux_gnu-linux_distributions)
+2. 准备良好的网络环境
 
 ###### 2. 下载工具
 
@@ -293,6 +304,7 @@ OpenWrt-K/compile.config --- 用于定义openwrt编译所用的分支或tag（�
 curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_build_tool.sh && chmod +x config_build_tool.sh
 ```
 
+> 注意：如果已下载旧版工具，为防止出错请先删除工具与其生成的```config```、```buildconfig.config```、```OpenWrt-K_config_build_dir```文件/文件夹
 ###### 3. 运行工具
 
 ```bash
@@ -301,26 +313,30 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
 
 1. 填写openwrt编译所用的分支或tag
 2. 填写你fork的openwrt-k编译仓库地址（如果你想以本仓库的配置为基础修改就默认即可）
-3. 选择一种选择导入拓展软件包配置的方式
-4. 配置拓展软件包（你也可以返回主菜单稍后配置）
-5. 准备运行环境（请确保你拥有良好的网络环境）
-6. 打开openwrt配置菜单自定义你的配置
-7. 构建配置
+3. 选择导入的OpenWrt-K配置
+4. 选择一种选择导入拓展软件包配置的方式
+5. 配置拓展软件包（你也可以返回主菜单稍后配置）
+6. 准备运行环境（请确保你拥有良好的网络环境）
+7. 打开openwrt配置菜单自定义你的配置
+8. 修改openwrt-K拓展配置(kmod编译排除列表、IP、时区等)
+9. 构建配置
 
-> 注意：修改拓展软件包配置后需重新载入拓展软件包，一般不删除拓展软件包，不想编译修改openwrt配置即可。不要重复添加拓展软件包，也不要```忘记添加依赖```或```删除其他包的依赖```。
+> 注：OpenWrt-k配置构建工具内到处都是介绍跟着一步步做就行  
+> 注意：修改拓展软件包配置后需重新载入拓展软件包，一般不删除拓展软件包，不想编译的软件包修改openwrt配置即可。不要重复添加拓展软件包，也不要```忘记添加依赖```或```删除其他包的依赖```。
 
 ###### 4. 上传
 
-1. 先看看生成的配置文件有哪些
-2. 删除fork仓库的config文件夹中刚刚未生成的配置文件（打开文件右上角三个点```Delete file```，请勿删除config/linux文件夹及其中的文件）
-3. 上传覆盖刚刚生成的配置文件到config文件夹中（不要忘了上传config/OpenWrt-K/extpackages.config）
+1. 删除fork仓库的config文件夹中刚刚生成的同名配置文件（进入要删除文件夹右上角三个点```Delete directory```）
+2. 上传生成```config/$配置名```配置文件夹到config文件夹中
+
+> 注：你可以修改生成的配置文件夹名再上传，这样新文件夹名就是配置名，你可以到config/OpenWrt.config设置工作流要编译的配置(文件夹名请勿出现任何括号)
 
 ##### 3.2.2手动修改config
 
 <details>
  <summary>点击展开</summary>
 
-1. 进入到你fork的仓库config文件夹中
+1. 进入到你fork的仓库config/$配置名文件夹中
 2. 修改镜像大小（默认偏大）：修改image.config
 
     > ```CONFIG_TARGET_KERNEL_PARTSIZE=```后面是内核分区大小  
@@ -331,56 +347,56 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
 4. 新增精简软件包：按类别修改kmod.config luci.config  network.config  utilities.configother.config  
 例：
 
-+ 删除passwall：直接删除luci.config中的以下内容
+   + 删除passwall：直接删除luci.config中的以下内容
 
-    ```text
-    CONFIG_PACKAGE_luci-app-passwall=y
-    #
-    # Configuration
-    #
-    CONFIG_PACKAGE_luci-app-passwall_Nftables_Transparent_Proxy=y
-    CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Brook=y
-    CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Hysteria=y
-    CONFIG_PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy=y
-    CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client=y
-    CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Server=y
-    CONFIG_PACKAGE_luci-app-passwall_INCLUDE_ShadowsocksR_Libev_Server=y
-    CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Trojan_GO=y
-    CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata=y
-    CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray_Plugin=y
-    # end of Configuration
-    ```
+        ```text
+        CONFIG_PACKAGE_luci-app-passwall=y
+        #
+        # Configuration
+        #
+        CONFIG_PACKAGE_luci-app-passwall_Nftables_Transparent_Proxy=y
+        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Brook=y
+        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Hysteria=y
+        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy=y
+        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Client=y
+        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust_Server=y
+        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_ShadowsocksR_Libev_Server=y
+        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Trojan_GO=y
+        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray_Geodata=y
+        CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray_Plugin=y
+        # end of Configuration
+        ```
 
-+ 添加transmission：直接在luci.config中插入以下行
+   + 添加transmission：直接在luci.config中插入以下行
 
     ```text
     CONFIG_PACKAGE_luci-app-transmission=y
     ```
 
-+ 添加官方openwrt源码与feeds没有的软件包，例：
-  + 例1：添加luci-app-lucky
-    1. 在config/OpenWrt-K/extpackages.config添加：
+   + 添加官方openwrt源码与feeds没有的软件包，例：
+     + 例1：添加luci-app-lucky
+        1. 在config/OpenWrt-K/extpackages.config添加：
 
-        ```text
-        EXT_PACKAGES_NAME[30]="luci-app-lucky"
-        EXT_PACKAGES_PATH[30]=""
-        EXT_PACKAGES_REPOSITORIE[30]="https://github.com/sirpdboy/luci-app-lucky"
-        EXT_PACKAGES_BRANCH[30]=""
-        ```
+            ```text
+            EXT_PACKAGES_NAME[30]="luci-app-lucky"
+            EXT_PACKAGES_PATH[30]=""
+            EXT_PACKAGES_REPOSITORIE[30]="https://github.com/sirpdboy/luci-app-lucky"
+            EXT_PACKAGES_BRANCH[30]=""
+            ```
 
-    2. 在luci.config中插入以下行
+        2. 在luci.config中插入以下行
 
-        ```text
-        CONFIG_PACKAGE_luci-app-lucky=y
-        ```
+            ```text
+            CONFIG_PACKAGE_luci-app-lucky=y
+            ```
 
-    3. 在network.config中插入以下行
+        3. 在network.config中插入以下行
 
-        ```text
-        CONFIG_PACKAGE_lucky=y
-        ```
+            ```text
+            CONFIG_PACKAGE_lucky=y
+            ```
 
-  + 例2：添加luci-app-ramfree
+   + 例2：添加luci-app-ramfree
     1. 在config/OpenWrt-K/extpackages.config添加：
 
         ```text
@@ -396,6 +412,8 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
         CONFIG_PACKAGE_luci-app-ramfree=y
         ```
 
+5. 修改IP、时区：修改OpenWrt-K/openwrtext.config，不要加引号
+
 > 注：1. 方括号中的数字仅供参考，请以实际为准。  
 > 2. 请不要重复添加拓展软件包，也不要```忘记添加依赖```或```删除其他包```的依赖。  
 > EXT_PACKAGES_NAME -- 拓展软件包名用于创建包存放文件夹，请勿输入空格斜杠或与其他软件包重名  
@@ -407,7 +425,7 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
 
 ### 4. 运行编译工作流
 
-> 此仓库在UTC 4：00及UTC+8 12：00自动运行，若不需要请删除[这两行](https://github.com/chenmozhijin/OpenWrt-K/blob/main/.github/workflows/build-openwrt.yml#LL27C1-L28C24)
+> 此仓库在UTC 4：00即UTC+8 12：00自动运行，若不需要请删除[这两行](https://github.com/chenmozhijin/OpenWrt-K/blob/main/.github/workflows/build-openwrt.yml#LL27C1-L28C24)
 
 1. 进入你fork的仓库
 2. 点击上方的```"Actions"```
@@ -428,24 +446,19 @@ curl -O https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/config_bui
 
 ### 6.注意事项
 
-1. 如需修改默认ip```192.168.1.1```可将
-
-    ```bash
-    uci set network.lan.ipaddr="192.168.2.1"
-    uci commit network
-    /etc/init.d/network restart
-    ```
-
-    插入到/files/etc/uci-defaults/zzz-chenmozhijin的第二行
-
-2. 如果你fork了此仓库，则编译出的固件的固件版本与页脚中的```Compiled by 沉默の金```中的沉默の金会被修改为你的github名称，你可以在[settings/Public profile](https://github.com/settings/profile) Name一栏中修改
-3. 部分软件包对firewall4的兼容不是很好，不建议编译。具体列表见 [openwrt/openwrt#16818](https://github.com/openwrt/packages/issues/16818)
-4. 工作流中“下载AdGuardHome核心与DNS名单”与“下载openclash内核”两个步骤会根据你在配置文件中是否将luci-app-adguardhome或luci-app-openclash配置为编译进固件决定下载或清除残留文件，请配置好配置文件。
-5. 默认不编译sfe，Releases allkmod.zip也没有如果需要修改openwrt固件编译配置时添加即可（必须设为添加进固件）。注意:kmod-shortcut-fe-cm与kmod-fast-classifier无法同时编译，同时编译会报不兼容。
-6. 现在main/master分支部分架构升级到了6.1内核部分内核模块(kmod)可能有bug导致无法编译成功,而本仓库默认编译所有内核模块(kmod)导致编译失败。现在可以使用内核模块(kmod)编译排除列表排除那些内核模块(kmod)。
-    > 注：内核模块(kmod)编译排除列表在仓库根目录的config/OpenWrt-K/compile.config中，不同内核模块(kmod)名之间用```,```(英文逗号)分隔，支持通字符```.*```。  
+1. 如果你fork了此仓库，则编译出的固件的固件版本与页脚中的```Compiled by 沉默の金```中的沉默の金会被修改为你的github名称，你可以在[settings/Public profile](https://github.com/settings/profile) Name一栏中修改
+2. 部分软件包对firewall4的兼容不是很好，不建议编译。具体列表见 [openwrt/openwrt#16818](https://github.com/openwrt/packages/issues/16818)
+3. 工作流中“下载AdGuardHome核心与DNS名单”与“下载openclash内核”两个步骤会根据你在配置文件中是否将luci-app-adguardhome或luci-app-openclash配置为编译进固件决定下载或清除残留文件，请配置好配置文件。
+4. 默认不编译sfe，Releases allkmod.zip也没有如果需要修改openwrt固件编译配置时添加即可（必须设为添加进固件）。注意:kmod-shortcut-fe-cm与kmod-fast-classifier无法同时编译，同时编译会报不兼容。
+5. 现在main/master分支部分架构升级到了6.1内核部分内核模块(kmod)可能有bug导致无法编译成功,而本仓库默认编译所有内核模块(kmod)导致编译失败。现在可以使用内核模块(kmod)编译排除列表排除那些内核模块(kmod)。
+    > 注：内核模块(kmod)编译排除列表在仓库根目录的config/$配置名OpenWrt-K/compile.config中，不同内核模块(kmod)名之间用```,```(英文逗号)分隔，支持通字符```.*```。  
     > 例：如果build-Image_Builder中编译并生成安装包步骤遇到dahdi相关的错误，如：```base.c:45:10: fatal error: stdbool.h: No such file or directory```可以添加```,kmod-dahdi.*```到内核模块(kmod)编译排除列表。
-7. 如你在编译与使用过程中遇到问题欢迎提[issue](https://github.com/chenmozhijin/OpenWrt-K/issues)。
+6. rpi4b配置生成的固件未经测试，谨慎使用
+7. 如你在编译与使用过程中遇到问题欢迎提[issue](https://github.com/chenmozhijin/OpenWrt-K/issues)或[discussions](https://github.com/chenmozhijin/OpenWrt-K/discussions)。
+
+## 更新日志
+
+2023.7.27： 添加多配置编译支持
 
 ## 感谢
 
