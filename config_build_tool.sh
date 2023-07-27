@@ -159,7 +159,7 @@ function input_parameters() {
     # 获取最新的OpenWrt标签（tag）
     latest_tag=$(curl -s -L https://api.github.com/repos/openwrt/openwrt/tags|sed -n  '/^    "name": "/p'|sed -e 's/    "name": "//g' -e 's/",//g'| sed -n '1p')
     # 提示用户输入OpenWrt的branch或tag，并将用户输入的值保存到OPENWRT_TAG_BRANCH变量
-    inputbox="输入编译的OpenWrt branch或tag例如v23.05.0-rc1或master\nEnter the compiled OpenWrt branch or tag such as v23.05.0-rc1 or master"
+    inputbox="输入你希望该配置编译的OpenWrt branch或tag，例如v23.05.0-rc1或master"
     OPENWRT_TAG_BRANCH=$(whiptail --title "输入 tag/branch" --inputbox "$inputbox" 10 60 $latest_tag 3>&1 1>&2 2>&3)
     exitstatus=$?
     # 如果用户选择退出，则输出提示信息并退出函数
@@ -179,8 +179,8 @@ function input_parameters() {
     done
     # 提示用户输入OpenWrt-K存储库地址，并保存到OpenWrt_K_url变量
     while true; do
-        inputbox="输入OpenWrt-K存储库地址"
-        OpenWrt_K_url="$(whiptail --title "输入存储库地址" --inputbox "$inputbox" 10 60 https://github.com/chenmozhijin/OpenWrt-K 3>&1 1>&2 2>&3)"
+        inputbox="输入OpenWrt-K存储库地址,本工具导入该存储库中的openwrt与OpenWrt-K拓展配置"
+        OpenWrt_K_url="$(whiptail --title "输入存储库地址" --inputbox "$inputbox" 10 80 https://github.com/chenmozhijin/OpenWrt-K 3>&1 1>&2 2>&3)"
         exitstatus=$?
         OpenWrt_K_url=$(echo $OpenWrt_K_url|sed  -e 's/^[ \t]*//g' -e's/[ \t]*$//g')
         if [ $exitstatus != 0 ]; then
@@ -205,7 +205,7 @@ function input_parameters() {
     OpenWrt_K_repo=$(echo $OpenWrt_K_url|sed -e "s/https:\/\/github.com\///" -e "s/\/$//" )
     # 提示用户输入OpenWrt-K分支
     while true; do
-            OpenWrt_K_branch=$(whiptail --title "输入分支" --inputbox "输入OpenWrt-K存储库分支" 10 60 $(curl -s -L --retry 3 https://api.github.com/repos/$OpenWrt_K_repo|grep "\"default_branch\": \""|grep "\","| sed -e "s/  \"default_branch\": \"//g" -e "s/\",//g" ) 3>&1 1>&2 2>&3)
+            OpenWrt_K_branch=$(whiptail --title "输入分支" --inputbox "输入OpenWrt-K存储库分支,本工具导入该存储库分支中的openwrt与OpenWrt-K拓展配置" 10 80 $(curl -s -L --retry 3 https://api.github.com/repos/$OpenWrt_K_repo|grep "\"default_branch\": \""|grep "\","| sed -e "s/  \"default_branch\": \"//g" -e "s/\",//g" ) 3>&1 1>&2 2>&3)
             exitstatus=$?
         if [ $exitstatus != 0 ]; then
             echo "你选择了退出"
@@ -225,7 +225,7 @@ function input_parameters() {
     done
     # 提示用户输入OpenWrt-K配置名
     while true; do
-        OpenWrt_K_config="$(whiptail --title "输入配置名" --inputbox "输入要导入的配置名（就是仓库config文件夹下的文件夹名,如：x86_64）" 10 60 3>&1 1>&2 2>&3)"
+        OpenWrt_K_config="$(whiptail --title "输入配置名" --inputbox "输入要导入的配置名（就是仓库config文件夹下的文件夹名,如：x86_64）,本工具导入该配置中的openwrt与OpenWrt-K拓展配置" 10 80 3>&1 1>&2 2>&3)"
         exitstatus=$?
         if [ $exitstatus != 0 ]; then
             echo "你选择了退出"
@@ -253,15 +253,52 @@ function input_parameters() {
         if [ "$(grep -c "^kmod_compile_exclude_list=" buildconfig.config)" -eq '1' ];then
             kmod_compile_exclude_list=$(grep "^kmod_compile_exclude_list=" buildconfig.config|sed -e "s/kmod_compile_exclude_list=//")
         fi
-        if [ "$(grep -c "^network.lan.ipaddr=" buildconfig.config)" -eq '1' ];then
-            ipaddr=$(grep "^ipaddr=" buildconfig.config|sed -e "s/ipaddr=//")
-        fi
-        if [ "$(grep -c "^timezone=" buildconfig.config)" -eq '1' ];then
-            timezone=$(grep "^timezone=" buildconfig.config|sed -e "s/timezone=//")
-        fi
-        if [ "$(grep -c "^zonename=" buildconfig.config)" -eq '1' ];then
-            zonename=$(grep "^zonename=" buildconfig.config|sed -e "s/zonename=//")
-        fi
+
+    fi
+    [[  -e $TMPDIR/openwrtext.config ]] && rm -rf $TMPDIR/openwrtext.config
+    DOWNLOAD_URL=https://raw.githubusercontent.com/$OpenWrt_K_repo/$OpenWrt_K_branch/config/$OpenWrt_K_config/OpenWrt-K/openwrtext.config
+    curl -o $TMPDIR/openwrtext.config -s -L --retry 3 --connect-timeout 20  $DOWNLOAD_URL
+    exitstatus=$?
+    if [ "$exitstatus" -ne "0" ];then
+        whiptail --title "错误" --msgbox "OpenWrt-K拓展配置下载失败，下载链接：\n$DOWNLOAD_URL,curl返回值：$?" 10 110
+        return 6
+    elif [ "$(cat $TMPDIR/openwrtext.config)" = "404: Not Found" ];then
+        whiptail --title "错误" --msgbox "OpenWrt-K拓展配置下载错误 “404: Not Found” ，下载链接：\n$DOWNLOAD_URL" 10 110
+        return 6
+    fi
+    if [ "$(grep -c "^ipaddr=" $TMPDIR/openwrtext.config)" -eq '1' ];then
+        ipaddr=$(grep "^ipaddr=" $TMPDIR/openwrtext.config|sed -e "s/ipaddr=//")
+    else
+        whiptail --title "错误" --msgbox "OpenWrt-K拓展配置下载未知错误，下载的文件中未检测到ip配置 ，下载链接：\n$DOWNLOAD_URL" 10 110
+        return 6
+    fi
+    if [ "$(grep -c "^timezone=" $TMPDIR/openwrtext.config)" -eq '1' ];then
+        timezone=$(grep "^timezone=" $TMPDIR/openwrtext.config|sed -e "s/timezone=//")
+    else
+        whiptail --title "错误" --msgbox "OpenWrt-K拓展配置下载未知错误，下载的文件中未检测到时区配置 ，下载链接：\n$DOWNLOAD_URL" 10 110
+        return 6
+    fi
+    if [ "$(grep -c "^zonename=" $TMPDIR/openwrtext.config)" -eq '1' ];then
+        zonename=$(grep "^zonename=" $TMPDIR/openwrtext.config|sed -e "s/zonename=//")
+    else
+        whiptail --title "错误" --msgbox "OpenWrt-K拓展配置下载未知错误，下载的文件中未检测到时区区域名称配置 ，下载链接：\n$DOWNLOAD_URL" 10 110
+        return 6
+    fi
+    DOWNLOAD_URL=https://raw.githubusercontent.com/$OpenWrt_K_repo/$OpenWrt_K_branch/config/$OpenWrt_K_config/OpenWrt-K/compile.config
+    curl -o $TMPDIR/compile.config -s -L --retry 3 --connect-timeout 20  $DOWNLOAD_URL
+    exitstatus=$?
+    if [ "$exitstatus" -ne "0" ];then
+        whiptail --title "错误" --msgbox "OpenWrt-K拓展配置下载失败，下载链接：\n$DOWNLOAD_URL,curl返回值：$?" 10 60
+        return 6
+    elif [ "$(cat $TMPDIR/compile.config)" = "404: Not Found" ];then
+        whiptail --title "错误" --msgbox "OpenWrt-K拓展编译配置下载错误 “404: Not Found” ，下载链接：\n$DOWNLOAD_URL" 10 60
+        return 6
+    fi
+    if [ "$(grep -c "^kmod_compile_exclude_list=" $TMPDIR/compile.config)" -eq '1' ];then
+        kmod_compile_exclude_list=$(grep "^kmod_compile_exclude_list=" $TMPDIR/compile.config|sed -e "s/kmod_compile_exclude_list=//")
+    else
+        whiptail --title "错误" --msgbox "OpenWrt-K拓展编译配置下载未知错误，下载的文件中未检测到kmod编译排除列表配置 ，下载链接：\n$DOWNLOAD_URL" 10 110
+        return 6
     fi
     whiptail --title "完成" --msgbox "你选择的OpenWrt branch或tag为: $OPENWRT_TAG_BRANCH\n选择的OpenWrt-K存储库地址为: $OpenWrt_K_url\n选择的OpenWrt-K存储库分支为: $OpenWrt_K_branch\n选择的配置为: $OpenWrt_K_config" 10 80
     echo "警告：请勿手动修改本文件" > buildconfig.config 
@@ -269,26 +306,10 @@ function input_parameters() {
     echo OpenWrt_K_url=$OpenWrt_K_url >> buildconfig.config
     echo OpenWrt_K_branch=$OpenWrt_K_branch >> buildconfig.config
     echo OpenWrt_K_config=$OpenWrt_K_config >> buildconfig.config
-    if [ -n "$kmod_compile_exclude_list" ];then
-        echo "kmod_compile_exclude_list=$kmod_compile_exclude_list" >> buildconfig.config
-    else
-        echo "kmod_compile_exclude_list=kmod-shortcut-fe-cm,kmod-shortcut-fe,kmod-fast-classifier" >> buildconfig.config
-    fi
-    if [ -n "$ipaddr" ];then
-        echo ipaddr=$ipaddr >> buildconfig.config
-    else
-        echo ipaddr=192.168.1.1 >> buildconfig.config
-    fi
-    if [ -n "$timezone" ];then
-        echo timezone=$timezone >> buildconfig.config
-    else
-        echo timezone=CST-8 >> buildconfig.config
-    fi
-    if [ -n "$zonename" ];then
-        echo zonename=$zonename >> buildconfig.config
-    else
-        echo zonename=Asia/Shanghai >> buildconfig.config
-    fi
+    echo ipaddr=$ipaddr >> buildconfig.config
+    echo timezone=$timezone >> buildconfig.config
+    echo zonename=$zonename >> buildconfig.config
+    echo "kmod_compile_exclude_list=$kmod_compile_exclude_list" >> buildconfig.config
     if [ -n "$build_dir" ];then
         echo build_dir=$build_dir >> buildconfig.config
         rm -rf $build_dir/OpenWrt-K
@@ -336,7 +357,7 @@ function import_ext_packages_config() {
         echo "拓展软件包配置下载错误 “404: Not Found” ，下载链接：$DOWNLOAD_URL"
         exit 1
     elif [ "$(grep -c "^EXT_PACKAGES" $TMPDIR/config_ext_packages/extpackages.config)" -eq '0' ];then
-        echo "拓展软件包配置下载未知错误，下载的文件中为检测到配置文件 ，下载链接：$DOWNLOAD_URL"
+        echo "拓展软件包配置下载未知错误，下载的文件中未检测到配置文件 ，下载链接：$DOWNLOAD_URL"
         exit 1
     fi
     sed -i "/^EXT_PACKAGES/d" buildconfig.config || exit 1
@@ -676,7 +697,7 @@ function menu() {
     "7" "重新配置OpenWrt-K存储库地址\分支、OpenWrt branch或tag与拓展软件包" \
     "8" "配置拓展软件包" \
     "9" "重新载入拓展软件包" \
-    "10" "openwrt-K拓展配置(kmod编译排除列表、IP、时区等)" \
+    "10" "OpenWrt-K拓展配置(kmod编译排除列表、IP、时区等)" \
     "11" "关于" 3>&1 1>&2 2>&3)
     exitstatus=$?
     if [ $exitstatus = 0 ]; then
@@ -1200,7 +1221,7 @@ function about() {
     whiptail --title "关于" --msgbox "\
 OpenWrt-k配置构建工具\n\
 \n\
-版本：v1.0\n\
+版本：v1.1\n\
 Copyright © 2023 沉默の金\n\
 \n\
 本软件基于MIT开源协议发布。你可以在MIT协议的允许范围内自由使用、修改和分发本软件。\n\
