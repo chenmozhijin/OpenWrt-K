@@ -11,6 +11,9 @@ payload:
   - DOMAIN-SUFFIX,zdstatic.speedtest.net
   - DOMAIN-SUFFIX,cdnst.net
 
+# > ipleak
+  - DOMAIN-SUFFIX,ipleak.net
+
 # > VPN
   - DOMAIN-SUFFIX,miyun.la
   - DOMAIN-SUFFIX,miyun.app
