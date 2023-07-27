@@ -11,6 +11,7 @@
 1. [固件介绍](https://github.com/chenmozhijin/OpenWrt-K#%E5%9B%BA%E4%BB%B6%E4%BB%8B%E7%BB%8D)
 2. [固件使用方法](https://github.com/chenmozhijin/OpenWrt-K#%E5%9B%BA%E4%BB%B6%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)
 3. [定制编译 OpenWrt 固件](https://github.com/chenmozhijin/OpenWrt-K#%E5%AE%9A%E5%88%B6%E7%BC%96%E8%AF%91-openwrt-%E5%9B%BA%E4%BB%B6)
+4. [更新日志](https://github.com/chenmozhijin/OpenWrt-K#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97)
 
 ## 固件介绍
 
@@ -244,7 +245,7 @@ config_build_tool.sh --- OpenWrt-k配置构建工具
 #### 3.1修改openwrt编译所用的分支或tag
 
 + 直接修改config/OpenWrt-K/compile.config中```openwrt_tag/branch=```一行```=```后面的分支或tag
-+ 注：建议使用较新的分支或tag（至少使用firewall4），paswall在v22.03.5中无法正常运行需升级dnsmasq与其依赖libubox~~（可参考[ce2e34e](https://github.com/chenmozhijin/OpenWrt-K/commit/ce2e34e88483f292451ae8078a44559218713d3e)被注释掉的部分）~~（已支持自动升级）
++ 注：建议使用较新的分支或tag（至少使用firewall4），paswall在v22.03.5中无法正常运行需升级dnsmasq与其依赖libubox（已支持自动升级）
 
 #### 3.2修改openwrt固件编译配置
 >
