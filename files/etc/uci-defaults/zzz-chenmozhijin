@@ -2,7 +2,6 @@
 uci set network.lan.ipaddr="192.168.1.1"
 uci commit network
 /etc/init.d/network restart
-sed -i 's_downloads.openwrt.org_mirrors.tuna.tsinghua.edu.cn/openwrt_' /etc/opkg/distfeeds.conf
 sed -i "/^DISTRIB_DESCRIPTION='/s/'$/ Compiled by 沉默の金'/" /etc/openwrt_release
 [ -d "/etc/init.d" ] && chmod +x /etc/init.d/*
 [ -e "/usr/bin/AdGuardHome/AdGuardHome" ] && chmod 755 /usr/bin/AdGuardHome/AdGuardHome
