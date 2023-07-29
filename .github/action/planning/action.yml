@@ -11,15 +11,15 @@ runs:
             config=$(grep "^config=" $GITHUB_WORKSPACE/config/OpenWrt.config|sed "s/.*=//g")
             if [ -z $config ] ; then
               echo "::error ::选择的配置为空"
-              exti 1
+              exit 1
             elif [ "$(echo "$config"|grep -c "[!@#$%^&:*=+\`~\'\"\(\)/ ]")" -ne '0' ] ; then
               echo "::error ::选择的配置中有非法字符"
-              exti 1
+              exit 1
             else
               for i in $(echo $config|sed "s/,/ /g"); do
                 if ! [ -d "$GITHUB_WORKSPACE/config/$i" ]; then
                   echo "::error ::配置$i不存在"
-                  exti 1
+                  exit 1
                 fi
               done
             fi
@@ -29,6 +29,34 @@ runs:
             TMPFILE=$(mktemp)
             export parameter=matrix={\'include\':[
             for i in $(echo $config|sed "s/,/ /g"); do
+              #配置完整性检测
+              if [ ! -e "$GITHUB_WORKSPACE/config/$i/OpenWrt-K/compile.config" ]; then
+                echo "::error ::$i配置中缺少openwrt编译配置文件(OpenWrt-K/compile.config),请尝试使用新版OpenWrt-k配置构建工具"
+                exit 1
+              elif [ -z "$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/$i/OpenWrt-K/compile.config | sed -e 's/.*=//')" ]; then
+                echo "::error ::无法获取$i配置中编译的openwrt分支或版本,请尝试使用新版OpenWrt-k配置构建工具"
+                exit 1
+              fi
+              if [ ! -e "$GITHUB_WORKSPACE/config/$i/OpenWrt-K/openwrtext.config" ]; then
+                echo "::error ::$i配置中缺少openwrt拓展配置文件(OpenWrt-K/openwrtext.config),请尝试使用新版OpenWrt-k配置构建工具"
+                exit 1
+              elif [ "$(grep -c "^ipaddr=" $GITHUB_WORKSPACE/config/$i/OpenWrt-K/openwrtext.config)" -eq 0 ];then
+                echo "::error ::无法获取$i配置中openwrt的默认IP(在OpenWrt-K/openwrtext.config中),请尝试使用新版OpenWrt-k配置构建工具"
+                exit 1
+              elif [ "$(grep -c "^timezone=" $GITHUB_WORKSPACE/config/$i/OpenWrt-K/openwrtext.config)" -eq 0 ];then
+                echo "::error ::无法获取$i配置中openwrt的时区(在OpenWrt-K/openwrtext.config中),请尝试使用新版OpenWrt-k配置构建工具"
+                exit 1
+              elif [ "$(grep -c "^zonename=" $GITHUB_WORKSPACE/config/$i/OpenWrt-K/openwrtext.config)" -eq 0 ];then
+                echo "::error ::无法获取$i配置中openwrt的时区区域名称(在OpenWrt-K/openwrtext.config中),请尝试使用新版OpenWrt-k配置构建工具"
+                exit 1
+              fi
+              if [ -z "$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/$i/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')" ];then
+                echo "::warning ::无法获取$i配置中的kmod编译排除列表，这很有可能导致编译失败。"
+              fi
+              if [ ! -e "$GITHUB_WORKSPACE/config/$i/OpenWrt-K/extpackages.config" ]; then
+                echo "::error ::$i配置中缺少拓展软件包配置文件(OpenWrt-K/extpackages.config)即使为空也应该存在,请尝试使用新版OpenWrt-k配置构建工具"
+                exit 1
+              fi
               git clone https://git.openwrt.org/openwrt/openwrt.git $GITHUB_WORKSPACE/openwrt
               cd $GITHUB_WORKSPACE/openwrt
               export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/$i/OpenWrt-K/compile.config | sed -e 's/.*=//')"
@@ -50,7 +78,7 @@ runs:
             export parameter=$(echo $parameter|sed "s/},]/}]/g")
             if sort $TMPFILE | uniq -d | grep -q . ; then
               echo "::error ::配置会生成重名的Release"
-              exti 1
+              exit 1
             fi
             echo parameter=$parameter >> "$GITHUB_ENV"
           shell: bash
