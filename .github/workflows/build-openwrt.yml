@@ -1304,7 +1304,7 @@ jobs:
           mv kmod oldkmod
           cp -rf oldkmod/* oldpackage/
           ls $PACKAGECOMPARE_ROOT_PATH/oldpackage/|sort| uniq >oldpackage.list
-          sed -i -e "s/_${{ matrix.target }}_${{ matrix.subtarget }}.ipk//g" -e "s/_all.ipk//g" oldpackage.list
+          sed -i -e "s/_${{ matrix.targetarchpackages }}.ipk//g" -e "s/_all.ipk//g" oldpackage.list
           rm -rf $PACKAGECOMPARE_ROOT_PATH/package.zip $PACKAGECOMPARE_ROOT_PATH/allkmod.zip
           cp -f $UPLOAD_ROOT_PATH/package-upload/package.zip $PACKAGECOMPARE_ROOT_PATH/package.zip
           cp -f $UPLOAD_ROOT_PATH/package-upload/allkmod.zip $PACKAGECOMPARE_ROOT_PATH/allkmod.zip
