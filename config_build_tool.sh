@@ -1290,35 +1290,35 @@ function build () {
       sed -i "$(($(sed -n "/# Target Images$/=" diffconfig2.config)-1)),$(sed -n "/# end of Target Images$/=" diffconfig2.config)d" diffconfig2.config
     else
       echo "没有Target Images配置"
-      > image.config
+      > $outputdir/image.config
     fi
     if [ "$(grep -c "# Kernel modules$" diffconfig2.config)" -ne '0' ];then
       sed -n "$(($(sed -n "/# Kernel modules$/=" diffconfig2.config)-1)),$(sed -n "/# end of Kernel modules$/=" diffconfig2.config)p" diffconfig2.config > $outputdir/kmod.config
       sed -i "$(($(sed -n "/# Kernel modules$/=" diffconfig2.config)-1)),$(sed -n "/# end of Kernel modules$/=" diffconfig2.config)d" diffconfig2.config
     else
       echo "没有Kernel modules配置"
-      > kmod.config
+      > $outputdir/kmod.config
     fi
     if [ "$(grep -c "# LuCI$" diffconfig2.config)" -ne '0' ];then
       sed -n "$(($(sed -n "/# LuCI$/=" diffconfig2.config)-1)),$(sed -n "/# end of LuCI$/=" diffconfig2.config)p" diffconfig2.config > $outputdir/luci.config
       sed -i "$(($(sed -n "/# LuCI$/=" diffconfig2.config)-1)),$(sed -n "/# end of LuCI$/=" diffconfig2.config)d" diffconfig2.config
     else
       echo "没有LuCI配置"
-      > luci.config
+      > $outputdir/luci.config
     fi
     if [ "$(grep -c "# Network$" diffconfig2.config)" -ne '0' ];then
       sed -n "$(($(sed -n "/# Network$/=" diffconfig2.config)-1)),$(sed -n "/# end of Network$/=" diffconfig2.config)p" diffconfig2.config > $outputdir/network.config
       sed -i "$(($(sed -n "/# Network$/=" diffconfig2.config)-1)),$(sed -n "/# end of Network$/=" diffconfig2.config)d" diffconfig2.config
     else
       echo "没有Network配置"
-      > network.config
+      > $outputdir/network.config
     fi
     if [ "$(grep -c "# Utilities$" diffconfig2.config)" -ne '0' ];then
       sed -n "$(($(sed -n "/# Utilities$/=" diffconfig2.config)-1)),$(sed -n "/# end of Utilities$/=" diffconfig2.config)p" diffconfig2.config > $outputdir/utilities.config
       sed -i "$(($(sed -n "/# Utilities$/=" diffconfig2.config)-1)),$(sed -n "/# end of Utilities$/=" diffconfig2.config)d" diffconfig2.config
     else
       echo "没有Utilities配置"
-      > utilities.config
+      > $outputdir/utilities.config
     fi
     if [ "$(grep -c "^CONFIG_TARGET_[a-zA-Z0-9]\{1,15\}=y$" diffconfig2.config)" -ne '0' ];then
       sed -n "/^CONFIG_TARGET_$(sed -n  "/^CONFIG_TARGET_[a-zA-Z0-9]\{1,15\}=y$/p" diffconfig2.config | sed -e 's/CONFIG_TARGET_//'  -e 's/=y//').*/p" diffconfig2.config > $outputdir/target.config
@@ -1337,6 +1337,7 @@ function build () {
       fi
     else
       echo "没有Target配置"
+      > $outputdir/target.config
     fi
     cat diffconfig2.config > $outputdir/other.config
     sed -n "/^EXT_PACKAGES/p" $build_dir/../buildconfig.config > $outputdir/OpenWrt-K/extpackages.config
