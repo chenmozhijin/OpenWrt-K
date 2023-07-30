@@ -1,15 +1,15 @@
-bind_host: 0.0.0.0
-bind_port: 3000
+http:
+  address: 0.0.0.0:3000
+  session_ttl: 720h
 users:
   - name: root
-    password: $2y$10$A4Uk1jWYhpj8GJawJeNF4ukA2aW55u/SEcgzd9MVl342RVZWrVDeO
+    password: $2y$10$sqOP4gJXTSZQSC5ipQhV6eAslpei/v8ahK7ptpAgJY8DR4lBJ16oe
 auth_attempts: 5
 block_auth_min: 15
 http_proxy: ""
 language: zh-cn
 theme: auto
 debug_pprof: false
-web_session_ttl: 720
 dns:
   bind_hosts:
     - 0.0.0.0
@@ -82,7 +82,10 @@ dns:
     yandex: true
     youtube: true
   rewrites: []
-  blocked_services: []
+  blocked_services:
+    schedule:
+      time_zone: UTC
+    ids: []
   upstream_timeout: 10s
   private_networks: []
   use_private_ptr_resolvers: true
@@ -108,13 +111,13 @@ tls:
   strict_sni_check: false
 querylog:
   ignored: []
-  interval: 6h
+  interval: 2160h
   size_memory: 1000
   enabled: true
   file_enabled: true
 statistics:
   ignored: []
-  interval: 720h
+  interval: 2160h
   enabled: true
 filters:
   - enabled: true
@@ -224,15 +227,16 @@ clients:
     dhcp: true
     hosts: true
   persistent: []
-log_file: ""
-log_max_backups: 0
-log_max_size: 100
-log_max_age: 3
-log_compress: false
-log_localtime: false
-verbose: false
+log:
+  file: ""
+  max_backups: 0
+  max_size: 100
+  max_age: 3
+  compress: false
+  local_time: false
+  verbose: false
 os:
   group: ""
   user: ""
   rlimit_nofile: 0
-schema_version: 20
+schema_version: 24
