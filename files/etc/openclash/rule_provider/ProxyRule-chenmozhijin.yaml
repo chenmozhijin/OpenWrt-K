@@ -153,7 +153,6 @@ payload:
   - DOMAIN,ftp.kddilabs.jp
 ##openwrt-编译cdn end
 
-
 # > chatgpt
   - DOMAIN,chat.openai.com
   - DOMAIN-SUFFIX,openai.com
@@ -207,6 +206,7 @@ payload:
 ###Visual novel end
 
 # > dlsite
+  - DOMAIN-SUFFIX,dlsite.com
   - DOMAIN,trial.dlsite.com
   - DOMAIN,download.dlsite.com
   - DOMAIN,img.dlsite.jp
@@ -214,6 +214,11 @@ payload:
   - DOMAIN,file.chobit.cc
   - DOMAIN-SUFFIX,chobit.cc
 ##dlsite end
+
+# > dmm
+  - DOMAIN-SUFFIX,dmm.com
+  - DOMAIN-SUFFIX,dmm.co.jp
+##dmm end
 
 # > discord
   - DOMAIN-SUFFIX,discord.com
