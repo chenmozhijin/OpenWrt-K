@@ -9,10 +9,17 @@
 
 ## 目录
 
-1. [固件介绍](https://github.com/chenmozhijin/OpenWrt-K#%E5%9B%BA%E4%BB%B6%E4%BB%8B%E7%BB%8D)
-2. [更新日志](https://github.com/chenmozhijin/OpenWrt-K#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97)
+[README](https://github.com/chenmozhijin/OpenWrt-K#openwrt-k):
 
-+ 固件使用方法/仓库基本介绍/定制编译OpenWrt固件等内容见[Wiki页面](https://github.com/chenmozhijin/OpenWrt-K/wiki)
+1. [固件介绍](https://github.com/chenmozhijin/OpenWrt-K#%E5%9B%BA%E4%BB%B6%E4%BB%8B%E7%BB%8D)
+2. [更新日志](https://github.com/chenmozhijin/OpenWrt-K#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97)  
+  
+[Wiki页面](https://github.com/chenmozhijin/OpenWrt-K/wiki):
+
+1. [固件使用方法](https://github.com/chenmozhijin/OpenWrt-K/wiki/%E5%9B%BA%E4%BB%B6%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95)
+2. [仓库基本介绍](https://github.com/chenmozhijin/OpenWrt-K/wiki/%E4%BB%93%E5%BA%93%E5%9F%BA%E6%9C%AC%E4%BB%8B%E7%BB%8D)
+3. [定制编译OpenWrt固件](https://github.com/chenmozhijin/OpenWrt-K/wiki/%E5%AE%9A%E5%88%B6%E7%BC%96%E8%AF%91-OpenWrt-%E5%9B%BA%E4%BB%B6)
+4. [常见问题](https://github.com/chenmozhijin/OpenWrt-K/wiki/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
 
 ## 固件介绍
 
@@ -154,7 +161,7 @@
 
 ## 更新日志
 
-2023.7.27： 添加多配置编译支持
+2023.7.27： 添加多配置编译支持、移动README部分内容到wiki
 
 ## 感谢
 
