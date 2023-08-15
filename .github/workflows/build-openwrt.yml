@@ -424,8 +424,8 @@ jobs:
               echo "::notice ::添加sfe/fullcone所需补丁与附加内核配置(5.10内核)"
               cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/952-net-conntrack-events-support-multiple-registrant.patch  $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version
             else
-              echo "::error ::OpenWrt-K不支持为5.10以下内核打补丁，如需编译请删除此步骤与turboacc的相关的步骤"
-              exti 1
+              echo "::error ::OpenWrt-K不支持为5.10以下内核打补丁，如需编译请删除此步骤与turboacc的相关的步骤并删除turboacc及其相关的拓展软件包(luci-app-turboacc、nft-fullcone、shortcut-fe)"
+              exit 1
             fi
             echo "# CONFIG_NF_CONNTRACK_CHAIN_EVENTS is not set" >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version
           fi
