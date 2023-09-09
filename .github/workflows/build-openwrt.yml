@@ -337,7 +337,7 @@ jobs:
           WORKINGDIR="$OPENWRT_ROOT_PATH/feeds/packages/net/smartdns"
           mkdir $WORKINGDIR -p
           rm $WORKINGDIR/* -fr
-          wget https://github.com/pymumu/openwrt-smartdns/archive/master.zip -O $WORKINGDIR/master.zip
+          curl -s -L --retry 6 https://github.com/pymumu/openwrt-smartdns/archive/master.zip -o $WORKINGDIR/master.zip
           unzip $WORKINGDIR/master.zip -d $WORKINGDIR
           mv $WORKINGDIR/openwrt-smartdns-master/* $WORKINGDIR/
           rmdir $WORKINGDIR/openwrt-smartdns-master
@@ -346,7 +346,7 @@ jobs:
           WORKINGDIR="$OPENWRT_ROOT_PATH/feeds/luci/applications/luci-app-smartdns"
           mkdir $WORKINGDIR -p
           rm $WORKINGDIR/* -fr
-          wget https://github.com/pymumu/luci-app-smartdns/archive/${LUCIBRANCH}.zip -O $WORKINGDIR/${LUCIBRANCH}.zip
+          curl -s -L --retry 6 https://github.com/pymumu/luci-app-smartdns/archive/${LUCIBRANCH}.zip -o $WORKINGDIR/${LUCIBRANCH}.zip
           unzip $WORKINGDIR/${LUCIBRANCH}.zip -d $WORKINGDIR
           mv $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}/* $WORKINGDIR/
           rmdir $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}
@@ -551,7 +551,7 @@ jobs:
                 mkdir -p ./files/usr/bin/AdGuardHome/tmp
                 rm -rf ./files/usr/bin/AdGuardHome/tmp/*
                 latest_ver="$(curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
-                wget https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_ver}/AdGuardHome_linux_${Arch}.tar.gz -O ./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz
+                curl -s -L --retry 6 https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_ver}/AdGuardHome_linux_${Arch}.tar.gz -o ./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz
                 tar -zxf "./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz" -C "./files/usr/bin/AdGuardHome/tmp/"
                 mv -f ./files/usr/bin/AdGuardHome/tmp/AdGuardHome/AdGuardHome ./files/usr/bin/AdGuardHome
                 rm -rf ./files/usr/bin/AdGuardHome/tmp
@@ -559,26 +559,26 @@ jobs:
                 echo "下载AdGuardHome DNS黑白名单"
                 mkdir -p ./files/usr/bin/AdGuardHome/data/filters
                 cd $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/data/filters
-                curl -o 1628750870.txt https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt -s -L --retry 3
-                curl -o 1628750871.txt https://anti-ad.net/easylist.txt -s -L --retry 3
-                curl -o 1677875715.txt https://easylist-downloads.adblockplus.org/easylist.txt -s -L --retry 3
-                curl -o 1677875716.txt https://easylist-downloads.adblockplus.org/easylistchina.txt -s -L --retry 3
-                curl -o 1677875717.txt https://cdn.jsdelivr.net/gh/cjx82630/cjxlist@master/cjx-annoyance.txt -s -L --retry 3
-                curl -o 1677875718.txt https://cdn.jsdelivr.net/gh/zsakvo/AdGuard-Custom-Rule@master/rule/zhihu-strict.txt -s -L --retry 3
-                curl -o 1677875720.txt https://gist.githubusercontent.com/Ewpratten/a25ae63a7200c02c850fede2f32453cf/raw/b9318009399b99e822515d388b8458557d828c37/hosts-yt-ads -s -L --retry 3
-                curl -o 1677875721.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt -s -L --retry 3
-                curl -o 1677875722.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/v -s -L --retry 3
-                curl -o 1677875724.txt https://raw.githubusercontent.com/banbendalao/ADgk/master/ADgk.txt -s -L --retry 3
-                curl -o 1677875725.txt https://www.i-dont-care-about-cookies.eu/abp/ -s -L --retry 3
-                curl -o 1677875726.txt https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts -s -L --retry 3
-                curl -o 1677875727.txt https://raw.githubusercontent.com/Goooler/1024_hosts/master/hosts -s -L --retry 3
-                curl -o 1677875728.txt https://winhelp2002.mvps.org/hosts.txt -s -L --retry 3
-                curl -o 1677875733.txt https://cdn.jsdelivr.net/gh/hl2gu -s -L --retry 3
-                curl -o 1677875734.txt https://cdn.jsdelivr.net/gh/hg1978/AdGuard-Home-Whitelist@master/whitelist.txt -s -L --retry 3
-                curl -o 1677875735.txt https://cdn.jsdelivr.net/gh/mmotti/adguard-home-filters@master/whitelist.txt -s -L --retry 3
-                curl -o 1677875737.txt https://cdn.jsdelivr.net/gh/liwenjie119/adg-rules@master/white.txt -s -L --retry 3
-                curl -o 1677875739.txt https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt -s -L --retry 3
-                curl -o 1677875740.txt https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt -s -L --retry 3
+                curl -o 1628750870.txt https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt -s -L --retry 6
+                curl -o 1628750871.txt https://anti-ad.net/easylist.txt -s -L --retry 6
+                curl -o 1677875715.txt https://easylist-downloads.adblockplus.org/easylist.txt -s -L --retry 6
+                curl -o 1677875716.txt https://easylist-downloads.adblockplus.org/easylistchina.txt -s -L --retry 6
+                curl -o 1677875717.txt https://cdn.jsdelivr.net/gh/cjx82630/cjxlist@master/cjx-annoyance.txt -s -L --retry 6
+                curl -o 1677875718.txt https://cdn.jsdelivr.net/gh/zsakvo/AdGuard-Custom-Rule@master/rule/zhihu-strict.txt -s -L --retry 6
+                curl -o 1677875720.txt https://gist.githubusercontent.com/Ewpratten/a25ae63a7200c02c850fede2f32453cf/raw/b9318009399b99e822515d388b8458557d828c37/hosts-yt-ads -s -L --retry 6
+                curl -o 1677875721.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt -s -L --retry 6
+                curl -o 1677875722.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/v -s -L --retry 6
+                curl -o 1677875724.txt https://raw.githubusercontent.com/banbendalao/ADgk/master/ADgk.txt -s -L --retry 6
+                curl -o 1677875725.txt https://www.i-dont-care-about-cookies.eu/abp/ -s -L --retry 6
+                curl -o 1677875726.txt https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts -s -L --retry 6
+                curl -o 1677875727.txt https://raw.githubusercontent.com/Goooler/1024_hosts/master/hosts -s -L --retry 6
+                curl -o 1677875728.txt https://winhelp2002.mvps.org/hosts.txt -s -L --retry 6
+                curl -o 1677875733.txt https://cdn.jsdelivr.net/gh/hl2gu -s -L --retry 6
+                curl -o 1677875734.txt https://cdn.jsdelivr.net/gh/hg1978/AdGuard-Home-Whitelist@master/whitelist.txt -s -L --retry 6
+                curl -o 1677875735.txt https://cdn.jsdelivr.net/gh/mmotti/adguard-home-filters@master/whitelist.txt -s -L --retry 6
+                curl -o 1677875737.txt https://cdn.jsdelivr.net/gh/liwenjie119/adg-rules@master/white.txt -s -L --retry 6
+                curl -o 1677875739.txt https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt -s -L --retry 6
+                curl -o 1677875740.txt https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt -s -L --retry 6
                 ls
                 echo "制作AdGuardHome上游 DNS 服务器规则"
                 cd  $WORKSPACE_ROOT_PATH
@@ -586,10 +586,10 @@ jobs:
                 cd $WORKSPACE_ROOT_PATH/tmp
                 ls
                 rm -rf *
-                curl -s -L --retry 3 https://raw.githubusercontent.com/YW5vbnltb3Vz/domain-list-community/release/gfwlist.txt -o base64_YW5vbnltb3Vz.txt
-                curl -s -L --retry 3 https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/gfw.txt -o Loyalsoldier.txt
-                curl -s -L --retry 3 https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt -o base64_gfwlist.txt
-                curl -s -L --retry 3 https://raw.githubusercontent.com/Loukky/gfwlist-by-loukky/master/gfwlist.txt -o base64_Loukky.txt
+                curl -s -L --retry 6 https://raw.githubusercontent.com/YW5vbnltb3Vz/domain-list-community/release/gfwlist.txt -o base64_YW5vbnltb3Vz.txt
+                curl -s -L --retry 6 https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/gfw.txt -o Loyalsoldier.txt
+                curl -s -L --retry 6 https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt -o base64_gfwlist.txt
+                curl -s -L --retry 6 https://raw.githubusercontent.com/Loukky/gfwlist-by-loukky/master/gfwlist.txt -o base64_Loukky.txt
                 base64 -d base64_YW5vbnltb3Vz.txt > YW5vbnltb3Vz.txt
                 base64 -d base64_gfwlist.txt > gfwlist.txt
                 base64 -d base64_Loukky.txt > Loukky.txt
@@ -665,10 +665,10 @@ jobs:
                 RELEASE_BRANCH=master
                 mkdir -p $OpenClashTMPDIR $OPENWRT_ROOT_PATH/files/etc/openclash/core/
                 rm -rf $OpenClashTMPDIR/*
-                CORE_LV=$(curl -s -L --retry 3 https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version|sed -n 2p)
-                curl -s -L --retry 3 -o $OpenClashTMPDIR/clash_tun.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/premium/clash-"$CPU_MODEL"-"$CORE_LV".gz
-                curl -s -L --retry 3 -o $OpenClashTMPDIR/clash_meta.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/meta/clash-"$CPU_MODEL".tar.gz
-                curl -s -L --retry 3 -o $OpenClashTMPDIR/clash.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/dev/clash-"$CPU_MODEL".tar.gz
+                CORE_LV=$(curl -s -L --retry 6 https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version|sed -n 2p)
+                curl -s -L --retry 6 -o $OpenClashTMPDIR/clash_tun.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/premium/clash-"$CPU_MODEL"-"$CORE_LV".gz
+                curl -s -L --retry 6 -o $OpenClashTMPDIR/clash_meta.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/meta/clash-"$CPU_MODEL".tar.gz
+                curl -s -L --retry 6 -o $OpenClashTMPDIR/clash.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/dev/clash-"$CPU_MODEL".tar.gz
                 #tun
                 gzip -d $OpenClashTMPDIR/clash_tun.gz
                 rm -rf $OpenClashTMPDIR/clash_tun.gz
@@ -702,7 +702,7 @@ jobs:
       - name: 更新BT Tracker
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-         export bt_tracker="$(curl  -s -L --retry 3 https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt || curl  -s -L --retry 3 https://cf.trackerslist.com/all_aria2.txt)"
+         export bt_tracker="$(curl  -s -L --retry 6 https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt || curl  -s -L --retry 6 https://cf.trackerslist.com/all_aria2.txt)"
          sed -i "s#^uci set aria2.main.bt_tracker=.*#uci set aria2.main.bt_tracker=\'$bt_tracker\'#g"  $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
 
       - name: 设置时区、主机名与IP
@@ -1292,11 +1292,11 @@ jobs:
           echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
           echo "编译的openwrt版本/分支: " $OPENWRT_TAG_BRANCH >> $UPLOAD_ROOT_PATH/release.txt
           echo "编译使用的配置: " ${{ matrix.config }} >> $UPLOAD_ROOT_PATH/release.txt
-          latest_ver="$(curl -s -L --retry 3 https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ matrix.target }}-${{ matrix.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCH)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
+          latest_ver="$(curl -s -L --retry 6 https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ matrix.target }}-${{ matrix.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCH)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
           echo latest_ver=$latest_ver
           rm -rf $PACKAGECOMPARE_ROOT_PATH/*
-          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -O $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv  || exit 0
-          wget https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -O $PACKAGECOMPARE_ROOT_PATH/package.zip -nv  || exit 0
+          curl -s -L --retry 6 https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -o $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv  || exit 0
+          curl -s -L --retry 6 https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -o $PACKAGECOMPARE_ROOT_PATH/package.zip -nv  || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
           unzip package.zip
           unzip allkmod.zip
