@@ -53,9 +53,27 @@ runs:
               if [ -z "$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/$i/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')" ];then
                 echo "::warning ::无法获取$i配置中的kmod编译排除列表，这很有可能导致编译失败。"
               fi
+              # 检查拓展软件包配置文件
               if [ ! -e "$GITHUB_WORKSPACE/config/$i/OpenWrt-K/extpackages.config" ]; then
                 echo "::error ::$i配置中缺少拓展软件包配置文件(OpenWrt-K/extpackages.config)即使为空也应该存在,请尝试使用新版OpenWrt-k配置构建工具"
                 exit 1
+              else
+                EXT_PKGS_CONFIG=$GITHUB_WORKSPACE/config/$i/OpenWrt-K/extpackages.config
+                NUMBER_OF_PKGS1=$(grep -c "^EXT_PACKAGES_NAME\[" $EXT_PKGS_CONFIG)
+                NUMBER_OF_PKGS2=$(sed -n -e "/^EXT_PACKAGES_NAME\[/p" $EXT_PKGS_CONFIG|sed -n '$p'|sed 's/EXT_PACKAGES_NAME\[\([0-9]*\).*/\1/')
+                if [ -z "$NUMBER_OF_PKGS1" ]; then
+                  echo "::warning ::$i配置中的拓展软件包配置文件中没有任何拓展软件包配置。"
+                elif [ "$NUMBER_OF_PKGS1" -ne "$NUMBER_OF_PKGS2" ]; then
+                  echo "::error ::$i配置中拓展软件包配置文件(OpenWrt-K/extpackages.config)有错误"
+                  n=1
+                  # 找出缺少的拓展软件包配置
+                  while [ "$n" -le $NUMBER_OF_PKGS2 ]; do
+                    if [ $(grep -c "^EXT_PACKAGES_NAME\[$n\]" $EXT_PKGS_CONFIG) -eq 0 ]; then
+                      echo "::error ::$i配置中拓展软件包配置序号为$n的配置不存在"
+                    fi
+                     n=$(( n+1 ))
+                  done
+                fi
               fi
               git clone https://git.openwrt.org/openwrt/openwrt.git $GITHUB_WORKSPACE/openwrt
               cd $GITHUB_WORKSPACE/openwrt
