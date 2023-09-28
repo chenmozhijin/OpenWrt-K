@@ -129,6 +129,7 @@ jobs:
           while [ "$n" -le $NUMBER_OF_CLONES ]; do
               mkdir -p $EXT_PKGS_DL_PATH/TMP
               COLNE_ARGUMENT=$(sed -n "${n}p" $EXT_PKGS_PREP_PATH/clone.config)
+              echo "正在克隆拓展软件包仓库：$(echo "$COLNE_ARGUMENT" | sed -e "s/ --branch.*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")"
               git clone --depth=1 --single-branch $COLNE_ARGUMENT $EXT_PKGS_DL_PATH/TMP
               cd $EXT_PKGS_DL_PATH/TMP
               if [ "$(echo "$COLNE_ARGUMENT" | grep -c " --branch ")" -ne '0' ];then
