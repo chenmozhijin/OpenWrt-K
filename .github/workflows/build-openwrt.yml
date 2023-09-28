@@ -476,7 +476,7 @@ jobs:
             echo "::notice ::检测到非openwrt-22.03分支/v22.03.*版本,跳过升级dnsmasq与libubox。"
           fi
 
-      - name: 检查到软件包依赖
+      - name: 检查软件包依赖
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           TMPDIR=$(mktemp -d) || exit 1
@@ -484,7 +484,7 @@ jobs:
           gmake -s prepare-tmpinfo
           ./scripts/package-metadata.pl mk tmp/.packageinfo > tmp/.packagedeps 2>$PACKAGEDEPWARNING || { rm -f tmp/.packagedeps; false; }
           if [ -n "$(cat $PACKAGEDEPWARNING)" ]; then
-            echo "::error ::检查到软件包依赖问题,这极有可能导致编译错误，请前往build1检查到软件包依赖步骤查看详情。"
+            echo "::error ::检查到软件包依赖问题,这极有可能导致编译错误，请前往build1检查软件包依赖步骤查看详情。"
             cat $PACKAGEDEPWARNING
           fi
           [[ -d $TMPDIR ]] && rm -rf "$TMPDIR"
