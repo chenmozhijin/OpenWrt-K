@@ -319,16 +319,16 @@ jobs:
           echo "cmzj_package" >> $LOG_PATH/cmzj_patch.log
           ls $OPENWRT_ROOT_PATH/package/cmzj_package >> $LOG_PATH/cmzj_patch.log
 
-      - name: 修复问题
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/fix_problem.sh
-
       - name: 更新 feeds
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+
+      - name: 修复问题
+        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        run: |
+          bash $GITHUB_WORKSPACE/scripts/fix_problem.sh
 
       - name: 更新smartdns、netdata
         run: |

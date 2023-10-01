@@ -20,7 +20,7 @@ else
       # 检查Makefile中是否包含PKG_VERSION:=20230606
       if grep -q "PKG_VERSION:=20230606" "$makefile_path"; then
           echo "$makefile_path 包含 PKG_VERSION:=20230606"
-          echo "# 使用sed命令进行替换操作"
+          # 使用sed命令进行替换操作
           sed -i 's/PKG_VERSION:=20230606/PKG_VERSION:=ac855e6dbc46f0e085734836556da2cdb9386fa3/g' "$makefile_path"
           sed -i 's/v$(PKG_VERSION)/$(PKG_VERSION)/g' "$makefile_path"
           sed -i 's/PKG_HASH:=.*/PKG_HASH:=skip/g' "$makefile_path"
