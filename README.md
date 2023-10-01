@@ -48,7 +48,7 @@
   luci-app-nlbwmon：网络带宽监视器  
   luci-app-opkg：软件包  
   [luci-app-openclash](https://github.com/vernesong/OpenClash):可运行在 OpenWrt 上的 Clash 客户端  
-  [luci-app-passwall](https://github.com/xiaorouji/openwrt-passwall/tree/luci)：passwall  
+  [luci-app-passwall](https://github.com/xiaorouji/openwrt-passwall)：passwall  
   [luci-app-passwall2](https://github.com/xiaorouji/openwrt-passwall2)：passwall2  
   luci-app-rclone：Rclone命令行网盘工具设置界面  
   luci-app-samba4：samba网络共享  
