@@ -983,6 +983,34 @@ function import_ext_packages() {
     cd $openwrt_dir
     ./scripts/feeds update -a  || return 4
     ./scripts/feeds install -a
+    if [ "$openwrt_tag_branch" = "openwrt-22.03" ] || [[ "$openwrt_tag_branch" =~ ^v22.03.* ]] || [[ "$openwrt_tag_branch" =~ ^23.05.0-rc[1-3]$ ]] ; then
+        echo "openwrt版本小于等于23.05.0-rc3，不需要修复brook的go依赖问题"
+    else
+      # https://github.com/openwrt/packages/pull/22251
+      if grep -q "^define Package/prometheus-node-exporter-lua-bmx6$" "feeds/packages/utils/prometheus-node-exporter-lua/Makefile"; then
+        echo "修复https://github.com/openwrt/packages/pull/22251"
+        curl -s -L --retry 6 https://github.com/openwrt/packages/commit/361b360d2bbf7abe93241f6eaa12320d8d83475a.patch  | patch -p1 -d feeds/packages 2>/dev/null
+      fi
+      echo "修复brook的go依赖问题"
+      # 查找所有brook/Makefile文件，并存储到数组中
+      brook_makefiles=($(find "$OPENWRT_ROOT_PATH/package" -type f -path "*/brook/Makefile"))
+      
+      # 遍历数组中的每个路径并处理
+      for makefile_path in "${brook_makefiles[@]}"; do
+          # 检查Makefile中是否包含PKG_VERSION:=20230606
+          if grep -q "PKG_VERSION:=20230606" "$makefile_path"; then
+              echo "$makefile_path 包含 PKG_VERSION:=20230606"
+              # 使用sed命令进行替换操作
+              sed -i 's/PKG_VERSION:=20230606/PKG_VERSION:=ac855e6dbc46f0e085734836556da2cdb9386fa3/g' "$makefile_path"
+              sed -i 's/v$(PKG_VERSION)/$(PKG_VERSION)/g' "$makefile_path"
+              sed -i 's/PKG_HASH:=.*/PKG_HASH:=skip/g' "$makefile_path"
+              echo "$makefile_path 已修复"
+              rm -rf $(echo "$makefile_path"|sed 's/Makefile/patches/g')
+          else
+              echo "$makefile_path 不包含 PKG_VERSION:=20230606, 跳过修复"
+          fi
+      done
+    fi
     check_packagedeps
     exitstatus=$?
     if [ $exitstatus = 1 ]; then

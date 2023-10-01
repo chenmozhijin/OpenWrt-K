@@ -25,6 +25,7 @@ else
           sed -i 's/v$(PKG_VERSION)/$(PKG_VERSION)/g' "$makefile_path"
           sed -i 's/PKG_HASH:=.*/PKG_HASH:=skip/g' "$makefile_path"
           echo "$makefile_path 已修复"
+          rm -rf $(echo "$makefile_path"|sed 's/Makefile/patches/g')
       else
           echo "$makefile_path 不包含 PKG_VERSION:=20230606, 跳过修复"
       fi
