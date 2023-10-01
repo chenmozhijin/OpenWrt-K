@@ -993,7 +993,7 @@ function import_ext_packages() {
       fi
       echo "修复brook的go依赖问题"
       # 查找所有brook/Makefile文件，并存储到数组中
-      brook_makefiles=($(find "$OPENWRT_ROOT_PATH/package" -type f -path "*/brook/Makefile"))
+      brook_makefiles=($(find "$openwrt_dir/package" -type f -path "*/brook/Makefile"))
       
       # 遍历数组中的每个路径并处理
       for makefile_path in "${brook_makefiles[@]}"; do
