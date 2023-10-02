@@ -1297,8 +1297,8 @@ jobs:
           curl -s -L --retry 6 https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -o $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv  || exit 0
           curl -s -L --retry 6 https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -o $PACKAGECOMPARE_ROOT_PATH/package.zip -nv  || exit 0
           cd $PACKAGECOMPARE_ROOT_PATH
-          unzip package.zip
-          unzip allkmod.zip
+          unzip package.zip || exit 0
+          unzip allkmod.zip || exit 0
           mv package oldpackage
           mv kmod oldkmod
           cp -rf oldkmod/* oldpackage/
