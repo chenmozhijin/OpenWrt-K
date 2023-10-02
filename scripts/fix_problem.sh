@@ -26,6 +26,8 @@ else
           sed -i 's/PKG_HASH:=.*/PKG_HASH:=skip/g' "$makefile_path"
           echo "$makefile_path 已修复"
           rm -rf $(echo "$makefile_path"|sed 's/Makefile/patches/g')
+          echo "$(echo "$makefile_path"|sed 's/Makefile/patches/g') 已删除"
+          ls -la $(find $(echo "$makefile_path"|sed 's/Makefile//g') -type d)
       else
           echo "$makefile_path 不包含 PKG_VERSION:=20230606, 跳过修复"
       fi
