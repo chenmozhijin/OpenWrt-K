@@ -75,7 +75,7 @@
   coremark：cpu跑分测试  
   pciutils：PCI 设备配置工具  
   usbutils：USB 设备列出工具  
-  [cloudflared](https://github.com/cloudflare/cloudflared)：Cloudflare 隧道客户端
+  ~~[cloudflared](https://github.com/cloudflare/cloudflared)：Cloudflare 隧道客户端~~[暂不支持go 1.21](https://github.com/cloudflare/cloudflared/issues/1054)
 
 3. LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
 
