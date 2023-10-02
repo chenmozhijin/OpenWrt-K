@@ -3,16 +3,21 @@
 ###Direct
 ##-------------------------------------
 payload:
+# > 360
+  - DOMAIN-SUFFIX,360.com
+  - DOMAIN-SUFFIX,360kuai.com
+  - DOMAIN-SUFFIX,360safe.com
+  - DOMAIN-SUFFIX,360.cn
 
 # > apple
   - DOMAIN-SUFFIX,apple.com
 
 # > microsoft
-  - DOMAIN-SUFFIX,live.com
   - DOMAIN-SUFFIX,windowsazure.com
   - DOMAIN-SUFFIX,login.microsoftonline.com
-  - DOMAIN-SUFFIX,microsoft.com
   - DOMAIN-SUFFIX,office.net
+    # Bing
+  - DOMAIN,cn.bing.com
 
 # > cdn
   - DOMAIN-SUFFIX,akamaized.net
@@ -28,21 +33,30 @@ payload:
   - DOMAIN-SUFFIX,163.com
   - DOMAIN-SUFFIX,126.net
   - DOMAIN-SUFFIX,127.net
+  - DOMAIN-SUFFIX,163yun.com
   - DOMAIN-SUFFIX,netease.com
   - DOMAIN-SUFFIX,yeah.net
 
 # > baidu
   - DOMAIN-SUFFIX,baidu.com
+  - DOMAIN-SUFFIX,baidubcr.com
+  - DOMAIN-SUFFIX,baidupcs.com
+  - DOMAIN-SUFFIX,baidustatic.com
   - DOMAIN-SUFFIX,bdstatic.com
   - DOMAIN-SUFFIX,bcebos.com
   - DOMAIN-SUFFIX,bdimg.com
 
 # > ali
-  - DOMAIN-SUFFIX,aliyun.com
   - DOMAIN-SUFFIX,tmall.com
   - DOMAIN-SUFFIX,taobao.com
   - DOMAIN-SUFFIX,aliapp.org
   - DOMAIN-SUFFIX,alibaba.com
+  - DOMAIN-SUFFIX,aliimg.com
+  - DOMAIN-SUFFIX,alipay.com
+  - DOMAIN-SUFFIX,aliyun.com
+  - DOMAIN-SUFFIX,aliyuncdn.com
+  - DOMAIN-SUFFIX,aliyuncs.com
+  - DOMAIN-SUFFIX,aliyundrive.com
 
 # > 51cto
   - DOMAIN-SUFFIX,51cto.com
@@ -53,8 +67,9 @@ payload:
   - DOMAIN-SUFFIX,bilivideo.com
   - DOMAIN-SUFFIX,biliapi.net
   - DOMAIN-SUFFIX,bilivideo.cn
+  - DOMAIN-SUFFIX,b23.tv
 
-# > bilibili
+# > speedtest
   - DOMAIN-KEYWORD,vipspeedtest,Proxy
   - DOMAIN-SUFFIX,speedtest.net
   - DOMAIN-SUFFIX,chinamobile.com
@@ -80,7 +95,6 @@ payload:
 # > cmzj
   - DOMAIN-SUFFIX,cmzj.org
   - DOMAIN-SUFFIX,cmzj.top
-
 
 # > mirrors-cn
   - DOMAIN,mirrors.tuna.tsinghua.edu.cn
@@ -109,7 +123,6 @@ payload:
   - DOMAIN,mirrors.uestc.cn
   - DOMAIN,mirrors.wsyu.edu.cn
 
-
 # > steam-china
   - DOMAIN,ipv6check-http.steamserver.net
   - DOMAIN,ipv6check-udp.steamserver.net
@@ -133,7 +146,6 @@ payload:
 
 # > epic-china
   - DOMAIN,epicgames-download1-1251447533.file.myqcloud.com
-
 
 # > ubisoft connect-china
   - DOMAIN,uplaypc-s-ubisoft.cdn.ubionline.com.cn

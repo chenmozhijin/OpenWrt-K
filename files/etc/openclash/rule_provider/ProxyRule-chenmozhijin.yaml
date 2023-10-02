@@ -3,9 +3,34 @@
 ###Proxy
 ##-------------------------------------
 payload:
-# > Bing
+# > microsoft
+  # Bing
   - DOMAIN-SUFFIX,bing.com
-# > Telegram Messenger Inc(AS44907 AS62014 AS59930 AS62041)
+  # .net
+  - DOMAIN,download.visualstudio.microsoft.com
+  # onedrive
+  - DOMAIN-SUFFIX,onedrive.com
+  - DOMAIN-SUFFIX,onedrive.live.com
+  - DOMAIN-SUFFIX,photos.live.com
+
+# > wikipedia
+  - DOMAIN-SUFFIX,mediawiki.org
+  - DOMAIN-SUFFIX,wikibooks.org
+  - DOMAIN-SUFFIX,wikidata.org
+  - DOMAIN-SUFFIX,wikimedia.org
+  - DOMAIN-SUFFIX,wikinews.org
+  - DOMAIN-SUFFIX,wikipedia.org
+  - DOMAIN-SUFFIX,wikiquote.org
+  - DOMAIN-SUFFIX,wikisource.org
+  - DOMAIN-SUFFIX,wikiversity.org
+  - DOMAIN-SUFFIX,wikivoyage.org
+  - DOMAIN-SUFFIX,wiktionary.org
+
+# > telegram
+  - DOMAIN-SUFFIX,telegram.org
+  - DOMAIN-SUFFIX,t.me
+  - DOMAIN-SUFFIX,telegram.me
+  # > Telegram Messenger Inc(AS44907 AS62014 AS59930 AS62041)
   #AS44907
   - IP-CIDR,91.108.20.0/22
   - IP-CIDR,91.108.20.0/23
@@ -32,6 +57,7 @@ payload:
   - IP-CIDR,91.108.8.0/22
   - IP-CIDR,95.161.64.0/20
   - IP-CIDR,2001:67c:4e8::/48
+## telegram end
 
 # > TapTap Anti-addiction service
   - DOMAIN,tds-tapsdk.cn.tapapis.com
@@ -60,10 +86,6 @@ payload:
   - DOMAIN,baibianxiaoying.top
   - DOMAIN,dingyue.baibianxiaoying.top
   - DOMAIN-SUFFIX,bbxy.buzz
-  
-# > .net
-  - DOMAIN,download.visualstudio.microsoft.com
-##.net end
 
 #bbs
   - DOMAIN-SUFFIX,tsdm39.com
@@ -105,11 +127,6 @@ payload:
   - DOMAIN-SUFFIX,ehgt.org
 ##api end
 
-# > telegram
-  - DOMAIN-SUFFIX,telegram.org
-  - DOMAIN-SUFFIX,t.me
-## telegram
-
 # > box
   - DOMAIN,cdn01.boxcdn.net
   - DOMAIN-SUFFIX,boxcdn.net
@@ -117,19 +134,31 @@ payload:
 ##box end
 
 # > google
+  - DOMAIN-KEYWORD,google
+  - DOMAIN-KEYWORD,gmail
   - DOMAIN-SUFFIX,googleapis.cn
   - DOMAIN-SUFFIX,googleapis.com
   - DOMAIN-SUFFIX,google.com.tw
   - DOMAIN-SUFFIX,google.com.hk
   - DOMAIN-SUFFIX,xn--ngstr-lra8j.com
   - DOMAIN-SUFFIX,google.com
-  - DOMAIN-SUFFIX,googleapis.com
   - DOMAIN-SUFFIX,gstatic.com
   - DOMAIN,fonts.gstatic.com
   - DOMAIN,www.gstatic.com
   - DOMAIN,ssl.gstatic.com
   - DOMAIN,csi.gstatic.com
   - DOMAIN,www.googletagmanager.com
+  # youtube
+  - DOMAIN-KEYWORD,youtube
+  - DOMAIN-SUFFIX,youtube.com
+  - DOMAIN,yt3.ggpht.com
+  - DOMAIN-SUFFIX,ytimg.com
+  - DOMAIN-SUFFIX,youtubeeducation.com
+  - DOMAIN-SUFFIX,youtubegaming.com
+  - DOMAIN-SUFFIX,youtubekids.com
+  - DOMAIN,music.youtube.com
+  - DOMAIN-SUFFIX,googlevideo.com
+
 ##google end
 
 # > github
@@ -186,6 +215,8 @@ payload:
 # > chatgpt
   - DOMAIN,chat.openai.com
   - DOMAIN-SUFFIX,openai.com
+  - DOMAIN-SUFFIX,auth0.com
+  - DOMAIN-SUFFIX,openaiapi-site.azureedge.net
   - DOMAIN,o33249.ingest.sentry.io
   - DOMAIN-SUFFIX,sentry.io
   - DOMAIN-SUFFIX,featuregates.org
