@@ -328,7 +328,8 @@ jobs:
       - name: 修复问题
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
-          bash $GITHUB_WORKSPACE/scripts/fix_problem.sh
+          sed -i 's/256/1024/' ./target/linux/${{ matrix.target }}/image/Makefile
+          bash $GITHUB_WORKSPACE/scripts/fix_problem.sh ${{ matrix.config }}
 
       - name: 更新smartdns、netdata
         run: |
