@@ -316,5 +316,7 @@ echo "0 2 * * * /usr/share/cmzj/openwrt-k_tool.sh update rules" >>/etc/crontabs/
 ln -s /usr/share/cmzj/openwrt-k_tool.sh /bin/openwrt-k
 chmod +x /usr/share/cmzj/openwrt-k_tool.sh
 uci commit
+/etc/init.d/sing-box stop
+/etc/init.d/sing-box disable
 exit 0
 
