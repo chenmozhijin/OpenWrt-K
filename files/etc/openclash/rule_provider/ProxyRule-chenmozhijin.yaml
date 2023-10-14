@@ -3,6 +3,12 @@
 ###Proxy
 ##-------------------------------------
 payload:
+# > huggingface
+  - DOMAIN-SUFFIX,huggingface.co
+
+# > recaptcha
+  - DOMAIN-SUFFIX,recaptcha.net
+
 # > microsoft
   # Bing
   - DOMAIN-SUFFIX,bing.com
@@ -90,6 +96,8 @@ payload:
 #bbs
   - DOMAIN-SUFFIX,tsdm39.com
   - DOMAIN-SUFFIX,sumisora.net
+  - DOMAIN-SUFFIX,keyfc.net
+  - DOMAIN-SUFFIX,v2ex.com
 #bbs end
 
 ##api
