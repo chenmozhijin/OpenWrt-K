@@ -115,28 +115,7 @@ update_rule(){
         mkdir -p $TMPDIR/update/rule/adguardhome
         cd $TMPDIR/update/rule/adguardhome
         [[ -d $TMPDIR ]] && rm -rf $TMPDIR/update/rule/adguardhome/* || exit 1
-        curl -s -L --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/YW5vbnltb3Vz/domain-list-community/release/gfwlist.txt -o base64_YW5vbnltb3Vz.txt || download_failed
-        curl -s -L --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/gfw.txt -o Loyalsoldier.txt || download_failed
-        curl -s -L --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt -o base64_gfwlist.txt || download_failed
-        curl -s -L --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/Loukky/gfwlist-by-loukky/master/gfwlist.txt -o base64_Loukky.txt || download_failed
-        curl -s -L --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/files/etc/openclash/rule_provider/ProxyRule-chenmozhijin.yaml -o ProxyRule-chenmozhijin.yaml || download_failed
-        curl -s -L --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/files/etc/openclash/rule_provider/DirectRule-chenmozhijin.yaml -o DirectRule-chenmozhijin.yaml || download_failed
-        base64 -d ./base64_YW5vbnltb3Vz.txt > ./YW5vbnltb3Vz.txt
-        base64 -d ./base64_gfwlist.txt > ./gfwlist.txt
-        base64 -d ./base64_Loukky.txt > ./Loukky.txt
-        sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' ./YW5vbnltb3Vz.txt>> ./gfwlist_chen
-        sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' ./Loyalsoldier.txt>> ./gfwlist_chen
-        sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' ./gfwlist.txt>> ./gfwlist_chen
-        sed -e '/^!/d' -e '/^\\/d' -e '/^@/d' -e 's/|//g' -e '/^http:\/\//d' -e '/^https:\/\//d' -e '/\//d' -e 's/^\.//g' -e '/\./!d' -e '/ /d' -e '/\*/d' -e '/%/d' -e '/^[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/d' ./Loukky.txt>> ./gfwlist_chen
-        sort ./gfwlist_chen | uniq > ./gfwlist
-        echo "127.0.0.1:6053" >> ./AdGuardHomednslist
-        echo "127.0.0.1:5335" >> ./AdGuardHomednslist
-        sed -n '/^  - DOMAIN,/p' DirectRule-chenmozhijin.yaml|sed -e "s/^  - DOMAIN,/[\//g" -e 's/$/\/]127.0.0.1:6053/g' >> ./AdGuardHomednslist
-        sed -n '/^  - DOMAIN-SUFFIX,/p' DirectRule-chenmozhijin.yaml|sed -e "s/^  - DOMAIN-SUFFIX,/[\//g" -e 's/$/\/]127.0.0.1:6053/g' >> ./AdGuardHomednslist
-        sed -n '/^  - DOMAIN,/p' ProxyRule-chenmozhijin.yaml|sed -e "s/^  - DOMAIN,/[\//g" -e 's/$/\/]127.0.0.1:5335/g' >> ./AdGuardHomednslist
-        sed -n '/^  - DOMAIN-SUFFIX,/p' ProxyRule-chenmozhijin.yaml|sed -e "s/^  - DOMAIN-SUFFIX,/[\//g" -e 's/$/\/]127.0.0.1:5335/g' >> ./AdGuardHomednslist
-        sed -e 's/^/[\//g' -e 's/$/\/]127.0.0.1:5335/g' ./gfwlist >> ./AdGuardHomednslist
-        sed -i "s/ //g" ./AdGuardHomednslist
+        curl -s -L --retry 6 --connect-timeout 20 "https://raw.githubusercontent.com/chenmozhijin/AdGuardHome-Rules/main/AdGuardHome-dnslist(by%20cmzj).yaml" -o "AdGuardHomednslist" || download_failed
         cat ./AdGuardHomednslist > /etc/AdGuardHome-dnslist"(by cmzj)".yaml
         /etc/init.d/AdGuardHome restart
         echo "更新adguardhome上游 DNS 服务器分流规则（/etc/AdGuardHome-dnslist(by cmzj).yaml)完成"
