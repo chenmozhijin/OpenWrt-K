@@ -280,6 +280,7 @@ update_tool() {
         ;;
     esac
     curl -L --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/files/usr/share/cmzj/openwrt-k_tool.sh -o $TMPDIR/openwrt-k_tool.sh || download_failed
+    chmod +x $TMPDIR/openwrt-k_tool.sh
     mv $TMPDIR/openwrt-k_tool.sh /usr/share/cmzj/openwrt-k_tool.sh && exit 0
 }
 
