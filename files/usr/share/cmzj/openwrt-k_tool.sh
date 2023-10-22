@@ -287,7 +287,7 @@ usage() {
     echo "OpenWrt-K工具"
     echo "固件项目地址：https://github.com/chenmozhijin/OpenWrt-K"
     echo ""
-    echo "Usage: OpenWrt-K <command> [<arguments>]"
+    echo "Usage: openwrt-k <command> [<arguments>]"
     echo ""
     echo "Commands:"
     echo "update <packages|rules|tool>              更新包/规则/本工具"
