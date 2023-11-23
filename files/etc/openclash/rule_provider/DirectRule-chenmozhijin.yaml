@@ -151,4 +151,4 @@ payload:
   - DOMAIN,uplaypc-s-ubisoft.cdn.ubionline.com.cn
 
 # > hikarifield
-  - DOMAIN-SUFFIX,hikarifield.co.jp
+  - DOMAIN,store.hikarifield.co.jp
