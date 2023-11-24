@@ -1,29 +1,25 @@
 http:
+  pprof:
+    port: 6060
+    enabled: false
   address: 0.0.0.0:3000
   session_ttl: 720h
 users:
   - name: root
-    password: $2y$10$sqOP4gJXTSZQSC5ipQhV6eAslpei/v8ahK7ptpAgJY8DR4lBJ16oe
+    password: $2y$10$GyigWcIgiGBggTCpAvR3C.BLdGcnL6lpI57MK3q//sv9xobIYKLCa
 auth_attempts: 5
 block_auth_min: 15
 http_proxy: ""
 language: zh-cn
 theme: auto
-debug_pprof: false
 dns:
   bind_hosts:
     - 0.0.0.0
   port: 1745
   anonymize_client_ip: false
-  protection_enabled: true
-  blocking_mode: default
-  blocking_ipv4: ""
-  blocking_ipv6: ""
-  blocked_response_ttl: 60
-  protection_disabled_until: null
-  parental_block_host: family-block.dns.adguard.com
-  safebrowsing_block_host: standard-block.dns.adguard.com
   ratelimit: 0
+  ratelimit_subnet_len_ipv4: 24
+  ratelimit_subnet_len_ipv6: 56
   ratelimit_whitelist: []
   refuse_any: false
   upstream_dns:
@@ -37,6 +33,7 @@ dns:
     - 119.29.29.29
     - 101.226.4.6
     - 180.76.76.76
+  fallback_dns: []
   all_servers: true
   fastest_addr: false
   fastest_timeout: 1s
@@ -65,27 +62,6 @@ dns:
   ipset: []
   ipset_file: ""
   bootstrap_prefer_ipv6: false
-  filtering_enabled: true
-  filters_update_interval: 24
-  parental_enabled: false
-  safebrowsing_enabled: false
-  safebrowsing_cache_size: 1048576
-  safesearch_cache_size: 1048576
-  parental_cache_size: 1048576
-  cache_time: 30
-  safe_search:
-    enabled: false
-    bing: true
-    duckduckgo: true
-    google: true
-    pixabay: true
-    yandex: true
-    youtube: true
-  rewrites: []
-  blocked_services:
-    schedule:
-      time_zone: UTC
-    ids: []
   upstream_timeout: 10s
   private_networks: []
   use_private_ptr_resolvers: true
@@ -111,7 +87,7 @@ tls:
   strict_sni_check: false
 querylog:
   ignored: []
-  interval: 2160h
+  interval: 168h
   size_memory: 1000
   enabled: true
   file_enabled: true
@@ -219,6 +195,36 @@ dhcp:
     lease_duration: 86400
     ra_slaac_only: false
     ra_allow_slaac: false
+filtering:
+  blocking_ipv4: ""
+  blocking_ipv6: ""
+  blocked_services:
+    schedule:
+      time_zone: UTC
+    ids: []
+  protection_disabled_until: null
+  safe_search:
+    enabled: false
+    bing: true
+    duckduckgo: true
+    google: true
+    pixabay: true
+    yandex: true
+    youtube: true
+  blocking_mode: default
+  parental_block_host: family-block.dns.adguard.com
+  safebrowsing_block_host: standard-block.dns.adguard.com
+  rewrites: []
+  safebrowsing_cache_size: 1048576
+  safesearch_cache_size: 1048576
+  parental_cache_size: 1048576
+  cache_time: 30
+  filters_update_interval: 24
+  blocked_response_ttl: 60
+  filtering_enabled: true
+  parental_enabled: false
+  safebrowsing_enabled: false
+  protection_enabled: true
 clients:
   runtime_sources:
     whois: true
@@ -239,4 +245,4 @@ os:
   group: ""
   user: ""
   rlimit_nofile: 0
-schema_version: 24
+schema_version: 27
