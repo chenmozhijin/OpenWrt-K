@@ -1383,6 +1383,7 @@ function build () {
     echo "ipaddr=$(grep "^ipaddr=" $build_dir/../buildconfig.config|sed -e "s/ipaddr=//")" > $outputdir/OpenWrt-K/openwrtext.config
     echo "timezone=$(grep "^timezone=" $build_dir/../buildconfig.config|sed -e "s/timezone=//")" >> $outputdir/OpenWrt-K/openwrtext.config
     echo "zonename=$(grep "^zonename=" $build_dir/../buildconfig.config|sed -e "s/zonename=//")" >> $outputdir/OpenWrt-K/openwrtext.config
+    echo "golang_version=$(grep "^golang_version=" $build_dir/../buildconfig.config|sed -e "s/golang_version=//")" >> $outputdir/OpenWrt-K/openwrtext.config
     # 输出配置文件
     [[ -d $build_dir/../config/$OpenWrt_K_config ]] && rm -rf $build_dir/../config/$OpenWrt_K_config
     mkdir -p $build_dir/../config/$OpenWrt_K_config
