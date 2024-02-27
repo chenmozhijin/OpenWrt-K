@@ -1236,7 +1236,7 @@ openwrt_extension_config() {
             fi
 
             NEW_GOLANG_VERSION="${branch_array[choice-1]}"
-            sed -i "/^zonename=/s#=.*#=$NEW_GOLANG_VERSION#g" buildconfig.config
+            sed -i "/^golang_version=/s#=.*#=$NEW_GOLANG_VERSION#g" buildconfig.config
             return 6
             ;;
         6)
