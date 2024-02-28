@@ -284,6 +284,12 @@ function input_parameters() {
         whiptail --title "错误" --msgbox "OpenWrt-K拓展配置下载未知错误，下载的文件中未检测到时区区域名称配置 ，下载链接：\n$DOWNLOAD_URL" 10 110
         return 6
     fi
+    if [ "$(grep -c "^golang_version=" $TMPDIR/openwrtext.config)" -eq '1' ];then
+        golang_version=$(grep "^golang_version=" $TMPDIR/openwrtext.config|sed -e "s/golang_version=//")
+    else
+        whiptail --title "错误" --msgbox "OpenWrt-K拓展配置下载未知错误，下载的文件中未检测到golang版本配置 ，下载链接：\n$DOWNLOAD_URL" 10 110
+        return 6
+    fi
     DOWNLOAD_URL=https://raw.githubusercontent.com/$OpenWrt_K_repo/$OpenWrt_K_branch/config/$OpenWrt_K_config/OpenWrt-K/compile.config
     curl -o $TMPDIR/compile.config -s -L --retry 3 --connect-timeout 20  $DOWNLOAD_URL
     exitstatus=$?
@@ -309,6 +315,7 @@ function input_parameters() {
     echo ipaddr=$ipaddr >> buildconfig.config
     echo timezone=$timezone >> buildconfig.config
     echo zonename=$zonename >> buildconfig.config
+    echo golang_version=$golang_version >> buildconfig.config
     echo "kmod_compile_exclude_list=$kmod_compile_exclude_list" >> buildconfig.config
     if [ -n "$build_dir" ];then
         echo build_dir=$build_dir >> buildconfig.config
@@ -1112,12 +1119,14 @@ openwrt_extension_config() {
     ipaddr=$(grep "^ipaddr=" buildconfig.config|sed -e "s/ipaddr=//")
     timezone=$(grep "^timezone=" buildconfig.config|sed -e "s/timezone=//")
     zonename=$(grep "^zonename=" buildconfig.config|sed -e "s/zonename=//")
+    golang_version=$(grep "^golang_version=" buildconfig.config|sed -e "s/golang_version=//")
     OPTION=$(whiptail --title "OpenWrt-k配置构建工具-拓展配置" --menu "选择你要修改的内容或选择Cancel退出" 16 80 8 \
     "1" "修改IP地址: $ipaddr" \
     "2" "修改时区：$timezone" \
     "3" "修改时区区域名称: $zonename" \
     "4" "修改内核模块(kmod)编译排除列表" \
-    "5" "恢复默认拓展配置"  3>&1 1>&2 2>&3)
+    "5" "修改golang版本: $golang_version" \
+    "6" "恢复默认拓展配置"  3>&1 1>&2 2>&3)
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         echo "你选择了退出"
@@ -1203,6 +1212,34 @@ openwrt_extension_config() {
             return 6
             ;;
         5)
+            # 修改golang版本
+            # 从 GitHub API 获取分支信息并提取名称
+            branches=$(curl -s -L https://api.github.com/repos/sbwml/packages_lang_golang/branches | sed -n '/^    "name": "/p' | sed -e 's/    "name": "//g' -e 's/",//g')
+
+            # 将分支名称存储到数组中
+            branch_array=($branches)
+
+            # 使用 whiptail 创建菜单
+            choices=()
+            index=1
+            for branch in "${branch_array[@]}"; do
+                choices+=("$index" "$branch")
+                ((index++))
+            done
+
+            # 获取用户选择
+            choice=$(whiptail --title "选择分支" --menu "请选择一个分支:" 15 60 4 "${choices[@]}" 3>&1 1>&2 2>&3)
+            exitstatus=$?
+            if [ $exitstatus != 0 ]; then
+                    echo "你选择了退出"
+                    return 6
+            fi
+
+            NEW_GOLANG_VERSION="${branch_array[choice-1]}"
+            sed -i "/^golang_version=/s#=.*#=$NEW_GOLANG_VERSION#g" buildconfig.config
+            return 6
+            ;;
+        6)
             sed -i "/^ipaddr/s/=.*/=192.168.1.1/g" buildconfig.config
             sed -i "/^timezone=/s/=.*/=CST-8/g" buildconfig.config
             sed -i "/^zonename=/s#=.*#=Asia/Shanghai#g" buildconfig.config
@@ -1346,6 +1383,7 @@ function build () {
     echo "ipaddr=$(grep "^ipaddr=" $build_dir/../buildconfig.config|sed -e "s/ipaddr=//")" > $outputdir/OpenWrt-K/openwrtext.config
     echo "timezone=$(grep "^timezone=" $build_dir/../buildconfig.config|sed -e "s/timezone=//")" >> $outputdir/OpenWrt-K/openwrtext.config
     echo "zonename=$(grep "^zonename=" $build_dir/../buildconfig.config|sed -e "s/zonename=//")" >> $outputdir/OpenWrt-K/openwrtext.config
+    echo "golang_version=$(grep "^golang_version=" $build_dir/../buildconfig.config|sed -e "s/golang_version=//")" >> $outputdir/OpenWrt-K/openwrtext.config
     # 输出配置文件
     [[ -d $build_dir/../config/$OpenWrt_K_config ]] && rm -rf $build_dir/../config/$OpenWrt_K_config
     mkdir -p $build_dir/../config/$OpenWrt_K_config

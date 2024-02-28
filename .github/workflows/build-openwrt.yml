@@ -697,6 +697,13 @@ jobs:
           sed -i -e "s/set system.@system\[-1].hostname='OpenWrt'/set system.@system\[-1].hostname='OpenWrt-k'/g" -e "s/set system.@system\[-1].timezone='UTC'/set system.@system\[-1].timezone=\'$timezone\'/g" -e "/set system.@system\[-1].timezone='CST-8'/i\		set system.@system\[-1].zonename=\'$zonename\'" $OPENWRT_ROOT_PATH/package/base-files/files/bin/config_generate
           sed -i "s#^uci set network.lan.ipaddr=.*#uci set network.lan.ipaddr=\"$ipaddr\"#g"  $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
 
+      - name: 替换golang版本
+        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        run: |
+          golang_version=$(grep "^golang_version=" $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/openwrtext.config|sed -e "s/golang_version=//" -e "s/ //g")
+          rm -rf feeds/packages/lang/golang
+          git clone https://github.com/sbwml/packages_lang_golang -b $golang_version feeds/packages/lang/golang
+
       - name: 检查剩余空间
         run: |
           echo "======================="
