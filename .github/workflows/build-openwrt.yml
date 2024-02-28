@@ -62,7 +62,7 @@ jobs:
         echo "::notice ::编译开始时间为：$starttime"
 
     - name: 将存储库签出到运行器
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: 规划编译流程
       id: planning
@@ -81,7 +81,7 @@ jobs:
           sudo apt install -y curl git rsync unzip wget sed tar || sudo apt install -y curl git rsync unzip wget sed tar
 
       - name: 将存储库签出到运行器
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 建立工作文件夹
         run: |
@@ -226,13 +226,13 @@ jobs:
           tar cvpzf $GITHUB_WORKSPACE/cmzj_patch.tgz *
 
       - name: 上传 cmzj_package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cmzj_package-${{ matrix.config }}
           path: cmzj_package.tgz
 
       - name: 上传 cmzj_patch
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cmzj_patch-${{ matrix.config }}
           path: cmzj_patch.tgz
@@ -245,7 +245,7 @@ jobs:
     name: build1-${{ matrix.config }}
     steps:
       - name: 将存储库签出到运行器
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 输出运行器硬件信息
         run: |
@@ -260,7 +260,7 @@ jobs:
           bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
 
       - name: 将存储库签出到运行器
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 建立工作文件夹
         run: |
@@ -277,12 +277,12 @@ jobs:
           cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
 
       - name: 下载cmzj_package
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: cmzj_package-${{ matrix.config }}
 
       - name: 下载cmzj_patch
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: cmzj_patch-${{ matrix.config }}
 
@@ -753,19 +753,19 @@ jobs:
           tar cvpzf $GITHUB_WORKSPACE/openwrt_files.tgz *
 
       - name: 上传 build1_WORKSPACE
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build1_WORKSPACE-${{ matrix.config }}
           path: /build1_WORKSPACE.tgz
 
       - name: 上传 .config
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build1_openwrt_config-${{ matrix.config }}
           path: ${{ env.OPENWRT_ROOT_PATH }}/build1.config
 
       - name: 上传 files
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build1_openwrt_files-${{ matrix.config }}
           path: openwrt_files.tgz
@@ -780,7 +780,7 @@ jobs:
 
       - name: 上传日志
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build1-logs-${{ matrix.config }}
           path: "${{ env.LOG_PATH }}"
@@ -793,7 +793,7 @@ jobs:
     name: build-package-${{ matrix.config }}
     steps:
       - name: 将存储库签出到运行器
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 输出运行器硬件信息
         run: |
@@ -812,7 +812,7 @@ jobs:
           bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
 
       - name: 下载build1_WORKSPACE
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build1_WORKSPACE-${{ matrix.config }}
 
@@ -871,7 +871,7 @@ jobs:
           rm -rf $(find ./artifact/package/ -type f -name "kmod-*")
 
       - name: 上传 package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: OpenWrt-package-${{ matrix.config }}
           path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/package/
@@ -885,7 +885,7 @@ jobs:
 
       - name: 上传日志
         if: success() || failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-package-logs-${{ matrix.config }}
           path: "${{ env.LOG_PATH }}"
@@ -898,7 +898,7 @@ jobs:
     name: build-Image_Builder-${{ matrix.config }}
     steps:
       - name: 将存储库签出到运行器
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 输出运行器硬件信息
         run: |
@@ -917,7 +917,7 @@ jobs:
           bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
 
       - name: 下载build1_WORKSPACE
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build1_WORKSPACE-${{ matrix.config }}
 
@@ -1050,13 +1050,13 @@ jobs:
           cp -rf $(find ./artifact/package/ -type f -name "kmod-*") ./artifact/kmod/
 
       - name: 上传 kmod
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: OpenWrt-kmod-${{ matrix.config }}
           path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/kmod/
 
       - name: 上传 Image Builder
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: OpenWrt-Image_Builder-${{ matrix.config }}
           path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{ matrix.target }}/${{ matrix.subtarget }}/openwrt-imagebuilder-${{ matrix.target }}-${{ matrix.subtarget }}.Linux-x86_64.tar.xz
@@ -1070,7 +1070,7 @@ jobs:
 
       - name: 上传日志
         if: success() || failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-Image_Builder-logs-${{ matrix.config }}
           path: "${{ env.LOG_PATH }}"
@@ -1083,7 +1083,7 @@ jobs:
     name: build-Image-${{ matrix.config }}
     steps:
       - name: 将存储库签出到运行器
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 输出运行器硬件信息
         run: |
@@ -1102,26 +1102,26 @@ jobs:
           bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
 
       - name: 将存储库签出到运行器
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 下载Image Builder
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: OpenWrt-Image_Builder-${{ matrix.config }}
 
       - name: 下载包
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: OpenWrt-package-${{ matrix.config }}
           path: ${{ github.workspace }}/package/
 
       - name: 下载build1配置文件
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build1_openwrt_config-${{ matrix.config }}
 
       - name: 下载 files
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build1_openwrt_files-${{ matrix.config }}
 
@@ -1191,13 +1191,13 @@ jobs:
           cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
 
       - name: 上传 firmware
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: OpenWrt-firmware-${{ matrix.config }}
           path: ${{ env.IMAGE_BUILDER_ROOT_PATH }}/bin/targets/
 
       - name: 上传 buildinfo
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: OpenWrt-buildinfo-${{ matrix.config }}
           path: ${{ env.IMAGE_BUILDER_ROOT_PATH }}/artifact/buildinfo/
@@ -1211,7 +1211,7 @@ jobs:
 
       - name: 上传日志
         if: success() || failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-Image-${{ matrix.target }}-${{ matrix.subtarget }}-logs
           path: "${{ env.LOG_PATH }}"
@@ -1224,7 +1224,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: 将存储库签出到运行器
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 建立工作文件夹
         run: |
@@ -1252,19 +1252,19 @@ jobs:
           echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
 
       - name: 下载固件
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: OpenWrt-firmware-${{ matrix.config }}
           path: ${{ env.UPLOAD_ROOT_PATH }}
 
       - name: 下载包
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: OpenWrt-package-${{ matrix.config }}
           path: ${{ env.UPLOAD_ROOT_PATH }}/package
 
       - name: 下载内核模块
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: OpenWrt-kmod-${{ matrix.config }}
           path: ${{ env.UPLOAD_ROOT_PATH }}/kmod
@@ -1311,7 +1311,7 @@ jobs:
 
       - name: 上传固件到 Release
         id: firmware-release
-        uses: softprops/action-gh-release@v0.1.15
+        uses: softprops/action-gh-release@master
         with:
           name: ${{ env.RELEASE_NAME }}
           tag_name: ${{ env.RELEASE_TAG_NAME }}
@@ -1321,7 +1321,7 @@ jobs:
           body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
 
       - name: 删除旧的Releases
-        uses: dev-drprasad/delete-older-releases@v0.2.1
+        uses: dev-drprasad/delete-older-releases@v0.3.2
         with:
           keep_latest: 10
           delete_tags: true
