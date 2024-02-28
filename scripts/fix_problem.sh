@@ -12,7 +12,7 @@ if [[ "$openwrt_tag_branch" == "v23.05.0-rc4" ]] ; then
   fi
 fi
 if [[ "$openwrt_tag_branch" == "v23.05.2" ]] ; then
-  if ! grep -q "^  CONFLICTS:=iperf3$" "feeds/packages/lang/net/iperf3/Makefile"; then
+  if ! grep -q "^  CONFLICTS:=iperf3$" "feeds/packages/net/iperf3/Makefile"; then
     echo "修复iperf3冲突"
     curl -s -L --retry 6 https://github.com/openwrt/packages/commit/cea45c75c0153a190ee41dedaf6526ae08e33928.patch  | patch -p1 -d feeds/packages 2>/dev/null
   fi
