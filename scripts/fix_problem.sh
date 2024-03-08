@@ -17,3 +17,9 @@ if [[ "$openwrt_tag_branch" == "v23.05.2" ]] ; then
     curl -s -L --retry 6 https://github.com/openwrt/packages/commit/cea45c75c0153a190ee41dedaf6526ae08e33928.patch  | patch -p1 -d feeds/packages 2>/dev/null
   fi
 fi
+if [ -d "package/cmzj_package/luci-app-netspeedtest/homebox/Makefile" ]; then
+  if ! grep -q "^	H_ARCH:=arm64y$" "package/cmzj_package/luci-app-netspeedtest/homebox/Makefile"; then
+    echo "修复netspeedtest"
+    curl -s -L --retry 6 https://github.com/sirpdboy/netspeedtest/commit/5b7a238a0e35b339a29de0c5d25a64788d6d04e6.patch | patch -p1 -d package/cmzj_package/luci-app-netspeedtest 2>/dev/null
+  fi
+fi
