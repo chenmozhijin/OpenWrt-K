@@ -399,7 +399,7 @@ jobs:
           if [ "$use_cache" = "true" ] || [ "$use_cache" = "True" ] || [ "$use_cache" = "TRUE" ];then
             use_cache=true
             echo "::notice ::使用ccache加速编译"
-            echo "CONFIG_DEVEL=y >> $OPENWRT_ROOT_PATH/.config
+            echo "CONFIG_DEVEL=y" >> $OPENWRT_ROOT_PATH/.config
             echo "CONFIG_CCACHE=y" >> $OPENWRT_ROOT_PATH/.config
             echo "USE_CACHE=$use_cache" >> $GITHUB_ENV
             cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
@@ -1002,7 +1002,7 @@ jobs:
           fi
           if [  ${{ env.USE_CACHE }} = "true" ];then
             echo "::notice ::使用缓存"
-            echo "CONFIG_DEVEL=y >> $OPENWRT_ROOT_PATH/.config
+            echo "CONFIG_DEVEL=y" >> $OPENWRT_ROOT_PATH/.config
             echo "CONFIG_CCACHE=y" >> $OPENWRT_ROOT_PATH/.config
           fi
           echo "以下是配置差异文件的内容"
