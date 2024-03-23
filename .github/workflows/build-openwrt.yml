@@ -799,6 +799,9 @@ jobs:
           cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
           ls -la $(find $OPENWRT_ROOT_PATH/files/ -type d)  >> $LOG_PATH/files.list
+          if [ -d $OPENWRT_ROOT_PATH/.ccache ];then
+            ls -la $(find $OPENWRT_ROOT_PATH/.ccache -type d)  >> $LOG_PATH/ccache.list
+          fi
 
       - name: 上传日志
         if: failure()
@@ -911,6 +914,9 @@ jobs:
           mkdir -p $LOG_PATH/openwrt-logs
           cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
+          if [ -d $OPENWRT_ROOT_PATH/.ccache ];then
+            ls -la $(find $OPENWRT_ROOT_PATH/.ccache -type d)  >> $LOG_PATH/ccache.list
+          fi
 
       - name: 上传日志
         if: success() || failure()
@@ -1108,6 +1114,9 @@ jobs:
           mkdir -p $LOG_PATH/openwrt-logs
           cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
           cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
+          if [ -d $OPENWRT_ROOT_PATH/.ccache ];then
+            ls -la $(find $OPENWRT_ROOT_PATH/.ccache -type d)  >> $LOG_PATH/ccache.list
+          fi
 
       - name: 上传日志
         if: success() || failure()
