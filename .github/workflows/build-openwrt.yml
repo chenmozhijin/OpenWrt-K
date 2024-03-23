@@ -315,7 +315,7 @@ jobs:
         run: |
           openwrt_tag_branch=$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')
           git checkout $openwrt_tag_branch
-          echo "OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH" >> $GITHUB_ENV
+          echo "OPENWRT_TAG_BRANCH=$openwrt_tag_branch" >> $GITHUB_ENV
           cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
 
       - name: 复制cmzj_package
