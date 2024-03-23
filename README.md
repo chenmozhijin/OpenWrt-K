@@ -57,15 +57,14 @@
   luci-app-ttyd：ttyd 终端  
   [luci-app-turboacc](https://github.com/chenmozhijin/turboacc)：Turbo ACC 网络加速  
   luci-app-upnp：通用即插即用（UPnP）  
-  luci-app-usb-printer：USB 打印服务器  
-  luci-app-vlmcsd：KMS 服务器  
+  luci-app-usb-printer：USB 打印服务器   
   luci-app-webadmin：Web 管理页面设置  
   [luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush)：微信推送  
   luci-app-wireguard：WireGuard 状态  
   luci-app-wol：网络唤醒  
   luci-app-zerotier：ZeroTier虚拟局域网
 
-2. 其他部分软件包：  
+1. 其他部分软件包：  
   ethtool-full：网卡工具用于查询及设置网卡参数  
   sudo：sudo命令支持  
   htop：系统监控与进程管理软件  
@@ -77,11 +76,11 @@
   usbutils：USB 设备列出工具  
   ~~[cloudflared](https://github.com/cloudflare/cloudflared)：Cloudflare 隧道客户端~~[暂不支持go 1.21](https://github.com/cloudflare/cloudflared/issues/1054)
 
-3. LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
+1. LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
 
     > + 以上软件包都在生成在Releases的package.zip文件中，可安装使用。
 
-4. 网卡驱动：  
+2. 网卡驱动：  
   kmod-8139cp  
   kmod-8139too  
   kmod-alx  
