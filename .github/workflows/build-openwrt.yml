@@ -312,7 +312,11 @@ jobs:
 
       - name: 切换标签/分支
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: git checkout $(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')
+        run: |
+          openwrt_tag_branch=$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')
+          git checkout $openwrt_tag_branch
+          echo "OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH" >> $GITHUB_ENV
+          cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
 
       - name: 复制cmzj_package
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
@@ -391,8 +395,24 @@ jobs:
         run: |
           cat $GITHUB_WORKSPACE/config/${{ matrix.config }}/{target,luci,utilities,network,other,kmod,image}.config >> $OPENWRT_ROOT_PATH/.config
           make defconfig
+          use_cache=$(sed -n '/use_cache/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')
+          if [ "$use_cache" = "true" ] || [ "$use_cache" = "True" ] || [ "$use_cache" = "TRUE" ];then
+            use_cache=true
+            echo "::notice ::使用ccache加速编译"
+            echo "CONFIG_DEVEL=y >> $OPENWRT_ROOT_PATH/.config
+            echo "CONFIG_CCACHE=y" >> $OPENWRT_ROOT_PATH/.config
+            echo "USE_CACHE=$use_cache" >> $GITHUB_ENV
+            cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
+          fi
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/build1-diffconfig.log
+
+      - name: 缓存
+        uses: actions/cache@v4
+        if: ${{ env.USE_CACHE }}
+        with:
+          path: ${{ env.OPENWRT_ROOT_PATH }}/.ccache
+          key: build1-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
 
       - name: 添加内核补丁与所需内核配置
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
@@ -825,6 +845,13 @@ jobs:
           sudo rm -rf /build1_WORKSPACE.tgz
           cat build1_ENV
           cat build1_ENV >> $GITHUB_ENV
+      
+      - name: 缓存
+        uses: actions/cache@v4
+        if: ${{ env.USE_CACHE }}
+        with:
+          path: ${{ env.OPENWRT_ROOT_PATH }}/.ccache
+          key: build-package-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
 
       - name: 环境变量
         run: env
@@ -934,6 +961,13 @@ jobs:
       - name: 环境变量
         run: env
 
+      - name: 缓存
+        uses: actions/cache@v4
+        if: ${{ env.USE_CACHE }}
+        with:
+          path: ${{ env.OPENWRT_ROOT_PATH }}/.ccache
+          key: build-Image_Builder-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
+
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
@@ -965,6 +999,11 @@ jobs:
           if [ "$(sed -n "/$kmod_compile_exclude_list/p" .config| grep -c "=y$")" -ne '0' ];then
             echo "::warning ::检测到有kmod被配置为编译进固件(=y)同时在kmod排除列表中,到build-Image_Builder的加载自定义配置并生成配置文件步骤查看详情"
             sed -n "/$kmod_compile_exclude_list/p" .config| grep "=y$"
+          fi
+          if [  ${{ env.USE_CACHE }} = "true" ];then
+            echo "::notice ::使用缓存"
+            echo "CONFIG_DEVEL=y >> $OPENWRT_ROOT_PATH/.config
+            echo "CONFIG_CCACHE=y" >> $OPENWRT_ROOT_PATH/.config
           fi
           echo "以下是配置差异文件的内容"
           ./scripts/diffconfig.sh
