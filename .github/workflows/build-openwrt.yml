@@ -407,13 +407,6 @@ jobs:
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/build1-diffconfig.log
 
-      - name: 缓存
-        uses: actions/cache@v4
-        if: ${{ env.USE_CACHE }}
-        with:
-          path: ${{ env.OPENWRT_ROOT_PATH }}/.ccache
-          key: build1-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
-
       - name: 添加内核补丁与所需内核配置
         working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
         run: |
@@ -726,6 +719,22 @@ jobs:
           rm -rf feeds/packages/lang/golang
           git clone https://github.com/sbwml/packages_lang_golang -b $golang_version feeds/packages/lang/golang
 
+      - name: 获取toolchain commit id
+        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        run: |
+          toolchain_commit=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
+          echo "TOOLCHAIN_COMMIT=$toolchain_commit" >> $GITHUB_ENV
+
+      - name: 缓存toolchain
+        uses: actions/cache@v4
+        id: cache-toolchain
+        if: ${{ env.USE_CACHE }}
+        with:
+          path: |
+            ${{ env.OPENWRT_ROOT_PATH }}/staging_dir/host*
+            ${{ env.OPENWRT_ROOT_PATH }}/staging_dir/tool*
+          key: toolchain-${{ env.TOOLCHAIN_COMMIT }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
+
       - name: 检查剩余空间
         run: |
           echo "======================="
@@ -736,6 +745,7 @@ jobs:
 
       - name: 下载 dl 库
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        if: ${{ steps.cache-toolchain.outputs.cache-hit != 'true' }}
         run: |
           make download -j16
           find dl -size -1024c -exec ls -l {} \;
@@ -744,6 +754,7 @@ jobs:
 
       - name: 构建工具
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        if: ${{ steps.cache-toolchain.outputs.cache-hit != 'true' }}
         run: |
           make tools/install -j $(($(nproc)+1)) || make tools/install -j1 V=s
           echo "======================="
@@ -754,6 +765,7 @@ jobs:
 
       - name: 构建工具链
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        if: ${{ steps.cache-toolchain.outputs.cache-hit != 'true' }}
         run: |
           make toolchain/install -j $(($(nproc)+1)) || make toolchain/install -j1 V=s
           echo "======================="
@@ -764,6 +776,7 @@ jobs:
 
       - name: 删除 dl 库
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
+        if: ${{ steps.cache-toolchain.outputs.cache-hit != 'true' }}
         run: rm -rf dl
 
       - name: 准备上传
@@ -848,13 +861,16 @@ jobs:
           sudo rm -rf /build1_WORKSPACE.tgz
           cat build1_ENV
           cat build1_ENV >> $GITHUB_ENV
+          rm -rf ${{ env.OPENWRT_ROOT_PATH }}/.ccache
       
       - name: 缓存
         uses: actions/cache@v4
         if: ${{ env.USE_CACHE }}
         with:
           path: ${{ env.OPENWRT_ROOT_PATH }}/.ccache
-          key: build-package-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
+          key: build-package-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}-${{ github.run_id }}
+          restore-keys: |
+            build-package-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
 
       - name: 环境变量
         run: env
@@ -972,7 +988,9 @@ jobs:
         if: ${{ env.USE_CACHE }}
         with:
           path: ${{ env.OPENWRT_ROOT_PATH }}/.ccache
-          key: build-Image_Builder-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
+          key: build-Image_Builder-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}-${{ github.run_id }}
+          restore-keys: |
+            build-Image_Builder-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
 
       - name: 加载自定义配置并生成配置文件
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
@@ -1107,6 +1125,16 @@ jobs:
         with:
           name: OpenWrt-Image_Builder-${{ matrix.config }}
           path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{ matrix.target }}/${{ matrix.subtarget }}/openwrt-imagebuilder-${{ matrix.target }}-${{ matrix.subtarget }}.Linux-x86_64.tar.xz
+
+      - name: 清理缓存
+        if: ${{ env.USE_CACHE }}
+        run: |
+          echo "清理前"
+          ccache -v 2>/dev/null
+          ccache --max-size 1G 2>/dev/null
+          ccache -c 2>/dev/null
+          echo "清理后"
+          ccache -v 2>/dev/null
 
       - name: 收集日志
         if: success() || failure()
@@ -1251,6 +1279,16 @@ jobs:
         with:
           name: OpenWrt-buildinfo-${{ matrix.config }}
           path: ${{ env.IMAGE_BUILDER_ROOT_PATH }}/artifact/buildinfo/
+
+      - name: 清理缓存
+        if: ${{ env.USE_CACHE }}
+        run: |
+          echo "清理前"
+          ccache -v 2>/dev/null
+          ccache --max-size 1G 2>/dev/null
+          ccache -c 2>/dev/null
+          echo "清理后"
+          ccache -v 2>/dev/null
 
       - name: 收集日志
         if: success() || failure()
