@@ -394,7 +394,6 @@ jobs:
         working-directory: ${{ env.OPENWRT_ROOT_PATH }}
         run: |
           cat $GITHUB_WORKSPACE/config/${{ matrix.config }}/{target,luci,utilities,network,other,kmod,image}.config >> $OPENWRT_ROOT_PATH/.config
-          make defconfig
           use_cache=$(sed -n '/use_cache/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')
           if [ "$use_cache" = "true" ] || [ "$use_cache" = "True" ] || [ "$use_cache" = "TRUE" ];then
             use_cache=true
@@ -404,6 +403,7 @@ jobs:
             echo "USE_CACHE=$use_cache" >> $GITHUB_ENV
             cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
           fi
+          make defconfig
           ./scripts/diffconfig.sh
           ./scripts/diffconfig.sh >> $LOG_PATH/build1-diffconfig.log
 
@@ -1027,6 +1027,7 @@ jobs:
             echo "::notice ::使用缓存"
             echo "CONFIG_DEVEL=y" >> $OPENWRT_ROOT_PATH/.config
             echo "CONFIG_CCACHE=y" >> $OPENWRT_ROOT_PATH/.config
+            make defconfig
           fi
           echo "以下是配置差异文件的内容"
           ./scripts/diffconfig.sh
