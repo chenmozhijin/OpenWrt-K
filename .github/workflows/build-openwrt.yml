@@ -861,7 +861,6 @@ jobs:
           sudo rm -rf /build1_WORKSPACE.tgz
           cat build1_ENV
           cat build1_ENV >> $GITHUB_ENV
-          rm -rf ${{ env.OPENWRT_ROOT_PATH }}/.ccache
       
       - name: 缓存
         uses: actions/cache@v4
