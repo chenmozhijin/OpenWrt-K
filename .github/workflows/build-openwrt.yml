@@ -923,6 +923,30 @@ jobs:
           name: OpenWrt-package-${{ matrix.config }}
           path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/package/
 
+      - name: 清理ccache
+        if: ${{ env.USE_CACHE }}
+        run: |
+          echo "清理前"
+          ccache -s 2>/dev/null
+          ccache --max-size 1G 2>/dev/null
+          ccache -c 2>/dev/null
+          echo "清理后"
+          ccache -s 2>/dev/null
+
+      - name: 删除旧缓存
+        run: |
+          set +e
+          gh extension install actions/gh-actions-cache
+
+          oldcacheKeys=$(gh actions-cache list -R $REPO --key build-package-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}- | cut -f 1 )
+          for cacheKey in $oldcacheKeys
+          do
+              gh actions-cache delete $cacheKey -R $REPO --confirm
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+
       - name: 收集日志
         if: success() || failure()
         run: |
@@ -1126,15 +1150,29 @@ jobs:
           name: OpenWrt-Image_Builder-${{ matrix.config }}
           path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{ matrix.target }}/${{ matrix.subtarget }}/openwrt-imagebuilder-${{ matrix.target }}-${{ matrix.subtarget }}.Linux-x86_64.tar.xz
 
-      - name: 清理缓存
+      - name: 清理ccache
         if: ${{ env.USE_CACHE }}
         run: |
           echo "清理前"
-          ccache -v 2>/dev/null
+          ccache -s 2>/dev/null
           ccache --max-size 1G 2>/dev/null
           ccache -c 2>/dev/null
           echo "清理后"
-          ccache -v 2>/dev/null
+          ccache -s 2>/dev/null
+
+      - name: 删除旧缓存
+        run: |
+          set +e
+          gh extension install actions/gh-actions-cache
+
+          oldcacheKeys=$(gh actions-cache list -R $REPO --key build-Image_Builder-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}- | cut -f 1 )
+          for cacheKey in $oldcacheKeys
+          do
+              gh actions-cache delete $cacheKey -R $REPO --confirm
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
 
       - name: 收集日志
         if: success() || failure()
