@@ -147,6 +147,9 @@ payload:
   - DOMAIN-SUFFIX,box.com
 ##box end
 
+# > civitai
+  - DOMAIN-SUFFIX,civitai.com
+
 # > google
   - DOMAIN-KEYWORD,google
   - DOMAIN-KEYWORD,gmail
@@ -165,7 +168,7 @@ payload:
   # youtube
   - DOMAIN-KEYWORD,youtube
   - DOMAIN-SUFFIX,youtube.com
-  - DOMAIN,yt3.ggpht.com
+  - DOMAIN-SUFFIX,yt3.ggpht.com
   - DOMAIN-SUFFIX,ytimg.com
   - DOMAIN-SUFFIX,youtubeeducation.com
   - DOMAIN-SUFFIX,youtubegaming.com
@@ -227,6 +230,7 @@ payload:
 ##openwrt-编译cdn end
 
 # > chatgpt
+  - DOMAIN,chatgpt.com
   - DOMAIN,chat.openai.com
   - DOMAIN-SUFFIX,openai.com
   - DOMAIN-SUFFIX,auth0.com
