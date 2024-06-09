@@ -69,7 +69,7 @@ function install_dependencies() {
     case $PM in
         apt)
             # 检查并安装缺少的依赖包（基于apt包管理器）
-            for package_name in build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev python3-distutils rsync unzip zlib1g-dev file wget make; do
+            for package_name in build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev rsync unzip zlib1g-dev file wget make; do
             if [ "$(apt list --installed 2>/dev/null| grep -c "^${package_name}")" -eq '0' ];then
                 if test ${n} = 0; then
                     echo $package_name > $TMPDIR/install.list
