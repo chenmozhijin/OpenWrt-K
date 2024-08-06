@@ -4,11 +4,6 @@
 ##-------------------------------------
 payload:
 
-# > heaven burns red
-  - DOMAIN,heaven-burns-red-assets.akamaized.net
-  - IP-CIDR,91.108.56.0/24
-  - DOMAIN,gl-payment.gree-apps.net
-
 # > huggingface
   - DOMAIN-SUFFIX,huggingface.co
 
