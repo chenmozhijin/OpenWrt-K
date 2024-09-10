@@ -12,11 +12,11 @@ import pygit2
 from actions_toolkit import core
 from actions_toolkit.github import Context
 
-from .utils import parse_config, setup_compilation_environment
-from .utils.logger import logger
-from .utils.network import dl2, get_gh_repo_last_releases, request_get, wait_dl_tasks
-from .utils.openwrt import OpenWrt
-from .utils.paths import paths
+from utils.logger import logger
+from utils.network import dl2, get_gh_repo_last_releases, request_get, wait_dl_tasks
+from utils.openwrt import OpenWrt
+from utils.paths import paths
+from utils.utils import parse_config, setup_compilation_environment
 
 if TYPE_CHECKING:
     from pySmartDL import SmartDL

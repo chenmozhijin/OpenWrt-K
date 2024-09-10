@@ -4,8 +4,6 @@ import os
 
 from actions_toolkit import core
 
-from . import parse_config
-
 
 class Paths:
 
@@ -22,6 +20,7 @@ class Paths:
         """获取配置的名称与路径"""
         configs = {}
         try:
+            from .utils import parse_config
             config_names = parse_config(self.global_config, "config")
             if not config_names:
                 core.set_failed("没有获取到任何配置")

@@ -8,7 +8,7 @@ from typing import Literal
 import pygit2
 from actions_toolkit import core
 
-from . import apply_patch
+from .utils import apply_patch
 from .logger import logger
 from .network import request_get
 
