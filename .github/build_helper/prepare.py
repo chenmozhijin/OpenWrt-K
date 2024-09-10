@@ -81,6 +81,7 @@ try:
         core.set_failed("未找到任何可用的配置")
     logger.debug("解析配置成功: %s", configs)
 except Exception as e:
+    logger.exception("解析配置时出错")
     core.set_failed(f"解析配置时出错: {e.__class__.__name__}: {e!s}")
 
 
@@ -381,4 +382,5 @@ try:
     prepare()
     core.set_output("matrix", get_matrix(configs))
 except Exception as e:
+    logger.exception("准备文件时出错")
     core.set_failed(f"准备文件时出错: {e.__class__.__name__}: {e!s}")

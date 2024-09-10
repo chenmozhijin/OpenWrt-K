@@ -34,7 +34,7 @@ def parse_config(path: str, prefixs: tuple[str,...]|list[str]) -> dict[str, str 
     return config
 
 
-def setup_compilation_environment(clear: bool = False, build: bool = False) -> None:
+def setup_compilation_environment(build: bool = False) -> None:
     def sudo(*args: str) -> None:
         subprocess.run(["sudo", "-E", *list(args)])
     def apt(*args: str) -> None:
@@ -46,18 +46,19 @@ def setup_compilation_environment(clear: bool = False, build: bool = False) -> N
     logger.info("更新包列表")
     apt("update")
     # 2.删除不需要的包
-    if clear:
+    if build:
         logger.info("删除不需要的包")
         try:
             apt("purge", "azure-cli*", "docker*", "ghc*", "zulu*", "llvm*", "firefox", "google*", "dotnet*",
                 "powershell*", "openjdk*", "mysql*", "php*", "mongodb*", "dotnet*", "snap*", "moby*")
         except subprocess.CalledProcessError:
             logger.exception("删除不需要的包时发生错误")
-    # 3. 完整更新所有包
-    logger.info("完整更新所有包")
-    apt("dist-upgrade")
-    # 4.安装编译环境
+
     if build:
+        # 3. 完整更新所有包
+        logger.info("完整更新所有包")
+        apt("dist-upgrade")
+        # 4.安装编译环境
         apt("install", "ack", "antlr3", "aria2", "asciidoc", "autoconf", "automake", "autopoint", "b43-fwcutter", "binutils",
             "bison", "build-essential", "bzip2", "ccache", "cmake", "cpio", "curl", "device-tree-compiler", "fastjar",
             "flex", "gawk", "gettext", "gcc-multilib", "g++-multilib", "git", "gperf", "haveged", "help2man", "intltool",
@@ -83,7 +84,7 @@ def setup_compilation_environment(clear: bool = False, build: bool = False) -> N
     # 8.调整时区
     logger.info("调整时区")
     sudo("timedatectl", "set-timezone", "Asia/Shanghai")
-    if clear:
+    if build:
         # 清理空间
         logger.info("清理空间")
         try:
