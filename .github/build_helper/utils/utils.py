@@ -2,14 +2,13 @@
 # SPDX-License-Identifier: MIT
 import os
 import subprocess
-from collections.abc import Sequence
 
 from actions_toolkit import core
 
 from .logger import logger
 
 
-def parse_config(path: str, prefixs: Sequence[str]) -> dict[str, str | list[str] | bool]:
+def parse_config(path: str, prefixs: tuple[str,...]|list[str]) -> dict[str, str | list[str] | bool]:
     if not os.path.isfile(path):
         core.set_failed(f"配置文件 {path} 不存在")
 
@@ -17,7 +16,7 @@ def parse_config(path: str, prefixs: Sequence[str]) -> dict[str, str | list[str]
     with open(path, encoding="utf-8") as f:
         for prefix in prefixs:
             for line in f:
-                if line.startswith(prefix):
+                if line.startswith(prefix+"="):
                     content = line.split("=")[1].strip()
                     match content.lower().strip():
                         case "true":
@@ -35,7 +34,7 @@ def parse_config(path: str, prefixs: Sequence[str]) -> dict[str, str | list[str]
     return config
 
 
-def setup_compilation_environment(clear: bool = False) -> None:
+def setup_compilation_environment(clear: bool = False, build: bool = False) -> None:
     def sudo(*args: str) -> None:
         subprocess.run(["sudo", "-E", *list(args)])
     def apt(*args: str) -> None:
@@ -47,35 +46,41 @@ def setup_compilation_environment(clear: bool = False) -> None:
     logger.info("更新包列表")
     apt("update")
     # 2.删除不需要的包
-    logger.info("删除不需要的包")
-    try:
-        apt("purge", "azure-cli*", "docker*", "ghc*", "zulu*", "llvm*", "firefox", "google*", "dotnet*",
-            "powershell*", "openjdk*", "mysql*", "php*", "mongodb*", "dotnet*", "snap*", "moby*")
-    except subprocess.CalledProcessError:
-        logger.exception("删除不需要的包时发生错误")
+    if clear:
+        logger.info("删除不需要的包")
+        try:
+            apt("purge", "azure-cli*", "docker*", "ghc*", "zulu*", "llvm*", "firefox", "google*", "dotnet*",
+                "powershell*", "openjdk*", "mysql*", "php*", "mongodb*", "dotnet*", "snap*", "moby*")
+        except subprocess.CalledProcessError:
+            logger.exception("删除不需要的包时发生错误")
     # 3. 完整更新所有包
     logger.info("完整更新所有包")
     apt("dist-upgrade")
-    apt("install", "ack", "antlr3", "aria2", "asciidoc", "autoconf", "automake", "autopoint", "b43-fwcutter", "binutils",
-        "bison", "build-essential", "bzip2", "ccache", "cmake", "cpio", "curl", "device-tree-compiler", "fastjar",
-        "flex", "gawk", "gettext", "gcc-multilib", "g++-multilib", "git", "gperf", "haveged", "help2man", "intltool",
-        "libc6-dev-i386", "libelf-dev", "libglib2.0-dev", "libgmp3-dev", "libltdl-dev", "libmpc-dev", "libmpfr-dev",
-        "libncurses5-dev", "libncursesw5-dev", "libreadline-dev", "libssl-dev", "libtool", "lrzsz", "mkisofs", "msmtp",
-        "nano", "ninja-build", "p7zip", "p7zip-full", "patch", "pkgconf", "python2.7", "python3-distutils",
-        "qemu-utils", "clang", "g++", "rsync", "unzip", "zlib1g-dev", "wget")
-    # 4.重载系统
+    # 4.安装编译环境
+    if build:
+        apt("install", "ack", "antlr3", "aria2", "asciidoc", "autoconf", "automake", "autopoint", "b43-fwcutter", "binutils",
+            "bison", "build-essential", "bzip2", "ccache", "cmake", "cpio", "curl", "device-tree-compiler", "fastjar",
+            "flex", "gawk", "gettext", "gcc-multilib", "g++-multilib", "git", "gperf", "haveged", "help2man", "intltool",
+            "libc6-dev-i386", "libelf-dev", "libglib2.0-dev", "libgmp3-dev", "libltdl-dev", "libmpc-dev", "libmpfr-dev",
+            "libncurses5-dev", "libncursesw5-dev", "libreadline-dev", "libssl-dev", "libtool", "lrzsz", "mkisofs", "msmtp",
+            "nano", "ninja-build", "p7zip", "p7zip-full", "patch", "pkgconf", "python2.7", "python3-distutils",
+            "qemu-utils", "clang", "g++", "rsync", "unzip", "zlib1g-dev", "wget")
+    else:
+        apt("install", "build-essential", "clang", "flex", "bison", "g++", "gawk", "gcc-multilib", "g++-multilib", "gettext",
+            "libncurses5-dev", "libssl-dev", "rsync", "swig", "unzip", "zlib1g-dev", "file", "wget")
+    # 5.重载系统
     logger.info("重载系统")
     sudo("systemctl", "daemon-reload")
-    # 5.自动删除不需要的包
+    # 6.自动删除不需要的包
     logger.info("自动删除不需要的包")
     try:
         apt("autoremove", "--purge")
     except subprocess.CalledProcessError:
         logger.exception("自动删除不需要的包")
-    # 6.清理缓存
+    # 7.清理缓存
     logger.info("清理缓存")
     apt("clean")
-    # 7.调整时区
+    # 8.调整时区
     logger.info("调整时区")
     sudo("timedatectl", "set-timezone", "Asia/Shanghai")
     if clear:

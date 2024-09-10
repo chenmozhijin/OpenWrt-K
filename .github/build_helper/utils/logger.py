@@ -24,6 +24,8 @@ if core.is_debug():
 else:
     handler.setLevel(logging.INFO)
 logger.addHandler(handler)
+logger.info("日志等级: %s", "DEBUG" if core.is_debug() else "INFO")
+sys.stdout.write("日志等级: %s\n" % ("DEBUG" if core.is_debug() else "INFO"))
 # 文件
 handler = logging.FileHandler(filename=paths.log, encoding="utf-8")
 handler.setFormatter(formatter)

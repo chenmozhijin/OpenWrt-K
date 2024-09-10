@@ -21,7 +21,7 @@ class Paths:
         configs = {}
         try:
             from .utils import parse_config
-            config_names = parse_config(self.global_config, "config")
+            config_names = parse_config(self.global_config, ["config"])
             if not config_names:
                 core.set_failed("没有获取到任何配置")
             for config in config_names:

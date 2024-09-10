@@ -1,5 +1,4 @@
 actions-toolkit
 pygit2
-patch-ng
 requests
 pySmartDL
