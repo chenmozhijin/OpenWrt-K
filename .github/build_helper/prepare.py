@@ -45,6 +45,8 @@ def parse_configs() -> dict[str, dict[str, Any]]:
                 for line in f:
                     matched = re.match(r"^EXT_PACKAGES_(?P<key>NAME|PATH|REPOSITORIE|BRANCH)\[(?P<id>\d+)\]=\"(?P<value>.*?)\"$", line)
                     if matched:
+                        if matched.group("id") not in extpackages:
+                            extpackages[matched.group("id")] = {}
                         extpackages[matched.group("id")][matched.group("key")] = matched.group("value")
             for i, pkg in extpackages.items():
                 pkg: dict
