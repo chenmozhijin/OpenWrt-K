@@ -33,12 +33,10 @@ def parse_configs() -> dict[str, dict[str, Any]]:
         if not os.path.isdir(k_config_path):
             core.set_failed(f"未找到配置{name}的openwrt文件夹: {k_config_path}")
 
-        configs[name]["compile"].update(
-            parse_config(os.path.join(k_config_path, "compile.config"), ("openwrt_tag/branch", "kmod_compile_exclude_list", "use_cache")),
-        )
-        configs[name]["openwrtext"].update(
-            parse_config(os.path.join(k_config_path, "openwrtext.config"), ("ipaddr", "timezone", "zonename", "golang_version")),
-        )
+        configs[name]["compile"] = parse_config(os.path.join(k_config_path, "compile.config"),
+                                                ("openwrt_tag/branch", "kmod_compile_exclude_list", "use_cache"))
+
+        configs[name]["openwrtext"] = parse_config(os.path.join(k_config_path, "openwrtext.config"), ("ipaddr", "timezone", "zonename", "golang_version"))
         extpackages_config = os.path.join(k_config_path, "extpackages.config")
         configs[name]["extpackages"] = {}
         if os.path.isfile(extpackages_config):
