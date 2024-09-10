@@ -26,7 +26,7 @@ setup_compilation_environment()
 def parse_configs() -> dict[str, dict[str, Any]]:
     """解析配置文件"""
     configs: dict[str, dict] = {}
-    for name, path in paths.configs:
+    for name, path in paths.configs.items():
         logger.info("解析配置: %s", name)
         configs[name] = {"path": path}
         k_config_path = os.path.join(path, "OpenWrt-K")

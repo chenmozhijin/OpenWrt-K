@@ -22,7 +22,7 @@ class Paths:
         try:
             from .utils import parse_config
             config_names = parse_config(self.global_config, ["config"])['config']
-            if not config_names:
+            if not isinstance(config_names, list) or len(config_names) == 0:
                 core.set_failed("没有获取到任何配置")
             for config in config_names:
                 path = os.path.join(self.root, "config", config)
