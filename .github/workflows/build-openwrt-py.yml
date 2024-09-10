@@ -21,6 +21,7 @@ jobs:
       matrix: ${{ steps.run.outputs.matrix }}
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v4
       - name: 建立环境
         uses: ./.github/action/prepare
       # 运行准备脚本
@@ -29,25 +30,20 @@ jobs:
         run: |
           python3 $GITHUB_WORKSPACE/.github/build_helper/prepare.py
 
-      - name: 上传 extpackages-source
+      - name: 上传 all
         uses: actions/upload-artifact@v4
         with:
-          name: extpackages-source
-          path: cmzj_package.tgz
+          name: all
+          path: ./
           retention-days: 1
-          compression-level: 9
-
-      - name: 上传 patches
-        uses: actions/upload-artifact@v4
-        with:
-          name: patches
-          path: uploads/patches
-          retention-days: 1
-          compression-level: 9
 
 
   base-builds:
     runs-on: ubuntu-22.04
+    needs: prepare
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
+      - uses: actions/checkout@v4
       - name: 建立环境
         uses: ./.github/action/prepare
