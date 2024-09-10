@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 沉默の金 <cmzj@cmzj.org>
+# SPDX-License-Identifier: MIT
+
+name: Build OpenWrt-K
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  push:
+    paths:
+      - '.github/**'
+      - 'files/**'
+      - '!README.md'
+  workflow_dispatch:
+permissions:
+  actions: write
+  contents: write
+  discussions: write
+jobs:
+  prepare:
+    outputs:
+      matrix: ${{ steps.run.outputs.matrix }}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 建立环境
+        uses: ./.github/action/prepare
+      # 运行准备脚本
+      - name: Run Build Helper
+        id: run
+        run: |
+          python3 $GITHUB_WORKSPACE/.github/build_helper/prepare.py
+
+      - name: 上传 extpackages-source
+        uses: actions/upload-artifact@v4
+        with:
+          name: extpackages-source
+          path: cmzj_package.tgz
+          retention-days: 1
+          compression-level: 9
+
+      - name: 上传 patches
+        uses: actions/upload-artifact@v4
+        with:
+          name: patches
+          path: uploads/patches
+          retention-days: 1
+          compression-level: 9
+
+
+  base-builds:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 建立环境
+        uses: ./.github/action/prepare

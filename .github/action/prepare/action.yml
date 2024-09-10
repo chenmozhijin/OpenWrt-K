@@ -1,0 +1,16 @@
+name: '准备运行环境'
+description: '准备运行环境'
+runs: 
+  using: "composite"
+  steps:
+    # 建立环境
+    - uses: actions/checkout@v4
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+    - name: Install Dependencies
+      run: |
+        python -m pip install -U pip
+        python -m pip install -r $GITHUB_WORKSPACE/.github/build_helper/requirements.tx
