@@ -18,7 +18,7 @@ def parse_config(path: str, prefixs: tuple[str,...]|list[str]) -> dict[str, str 
             for line in f:
                 if line.startswith(prefix+"="):
                     content = line.split("=")[1].strip()
-                    match content.lower().strip():
+                    match content.lower():
                         case "true":
                             config[prefix] = True
                         case "false":
@@ -30,7 +30,7 @@ def parse_config(path: str, prefixs: tuple[str,...]|list[str]) -> dict[str, str 
                                 config[prefix] = content
                     break
             else:
-                core.set_failed(f"无法在配置文件 {config} 中找到配置项{prefix}")
+                core.set_failed(f"无法在配置文件 {path} 中找到配置项{prefix}")
     return config
 
 

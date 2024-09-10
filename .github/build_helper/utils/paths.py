@@ -10,7 +10,7 @@ class Paths:
     def __init__(self) -> None:
         root = os.getenv("GITHUB_WORKSPACE")
         if root is None:
-            core.set_failed("没有获取到工作区路径")
+            self.root = os.getcwd()
         else:
             self.root = root
         self.global_config = os.path.join(self.root, "config", "OpenWrt.config")
@@ -21,7 +21,7 @@ class Paths:
         configs = {}
         try:
             from .utils import parse_config
-            config_names = parse_config(self.global_config, ["config"])
+            config_names = parse_config(self.global_config, ["config"])['config']
             if not config_names:
                 core.set_failed("没有获取到任何配置")
             for config in config_names:
