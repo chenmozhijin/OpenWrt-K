@@ -7,6 +7,13 @@ from pySmartDL import SmartDL
 
 from .logger import logger
 
+HEADER = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
+    "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7,en-GB;q=0.6",
+    "accept-encoding": "gzip, deflate, br, zstd",
+    "cache-control": "no-cache",
+}
+
 
 def request_get(url: str, retry: int = 6) -> str | None:
     for i in range(retry):
@@ -22,12 +29,13 @@ def request_get(url: str, retry: int = 6) -> str | None:
 
 def dl2(url: str, path: str, retry: int = 6) -> SmartDL:
     logger.debug("下载 %s 到 %s", url, path)
-    task = SmartDL(urls=url, dest=path, progress_bar=False)
+    task = SmartDL(urls=url, dest=path, progress_bar=False, request_args={"headers": HEADER})
     task.attemps_limit = retry
     try:
         task.start()
     except Exception as e:
         logger.exception(f"下载: {url} 失败")
+        raise e
     return task
 
 def wait_dl_tasks(dl_tasks: list[SmartDL]) -> None:
