@@ -20,7 +20,19 @@ class OpenWrt:
         self.set_tag_or_branch(tag_branch)
 
     def set_tag_or_branch(self, tag_branch: str) -> None:
-        self.repo.checkout(tag_branch)
+        if tag_branch in self.repo.branches:
+            # 分支
+            self.repo.checkout(tag_branch)
+        else:
+            # 标签
+            tag_ref = self.repo.lookup_reference(f"refs/tags/{tag_branch}")
+            treeish = self.repo.get(tag_ref.target)
+            if treeish:
+                self.repo.checkout_tree(treeish)
+                self.repo.head.set_target(tag_ref.target)
+            else:
+                raise ValueError(f"标签{tag_branch}不存在")
+
         self.tag_branch = tag_branch
 
     def feed_update(self) -> None:
