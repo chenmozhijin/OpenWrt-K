@@ -156,7 +156,8 @@ def prepare() -> None:
             logger.debug("复制拓展软件包 %s 到 %s", pkg_name, path)
             shutil.copytree(os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"]), path, symlinks=True)
 
-    # 准备自定义文件1
+    # 下载AdGuardHome规则与配置
+    logger.info("下载AdGuardHome规则与配置...")
     global_files_path = os.path.join(paths.workdir, "files")
     adg_filters_path = os.path.join(global_files_path, "usr", "bin", "AdGuardHome", "data", "filters")
     os.makedirs(adg_filters_path, exist_ok=True)
