@@ -114,9 +114,10 @@ def prepare() -> None:
 
 
     logger.info("开始处理拓展软件源码...")
-    ext_repo_paths = {cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])] for config in configs.values() for pkg in config["extpackages"].values()}
-    for path in ext_repo_paths:
-        logger.info("处理仓库 %s", path)
+    ext_pkg_paths = {os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"])
+                     for config in configs.values() for pkg in config["extpackages"].values()}
+    for path in ext_pkg_paths:
+        logger.info("处理拓展包 %s", path)
         for root, dirs, files in os.walk(path):
 
             # 修复Makefile中luci.mk的路径
@@ -145,7 +146,7 @@ def prepare() -> None:
                         os.symlink("zh_Hans", zh_cn, target_is_directory=True)
                         logger.info("创建符号链接 %s -> %s", zh_cn, zh_hans)
                     elif not os.path.isdir(zh_hans) or not os.path.islink(zh_hans):
-                        logger.warning("%s 中不存在汉化文件，这可能是该luci插件原生为中文或不支持中文", po_path)
+                        logger.info("%s 中不存在汉化文件，这可能是该luci插件原生为中文或不支持中文", po_path)
 
     # 复制拓展软件包
     for name, config in configs.items():
@@ -153,7 +154,7 @@ def prepare() -> None:
         for pkg_name, pkg in config["extpackages"].items():
             path = os.path.join(openwrt_paths, name, "cmzj_packages", pkg_name)
             logger.debug("复制拓展软件包 %s 到 %s", pkg_name, path)
-            shutil.copytree(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], path, symlinks=True)
+            shutil.copytree(os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"]), path, symlinks=True)
 
     # 准备自定义文件1
     global_files_path = os.path.join(paths.workdir, "files")
@@ -181,7 +182,6 @@ def prepare() -> None:
                "1677875740.txt": "https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt"}
     dl_tasks: list[SmartDL] = []
     for name, url in filters.items():
-        logger.debug("下载 %s 到 %s", url, os.path.join(adg_filters_path, name))
         dl_tasks.append(dl2(url, os.path.join(adg_filters_path, name)))
 
     dl_tasks.append(dl2("https://raw.githubusercontent.com/chenmozhijin/AdGuardHome-Rules/main/AdGuardHome-dnslist(by%20cmzj).yaml",
