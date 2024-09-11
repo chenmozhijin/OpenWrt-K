@@ -209,7 +209,7 @@ def prepare() -> None:
         # 替换golang版本
         golang_path = os.path.join(openwrt.path, "feeds", "packages", "lang", "golang")
         shutil.rmtree(golang_path)
-        shutil.copytree(cloned_repos[("https://github.com/sbwml/packages", config["openwrtext"]["golang_version"])], golang_path)
+        shutil.copytree(cloned_repos[("https://github.com/sbwml/packages_lang_golang", config["openwrtext"]["golang_version"])], golang_path)
         openwrt.feed_install()
         # 修复问题
         openwrt.fix_problems()
