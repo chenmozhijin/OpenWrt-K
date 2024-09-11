@@ -1,20 +1,14 @@
-# My Adguard Home whitelist
-#Adguard DNS
 @@||dns.adguard.com^$important
 @@||dns-family.adguard.com^$important
-# Instagram
 @@||cdninstagram.com^$important
 @@||instagram.com^$important
 @@||instagram.c10r.facebook.com^$important
-# F1 TV
 @@||f1-prod-production.apigee.net^$important
 @@||f1-prod-production.dn.apigee.net^$important
 @@||formula1.com^$important
-# Joyn TV Stream
 @@||yospace.com^$important
 @@||heartbeats.prd.data.s.joyn.de^$important
 @@||ad-client.mediafe-prd.s.joyn.de^$important
-# Google
 @@||0.client-channel.google.com^$important
 @@||2.android.pool.ntp.org^$important
 @@||android.clients.google.com^$important
@@ -32,7 +26,6 @@
 @@||video-stats.l.google.com^$important
 @@||geo3.ggpht.com^$important
 @@||yt3.ggpht.com^$important
-# Youtube
 @@||s.youtube.com^$important
 @@||s2.youtube.com^$important
 @@||youtu.be^$important
@@ -40,7 +33,6 @@
 @@||i.ytimg.com^$important
 @@||i1.ytimg.com^$important
 @@||s.ytimg.com^$important
-# Plex
 @@||app.plex.tv^$important
 @@||cpms.spop10.ams.plex.bz^$important
 @@||cpms35.spop10.ams.plex.bz^$important
@@ -62,125 +54,81 @@
 @@||status.plex.tv^$important
 @@||tvdb2.plex.tv^$important
 @@||tvthemes.plexapp.com^$important
-# Github
 @@||github.com^$important
 @@||github.io^$important
 @@||raw.githubusercontent.com^$important
-# Cloudflare
 @@||cdn.cloudflare.net^$important
 @@||cdnjs.cloudflare.com^$important
-# Dropbox
 @@||dl.dropbox.com^$important
 @@||dl.dropboxusercontent.com^$important
 @@||ns1.dropbox.com^$important
 @@||ns2.dropbox.com^$important
-# No-IP.com
 @@||no-ip.com^$important
-# Twitter
 @@||twimg.com^$important
 @@||twitter.com^$important
 @@||t.co^$important
-# Optimizely
 @@||cdn.optimizely.com^$important
 @@||cdn2.optimizely.com^$important
 @@||cdn3.optimizely.com^$important
-# Akamai Technologies
 @@||akamaihd.net^$important
 @@||akamaitechnologies.com^$important
 @@||akamaized.net^$important
 @@||widget-cdn.rpxnow.com^$important
 @@||akamai.net^$important
 @@||akadns.net^$important
-# Sonarr TV Soft
 @@||apt.sonarr.tv^$important
 @@||download.sonarr.tv^$important
 @@||forums.sonarr.tv^$important
 @@||services.sonarr.tv^$important
 @@||skyhook.sonarr.tv^$important
-# Ipify.org
 @@||api.ipify.org^$important
-# Rlje.net VOD
 @@||api.rlje.net^$important
-# Buffer CDN 
 @@||bufferapp.com^$important
-# Embedly.com
 @@||cdn.embedly.com^$important
-# Dataplicity.com
 @@||dataplicity.com^$important
-# Drift.com
 @@||drift.com^$important
 @@||driftt.com^$important
-# Giphy.com
 @@||giphy.com^$important
-# Gravatar Image
 @@||gravatar.com^$important
-# Ted.com
 @@||hls.ted.com^$important
 @@||app-api.ted.com^$important
 @@||tedcdn.com^$important
-# Vidible Video Platform
 @@||img.vidible.tv^$important
 @@||cdn.vidible.tv^$important
 @@||delivery.vidible.tv^$important
 @@||videos.vidible.tv^$important
-# ImgIX
 @@||imgix.net^$important
-# XKCD
 @@||imgs.xkcd.com^$important
-#Bitly URL Shortener
 @@||j.mp^$important
-# Jquery
 @@||jquery.com^$important
-# Jsdelivr.net Open Source CDN
 @@||jsdelivr.net^$important
-# Malwarebytes Anti-Malware
 @@||keystone.mwbsys.com^$important
-# Aliexpress.com
 @@||login.aliexpress.com^$important
-# Adswizz sponsor clips before several podcasts
 @@||npr-news.streaming.adswizz.com^$important
-# CBS Television Stream
 @@||cbsi.com^$important
 @@||cbsinteractive.hb.omtrdc.net^$important
 @@||s0.2mdn.net^$important
-# Audioscrobbler.com
 @@||ws.audioscrobbler.com^$important
-# Pinterest
 @@||pinterest.com^$important
-# Placehold it image soft
 @@||placehold.it^$important
 @@||placeholdit.imgix.net^$important
-# Brightcove Player
 @@||brightcove.net^$important
 @@||secure.brightcove.com^$important
 @@||edge.api.brightcove.com^$important
-# Cloudinary Upload Platform
 @@||res.cloudinary.com^$important
-# Shopify.com eCommerce Software
 @@||v.shopify.com^$important
 @@||s.shopify.com^$important
-# Wordpress
 @@||wp.com^$important
 @@||wordpress.com^$important
-# Avangate Shop
 @@||secure.avangate.com^$important
-# Surveymonkey
 @@||secure.surveymonkey.com^$important
-# JW Player
 @@||ssl.p.jwpcdn.com^$important
-# Tawk Live Chat
 @@||tawk.to^$important
-# Themoviedb.com
 @@||themoviedb.com^$important
-# Thetvdb.com
 @@||thetvdb.com^$important
-# Tinyurl Shortener
 @@||tinyurl.com^$important
-# Libsyn Podcast Hosting
 @@||traffic.libsyn.com^$important
-# Wikipedia
 @@||wikipedia.org^$important
-# Microsoft
 @@||xbox.ipv6.microsoft.com^$important
 @@||xboxexperiencesprod.experimentation.xboxlive.com^$important
 @@||xflight.xboxlive.com^$important
@@ -222,14 +170,11 @@
 @@||dl.delivery.mp.microsoft.com^$important
 @@||1drv.com^$important
 @@||aspnetcdn.com^$important
-# Netflix
 @@||api-global.netflix.com^$important
 @@||ichnaea.netflix.com^$important
 @@||appboot.netflix.com^$important
 @@||secure.netflix.com^$important
-# Samsung TV network issue
 @@||cdn.samsungcloudsolution.com^$important
-# Spotify
 @@||open.spotify.com^$important
 @@||mobile-ap.spotify.com^$important
 @@||apresolve.spotify.com^$important
@@ -239,9 +184,7 @@
 @@||ap.spotify.com^$important
 @@||audio-ake.spotify.com.edgesuite.net^$important
 @@||audio4-ak.spotify.com.edgesuite.net^$important
-# Sonos
 @@||msmetrics.ws.sonos.com^$important
-# Amazon Prime Video and Amazon CDN
 @@||eu.api.amazonvideo.com^$important
 @@||device-metrics-us.amazon.com^$important
 @@||fls-eu.amazon.com^$important
@@ -250,7 +193,6 @@
 @@||device-metrics-us-2.amazon.com^$important
 @@||images-amazon.com^$important
 @@||amazonaws.com^$important
-# Apple
 @@||gdmf.apple.com.akadns.net^$important
 @@||itunes.com^$important
 @@||mzstatic.com^$important
@@ -261,20 +203,15 @@
 @@||np-edge-cdn.itunes-apple.com.akadns.net^$important
 @@||iadsdk.apple.com.akadns.net^$important
 @@||play.itunes.apple.com.edgesuite.net^$important
-# Weather
 @@||worldweather.wmo.int^$important
 @@||yr.no^$important
-# Lets Encrypt
 @@||letsencrypt.org^$important
-# Spiegel.de
 @@||sni.cdn.www.spiegel.de.c.footprint.net^$important
 @@||spiegel.de^$important
-# Manager Magazin App
 @@||manager-magazin-de.manager-magazin.de^$important
 @@||cdn1.manager-magazin.de^$important
 @@||sni.cdn.manager-magazin.de.c.footprint.net^$important
 @@||a.manager-magazin.de^$important
-# Disney+ Streaming
 @@||cdn.registerdisney.go.com^$important
 @@||dssott.com^$important
 @@||disneyplus.com^$important
@@ -288,33 +225,30 @@
 @@||cws-iad1.conviva.com^$important
 @@||vod-l3c-eu-north-2.media.dssott.com.c.footprint.net^$important
 @@||disney.demdex.net^$important
-# Formula 1 Mobile iOS
 @@||codemasters.helpshift.com^$important
 @@||f1mrs.codemasters.com^$important
 @@||cdp.cloud.unity3d.com^$important
 @@||di-wuhqj6gc.leasewebultracdn.com^$important
 @@||config.uca.cloud.unity3d.com^$important
 @@||ecommerce.iap.unity3d.com^$important
-# DynDns Provider
 @@||dyndns.variomedia.de^$important
-# ARD German Television
 @@||image.ard.de^$important
 @@||image-ard-de-cddc.at-o.net^$important
 @@||daserste.de^$important
-# German Corona Apps Very Special lol
 @@||corona-datenspende.de^$important
 @@||datenspende.und-gesund.de^$important
-# Firefox Browser
 @@||detectportal.firefox.com^$important
-# German Corona Warn App
 @@||svc90.main.px.t-online.de^$important
-# Earthquake App
 @@||fe-lb.tranquilli.org^$important
-# Reddit
 @@||reddit.com^$important
-# WhatsApp
 @@||whatsapp.net^$important
 @@||whatsapp.com^$important
-# Tidal
 @@||sp-ad-fa.audio.tidal.com^$important
 @@||vb-ad-fa.video.tidal.com^$important
+@@||piano.io^$important
+@@||dpm.demdex.net^$important
+@@||identity.mparticle.com^$important
+@@||business.meteologix.com^$important
+@@||.capital^$important
+@@||de.scalable.capital^$important
+@@||secure.scalable.capital^$important

@@ -1,5 +1,5 @@
 ! Title: LWJ's white list
-! Last modified: 2022-11-18 12:53
+! Last modified: 2024-03-11 14:15
 !
 !短链接
 @@goo.gl
@@ -106,6 +106,8 @@
 @@||f*.market.xiaomi.com^$important
 @@||f*.market.mi-img.com^$important
 @@||market.mi-img.com^$important
+#手机应用列表上传，但是禁用后会导致应用云备份gg
+@@||a0.app.xiaomi.com
 !
 !阿里系
 @@s.click.taobao.com
@@ -131,6 +133,8 @@
 @@||alicdn.com^$important
 @@||dj.1688.com^$important
 @@||click.simba.taobao.com^$important
+!阿里云盘登录需要
+@@||acs.m.taobao.com^$important
 #代理游戏
 @@||na61-na62.wagbridge.advertisement.alibabacorp.com.gds.alibabadns.com^$important
 @@||na61-na62.wagbridge.advertisement.alibabacorp.com^$important
@@ -241,6 +245,8 @@
 @@||jr.jd.com^$important
 @@||mars.jd.com^$important
 @@||wqsd.jd.com
+!京东一号店
+@@||yhd.com^$important
 !海外
 @@||self.events.data.microsoft.com^$important
 @@||bing.com^$important
