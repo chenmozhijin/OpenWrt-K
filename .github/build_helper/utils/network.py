@@ -21,9 +21,13 @@ def request_get(url: str, retry: int = 6) -> str | None:
 
 
 def dl2(url: str, path: str, retry: int = 6) -> SmartDL:
-    task = SmartDL(urls=url, dest=path)
+    logger.debug("下载 %s 到 %s", url, path)
+    task = SmartDL(urls=url, dest=path, progress_bar=False)
     task.attemps_limit = retry
-    task.start()
+    try:
+        task.start()
+    except Exception as e:
+        logger.exception(f"下载: {url} 失败")
     return task
 
 def wait_dl_tasks(dl_tasks: list[SmartDL]) -> None:
