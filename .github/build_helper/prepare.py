@@ -164,20 +164,20 @@ def prepare() -> None:
                "1628750871.txt": "https://anti-ad.net/easylist.txt",
                "1677875715.txt": "https://easylist-downloads.adblockplus.org/easylist.txt",
                "1677875716.txt": "https://easylist-downloads.adblockplus.org/easylistchina.txt",
-               "1677875717.txt": "https://cdn.jsdelivr.net/gh/cjx82630/cjxlist@master/cjx-annoyance.txt",
-               "1677875718.txt": "https://cdn.jsdelivr.net/gh/zsakvo/AdGuard-Custom-Rule@master/rule/zhihu-strict.txt",
+               "1677875717.txt": "https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt",
+               "1677875718.txt": "https://raw.githubusercontent.com/zsakvo/AdGuard-Custom-Rule/master/rule/zhihu-strict.txt",
                "1677875720.txt": "https://gist.githubusercontent.com/Ewpratten/a25ae63a7200c02c850fede2f32453cf/raw/b9318009399b99e822515d388b8458557d828c37/hosts-yt-ads",
                "1677875724.txt": "https://raw.githubusercontent.com/banbendalao/ADgk/master/ADgk.txt",
                "1677875725.txt": "https://www.i-dont-care-about-cookies.eu/abp/",
                "1677875726.txt": "https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts",
                "1677875727.txt": "https://raw.githubusercontent.com/Goooler/1024_hosts/master/hosts",
                "1677875728.txt": "https://winhelp2002.mvps.org/hosts.txt",
-               "1677875733.txt": "https://cdn.jsdelivr.net/gh/hl2guide/Filterlist-for-AdGuard@master/filter_whitelist.txt",
-               "1677875734.txt": "https://cdn.jsdelivr.net/gh/hg1978/AdGuard-Home-Whitelist@master/whitelist.txt",
-               "1677875735.txt": "https://cdn.jsdelivr.net/gh/mmotti/adguard-home-filters@master/whitelist.txt",
-               "1677875737.txt": "https://cdn.jsdelivr.net/gh/liwenjie119/adg-rules@master/white.txt",
-               "1677875739.txt": "https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt",
-               "1677875740.txt": "https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt"}
+               "1677875733.txt": "https://raw.githubusercontent.com/hl2guide/Filterlist-for-AdGuard/master/filter_whitelist.txt",
+               "1677875734.txt": "https://raw.githubusercontent.com/hg1978/AdGuard-Home-Whitelist/master/whitelist.txt",
+               "1677875735.txt": "https://raw.githubusercontent.com/mmotti/adguard-home-filters/master/whitelist.txt",
+               "1677875737.txt": "https://raw.githubusercontent.com/liwenjie119/adg-rules/master/white.txt",
+               "1677875739.txt": "https://raw.githubusercontent.com/JamesDamp/AdGuard-Home---Personal-Whitelist/master/AdGuardHome-Whitelist.txt",
+               "1677875740.txt": "https://raw.githubusercontent.com/scarletbane/AdGuard-Home-Whitelist/main/whitelist.txt"}
     dl_tasks: list[SmartDL] = []
     for name, url in filters.items():
         dl_tasks.append(dl2(url, os.path.join(adg_filters_path, name)))
