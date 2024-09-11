@@ -14,9 +14,10 @@ from .network import request_get
 
 
 class OpenWrt:
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, tag_branch: str) -> None:
         self.path = path
         self.repo = pygit2.Repository(self.path)
+        self.set_tag_or_branch(tag_branch)
 
     def set_tag_or_branch(self, tag_branch: str) -> None:
         self.repo.checkout(tag_branch)

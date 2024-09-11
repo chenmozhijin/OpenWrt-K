@@ -94,7 +94,7 @@ def prepare() -> None:
     if len(cfg_names) > 1:
         for name in cfg_names[1:]:
             shutil.copytree(os.path.join(openwrt_paths, cfg_names[0]), os.path.join(openwrt_paths, name), symlinks=True)
-    openwrts = {name: OpenWrt(os.path.join(openwrt_paths, name)) for name in cfg_names}
+    openwrts = {name: OpenWrt(os.path.join(openwrt_paths, name), configs[name]["compile"]["openwrt_tag/branch"]) for name in cfg_names}
 
     # clone拓展软件源码
     logger.info("开始克隆拓展软件源码...")
@@ -109,7 +109,7 @@ def prepare() -> None:
     for repo, branch in to_clone:
         path = os.path.join(paths.workdir, "repos", repo.split("/")[-2], repo.split("/")[-1],branch if branch else "+_default_+")
         logger.info("开始克隆仓库 %s 到 %s", repo, path)
-        pygit2.clone_repository(repo, path, checkout_branch=branch, depth=1)
+        pygit2.clone_repository(repo, path, checkout_branch=branch if branch else None, depth=1)
         cloned_repos[(repo, branch)] = path
 
 
