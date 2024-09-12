@@ -156,12 +156,13 @@ class OpenWrt:
 
 
     def get_pacthes(self) -> dict:
-        result = {"openwrt": self.repo.diff(flags=pygit2.enums.DiffOption.INCLUDE_UNTRACKED).patch,
+        flags = pygit2.enums.DiffOption.INCLUDE_UNTRACKED|pygit2.enums.DiffOption.RECURSE_UNTRACKED_DIRS
+        result = {"openwrt": self.repo.diff(flags=flags).patch,
                   "feeds": {}}
         for feed in os.listdir(os.path.join(self.path, "feeds")):
             path = os.path.join(self.path, "feeds", feed)
             if os.path.isdir(path) and os.path.isdir(os.path.join(path, ".git")):
-                diff = pygit2.Repository(path).diff(flags=pygit2.enums.DiffOption.INCLUDE_UNTRACKED).patch
+                diff = pygit2.Repository(path).diff(flags=flags).patch
                 if diff:
                     result["feeds"][feed] = diff
         return result
