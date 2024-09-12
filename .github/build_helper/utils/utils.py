@@ -36,9 +36,9 @@ def parse_config(path: str, prefixs: tuple[str,...]|list[str]) -> dict[str, str 
 
 def setup_compilation_environment(build: bool = False) -> None:
     def sudo(*args: str) -> None:
-        subprocess.run(["sudo", "-E", *list(args)])
+        subprocess.run(["sudo", "-E", *list(args)], stdout=subprocess.PIPE)
     def apt(*args: str) -> None:
-        subprocess.run(["sudo", "-E", "apt-get", "-y", *list(args)])
+        subprocess.run(["sudo", "-E", "apt-get", "-y", *list(args)], stdout=subprocess.PIPE)
     logger.info("开始设置编译环境...")
     # https://github.com/community/community/discussions/47863
     sudo("apt-mark", "hold", "grub-efi-amd64-signed")

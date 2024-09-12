@@ -190,8 +190,8 @@ def prepare() -> None:
     wait_dl_tasks(dl_tasks)
 
 
-    logger.info("处理软件包...")
     for cfg_name, openwrt in openwrts.items():
+        logger.info("%s处理软件包...", cfg_name)
         openwrt.feed_update()
         config = configs[cfg_name]
 
@@ -257,7 +257,7 @@ def prepare() -> None:
             shutil.rmtree(os.path.join(openwrt.path, "package", "utils", "nftables"))
             shutil.copytree(os.path.join(turboacc_dir, f"nftables-{versions['NFTABLES_VERSION']}"), os.path.join(openwrt.path, "package", "utils", "nftables"))
 
-        logger.info("准备自定义文件")
+        logger.info("%s准备自定义文件...", cfg_name)
         files_path = os.path.join(openwrt.path, "files")
         shutil.copytree(global_files_path, files_path)
         arch, version = openwrt.get_arch()
@@ -291,7 +291,8 @@ def prepare() -> None:
                 adg_arch, clash_arch = None, None
 
         tmpdir = tempfile.TemporaryDirectory()
-        if adg_arch:
+        if adg_arch and openwrt.get_package_config("luci-app-adguardhome") == "y":
+            logger.info("%s下载架构为%s的AdGuardHome核心", cfg_name, adg_arch)
             releases = get_gh_repo_last_releases("AdguardTeam/AdGuardHome")
             if releases:
                 for asset in releases["assets"]:
@@ -301,7 +302,8 @@ def prepare() -> None:
                 else:
                     logger.error("未找到可用的AdGuardHome二进制文件")
 
-        if clash_arch:
+        if clash_arch and openwrt.get_package_config("luci-app-openclash") == "y":
+            logger.info("%s下载架构为%s的OpenClash核心", cfg_name, clash_arch)
             versions = request_get("https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version")
             tun_v = versions.splitlines()[1] if versions else None
             if tun_v:
@@ -377,6 +379,10 @@ def prepare() -> None:
                 else:
                     f.write(line + "\n")
 
+        logger.info("生成pacthes")
+        patches = openwrt.get_pacthes()
+        with open(os.path.join(paths.uploads, "patches", f"{cfg_name}.json"), "w") as f:
+            json.dump(patches, f, indent=4, ensure_ascii=False)
 
 try:
     prepare()

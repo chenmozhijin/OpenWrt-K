@@ -49,7 +49,7 @@ class OpenWrt:
             f.write(config)
 
     def get_diff_config(self) -> str:
-        return subprocess.run([os.path.join(self.path, "scripts", "diffconfig.sh")], cwd=self.path).stdout.decode()
+        return subprocess.run([os.path.join(self.path, "scripts", "diffconfig.sh")], cwd=self.path, capture_output=True, text=True).stdout
 
     def get_kernel_version(self) -> str | None:
         kernel_version = None
@@ -98,8 +98,8 @@ class OpenWrt:
 
     def check_package_dependencies(self) -> bool:
         subprocess.run(['gmake', '-s', 'prepare-tmpinfo'], cwd=self.path)
-        if err := subprocess.run(['./scripts/package-metadata.pl', 'mk', 'tmp/.packageinfo'], cwd=self.path).stderr:
-            core.error(f'检查到软件包依赖问题,这有可能会导致编译错误:\n{err.decode()}')
+        if err := subprocess.run(['./scripts/package-metadata.pl', 'mk', 'tmp/.packageinfo'], cwd=self.path, capture_output=True, text=True).stderr:
+            core.error(f'检查到软件包依赖问题,这有可能会导致编译错误:\n{err}')
             return False
         return True
 
@@ -150,3 +150,14 @@ class OpenWrt:
 
 
 
+    def get_pacthes(self) -> dict:
+        result = {"openwrt": self.repo.diff(flags=pygit2.enums.DiffOption.INCLUDE_UNTRACKED).patch,
+                  "feeds": {}}
+        for feed in os.listdir(os.path.join(self.path, "feeds")):
+            path = os.path.join(self.path, "feeds", feed)
+            if os.path.isdir(path) and os.path.isdir(os.path.join(path, ".git")):
+                diff = pygit2.Repository(path).diff(flags=pygit2.enums.DiffOption.INCLUDE_UNTRACKED).patch
+                if diff:
+                    result["feeds"][feed] = diff
+        return result
+        
