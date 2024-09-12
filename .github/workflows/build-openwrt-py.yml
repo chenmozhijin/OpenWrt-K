@@ -32,7 +32,7 @@ jobs:
 
       - name: 上传 all
         if: success() || failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.3.5
         with:
           name: All-Files
           path: ./
