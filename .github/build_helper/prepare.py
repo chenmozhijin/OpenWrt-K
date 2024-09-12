@@ -108,7 +108,7 @@ def prepare() -> None:
     cloned_repos: dict[tuple[str, str], str] = {}
     for repo, branch in to_clone:
         path = os.path.join(paths.workdir, "repos", repo.split("/")[-2], repo.split("/")[-1],branch if branch else "+_default_+")
-        logger.info("开始克隆仓库 %s 到 %s", repo, path)
+        logger.info("开始克隆仓库 %s", repo if not branch else f"{repo} (分支: {branch})")
         pygit2.clone_repository(repo, path, checkout_branch=branch if branch else None, depth=1)
         cloned_repos[(repo, branch)] = path
 
@@ -158,7 +158,7 @@ def prepare() -> None:
 
     # 下载AdGuardHome规则与配置
     logger.info("下载AdGuardHome规则与配置...")
-    global_files_path = os.path.join(paths.workdir, "files")
+    global_files_path = os.path.join(paths.root, "files")
     adg_filters_path = os.path.join(global_files_path, "usr", "bin", "AdGuardHome", "data", "filters")
     os.makedirs(adg_filters_path, exist_ok=True)
     filters = {"1628750870.txt": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
@@ -192,8 +192,12 @@ def prepare() -> None:
 
     for cfg_name, openwrt in openwrts.items():
         logger.info("%s处理软件包...", cfg_name)
-        openwrt.feed_update()
         config = configs[cfg_name]
+        for pkg_name, pkg in config["extpackages"].items():
+            path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)
+            logger.debug("复制拓展软件包 %s 到 %s", pkg_name, path)
+            shutil.copytree(os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"]), path, symlinks=True)
+        openwrt.feed_update()
 
         # 更新netdata
         shutil.rmtree(os.path.join(openwrt.path, "feeds", "admin", "netdata"), ignore_errors=True)

@@ -19,7 +19,8 @@ if isinstance(sys.stdout, io.TextIOWrapper):
 handler.setFormatter(formatter)
 
 # 日志等级
-if core.is_debug():
+# if core.is_debug():
+if True:
     handler.setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
 else:

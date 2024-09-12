@@ -87,7 +87,7 @@ class OpenWrt:
         package_config = None
         if os.path.isfile(os.path.join(self.path, '.config')):
             with open(os.path.join(self.path, '.config')) as f:
-                for line in f:
+                for line in f.readlines():
                     if line.startswith(f'CONFIG_PACKAGE_{package}='):
                         match = re.match(r'^CONFIG_PACKAGE_{package}=([ymn])$', line)
                         if match:
@@ -95,6 +95,8 @@ class OpenWrt:
                             if  package_config in ["y", "n", "m"]:
                                 break
                             package_config = None
+        else:
+            logger.warning("仓库%s的配置文件不存在", self.path)
         logger.debug("仓库%s的软件包%s的配置为%s", self.path, package, package_config)
         return package_config # type: ignore[]
 
