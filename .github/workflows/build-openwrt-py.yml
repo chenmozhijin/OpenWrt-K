@@ -31,6 +31,7 @@ jobs:
           python3 $GITHUB_WORKSPACE/.github/build_helper/prepare.py
 
       - name: 上传 all
+        if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: all

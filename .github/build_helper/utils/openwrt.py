@@ -80,6 +80,7 @@ class OpenWrt:
                         if match:
                             version = match.group(0)
                             break
+        logger.debug("仓库%s的架构为%s,版本为%s", self.path, arch, version)
         return arch, version
 
     def get_package_config(self, package: str) -> Literal["y", "n", "m"] | None:
@@ -94,6 +95,7 @@ class OpenWrt:
                             if  package_config in ["y", "n", "m"]:
                                 break
                             package_config = None
+        logger.debug("仓库%s的软件包%s的配置为%s", self.path, package, package_config)
         return package_config # type: ignore[]
 
     def check_package_dependencies(self) -> bool:
