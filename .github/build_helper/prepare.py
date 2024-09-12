@@ -220,7 +220,7 @@ def prepare() -> None:
 
         # 添加turboacc补丁
         turboacc_dir = os.path.join(cloned_repos[("https://github.com/chenmozhijin/turboacc", "package")])
-        versions = parse_config(turboacc_dir, ("FIREWALL4_VERSION", "NFTABLES_VERSION", "LIBNFTNL_VERSION"))
+        versions = parse_config(os.path.join(turboacc_dir, "version"), ("FIREWALL4_VERSION", "NFTABLES_VERSION", "LIBNFTNL_VERSION"))
         kernel_version = openwrt.get_kernel_version()
         enable_sfe = (openwrt.get_package_config("kmod-shortcut-fe") in ("y", "m") or
                    openwrt.get_package_config("kmod-shortcut-fe-drv") in ("y", "m") or
