@@ -385,6 +385,7 @@ def prepare() -> None:
 
         logger.info("生成pacthes")
         patches = openwrt.get_pacthes()
+        os.makedirs(os.path.join(paths.uploads, "patches"), exist_ok=True)
         with open(os.path.join(paths.uploads, "patches", f"{cfg_name}.json"), "w") as f:
             json.dump(patches, f, indent=4, ensure_ascii=False)
 

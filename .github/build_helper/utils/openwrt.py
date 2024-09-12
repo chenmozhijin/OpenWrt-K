@@ -8,9 +8,9 @@ from typing import Literal
 import pygit2
 from actions_toolkit import core
 
-from .utils import apply_patch
 from .logger import logger
 from .network import request_get
+from .utils import apply_patch
 
 
 class OpenWrt:
@@ -31,7 +31,8 @@ class OpenWrt:
                 self.repo.checkout_tree(treeish)
                 self.repo.head.set_target(tag_ref.target)
             else:
-                raise ValueError(f"标签{tag_branch}不存在")
+                msg = f"标签{tag_branch}不存在"
+                raise ValueError(msg)
 
         self.tag_branch = tag_branch
 
@@ -71,14 +72,14 @@ class OpenWrt:
             with open(os.path.join(self.path, '.config')) as f:
                 for line in f:
                     if line.startswith('CONFIG_ARCH='):
-                        match = re.match(r'^CONFIG_ARCH="(.*)"$', line)
+                        match = re.match(r'^CONFIG_ARCH="(?P<arch>.*)"$', line)
                         if match:
-                            arch = match.group(0)
+                            arch = match.group("arch")
                             break
                     elif line.startswith('CONFIG_arm_'):
-                        match = re.match(r'^CONFIG_arm_([0-9]+)=y$', line)
+                        match = re.match(r'^CONFIG_arm_(?P<ver>[0-9]+)=y$', line)
                         if match:
-                            version = match.group(0)
+                            version = match.group("ver")
                             break
         logger.debug("仓库%s的架构为%s,版本为%s", self.path, arch, version)
         return arch, version
@@ -164,4 +165,3 @@ class OpenWrt:
                 if diff:
                     result["feeds"][feed] = diff
         return result
-        
