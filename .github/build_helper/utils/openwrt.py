@@ -58,9 +58,9 @@ class OpenWrt:
             with open(os.path.join(self.path, '.config')) as f:
                 for line in f:
                     if line.startswith('CONFIG_LINUX_'):
-                        match = re.match(r'^CONFIG_LINUX_([0-9]+)_([0-9]+)=y$', line)
+                        match = re.match(r'^CONFIG_LINUX_(?P<major>[0-9]+)_(?P<minor>[0-9]+)=y$', line)
                         if match:
-                            kernel_version = f"{match.group(0)}.{match.group(1)}"
+                            kernel_version = f"{match.group("major")}.{match.group("minor")}"
                             break
         logger.debug("仓库%s的内核版本为%s", self.path, kernel_version)
         return kernel_version
@@ -88,11 +88,11 @@ class OpenWrt:
         package_config = None
         if os.path.isfile(os.path.join(self.path, '.config')):
             with open(os.path.join(self.path, '.config')) as f:
-                for line in f.readlines():
+                for line in f:
                     if line.startswith(f'CONFIG_PACKAGE_{package}='):
-                        match = re.match(r'^CONFIG_PACKAGE_{package}=([ymn])$', line)
+                        match = re.match(r'^CONFIG_PACKAGE_{package}=(?P<config>[ymn])$', line)
                         if match:
-                            package_config = match.group(0)
+                            package_config = match.group("config")
                             if  package_config in ["y", "n", "m"]:
                                 break
                             package_config = None

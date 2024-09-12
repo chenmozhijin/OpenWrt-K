@@ -30,6 +30,22 @@ jobs:
         run: |
           python3 $GITHUB_WORKSPACE/.github/build_helper/prepare.py
 
+      - name: 上传 patches
+        uses: actions/upload-artifact@v4
+        with:
+          name: patches
+          path: uploads/patches
+          retention-days: 1
+          compression-level: 9
+
+      - name: 上传 files
+        uses: actions/upload-artifact@v4
+        with:
+          name: files
+          path: uploads/files
+          retention-days: 1
+          compression-level: 0
+
       - name: 上传 all
         if: success() || failure()
         uses: actions/upload-artifact@v4.3.5
@@ -42,6 +58,7 @@ jobs:
   base-builds:
     runs-on: ubuntu-22.04
     needs: prepare
+    name: base-builds-${{ matrix.config }}
     strategy:
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:

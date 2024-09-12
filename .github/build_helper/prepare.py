@@ -138,10 +138,10 @@ def prepare() -> None:
                     zh_cn = os.path.join(po_path , "zh-cn")
                     if not os.path.isdir(zh_cn):
                         if os.path.isdir(zh_hans) or os.path.islink(zh_hans):
-                            logger.debug("已存在符号链接或目录 %s，跳过")
+                            logger.debug("已存在符号链接或目录 %s，跳过", zh_hans)
                             continue
                         if os.path.isfile(zh_hans):
-                            logger.debug("已存在文件 %s，删除")
+                            logger.debug("已存在文件 %s，删除", zh_hans)
                             os.remove(zh_hans)
                         os.symlink("zh_Hans", zh_cn, target_is_directory=True)
                         logger.info("创建符号链接 %s -> %s", zh_cn, zh_hans)
@@ -388,6 +388,10 @@ def prepare() -> None:
         os.makedirs(os.path.join(paths.uploads, "patches"), exist_ok=True)
         with open(os.path.join(paths.uploads, "patches", f"{cfg_name}.json"), "w") as f:
             json.dump(patches, f, indent=4, ensure_ascii=False)
+
+        logger.info("生成files")
+        os.makedirs(os.path.join(paths.uploads, "files"), exist_ok=True)
+        shutil.copytree(files_path, os.path.join(paths.uploads, "files", cfg_name))
 
 try:
     prepare()
