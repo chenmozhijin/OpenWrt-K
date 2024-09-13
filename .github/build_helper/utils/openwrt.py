@@ -13,6 +13,37 @@ from .network import request_get
 from .utils import apply_patch
 
 
+def create_patch_from_unstaged(repo_path: str) -> str | None:
+    # Open the repository
+    repo = pygit2.Repository(repo_path)
+
+    orig = repo.head.target
+
+    # Check for unstaged changes
+    index = repo.index
+    unstaged_changes = index.diff_to_workdir()
+
+    if not unstaged_changes.deltas:
+        logger.debug("%s 没有未提交的更改", repo_path)
+        return None
+
+    # Create a new temporary commit for unstaged changes
+    temp_commit_message = "Temporary commit for patch generation"
+    author = repo.default_signature
+    index.add_all()  # Add all unstaged files
+    tree = index.write_tree()
+    temp_commit_oid = repo.create_commit(
+        'HEAD', author, author, temp_commit_message, tree, [repo.head.target],
+    )
+
+    # Generate a diff between the temporary commit and the previous commit
+    diff = repo.diff(orig, temp_commit_oid)
+
+    # Reset the repository to the previous commit to undo the temporary commit
+    repo.reset(orig, pygit2.enums.ResetMode.MIXED)
+
+    return diff.patch
+
 class OpenWrt:
     def __init__(self, path: str, tag_branch: str) -> None:
         self.path = path
@@ -156,13 +187,10 @@ class OpenWrt:
 
 
     def get_pacthes(self) -> dict:
-        flags = pygit2.enums.DiffOption.INCLUDE_UNTRACKED|pygit2.enums.DiffOption.RECURSE_UNTRACKED_DIRS|pygit2.enums.DiffOption.INCLUDE_TYPECHANGE
-        result = {"openwrt": self.repo.index.diff_to_workdir(flags=flags).patch,
+        result = {"openwrt": create_patch_from_unstaged(self.path),
                   "feeds": {}}
         for feed in os.listdir(os.path.join(self.path, "feeds")):
             path = os.path.join(self.path, "feeds", feed)
-            if os.path.isdir(path) and os.path.isdir(os.path.join(path, ".git")):
-                diff = pygit2.Repository(path).index.diff_to_workdir(flags=flags).patch
-                if diff:
-                    result["feeds"][feed] = diff
+            if os.path.isdir(path) and os.path.isdir(os.path.join(path, ".git")) and (patch := create_patch_from_unstaged(path)):
+                result["feeds"][feed] = patch
         return result
