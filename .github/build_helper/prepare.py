@@ -316,7 +316,7 @@ def prepare() -> None:
                                     os.path.join(tmpdir.name, "clash_tun.tar.gz")))
             dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-{clash_arch}.tar.gz",
                                     os.path.join(tmpdir.name, "clash_meta.tar.gz")))
-            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/dev/clash-{clash_arch}.tar.gz",
+            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/dev/clash-{clash_arch}.gz",
                                     os.path.join(tmpdir.name, "clash.tar.gz")))
 
         wait_dl_tasks(dl_tasks)
@@ -334,15 +334,15 @@ def prepare() -> None:
                         f.write(file.read())
                     os.chmod(os.path.join(clash_core_path, "clash_tun"), 0o755)  # noqa: S103
 
-        if os.path.isfile(os.path.join(tmpdir.name, "clash_meta.tar.tar.gz")):
-            with tarfile.open(os.path.join(tmpdir.name, "clash_meta.tar.tar.gz"), "r:gz") as tar:
+        if os.path.isfile(os.path.join(tmpdir.name, "clash_meta.tar.gz")):
+            with tarfile.open(os.path.join(tmpdir.name, "clash_meta.tar.gz"), "r:gz") as tar:
                 if file := tar.extractfile("clash"):
                     with open(os.path.join(clash_core_path, "clash_meta"), "wb") as f:
                         f.write(file.read())
                     os.chmod(os.path.join(clash_core_path, "clash_meta"), 0o755)  # noqa: S103
 
-        if os.path.isfile(os.path.join(tmpdir.name, "clash.tar.tar.gz")):
-            with tarfile.open(os.path.join(tmpdir.name, "clash.tar.tar.gz"), "r:gz") as tar:
+        if os.path.isfile(os.path.join(tmpdir.name, "clash.tar.gz")):
+            with tarfile.open(os.path.join(tmpdir.name, "clash.tar.gz"), "r:gz") as tar:
                 if file := tar.extractfile("clash"):
                     with open(os.path.join(clash_core_path, "clash"), "wb") as f:
                         f.write(file.read())
