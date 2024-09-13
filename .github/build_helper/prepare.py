@@ -328,6 +328,8 @@ def prepare() -> None:
                 os.chmod(os.path.join(files_path, "usr", "bin", "AdGuardHome", "AdGuardHome"), 0o755)  # noqa: S103
 
         clash_core_path = os.path.join(files_path, "etc", "openclash", "core")
+        if not os.path.isdir(clash_core_path):
+            os.makedirs(clash_core_path)
         if os.path.isfile(os.path.join(tmpdir.name, "clash_tun.gz")):
             with gzip.open(os.path.join(tmpdir.name, "clash_tun.gz"), 'rb') as f_in, open(os.path.join(clash_core_path, "clash_tun"), 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
