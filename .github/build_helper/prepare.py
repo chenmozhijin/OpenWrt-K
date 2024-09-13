@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 沉默の金 <cmzj@cmzj.org>
 # SPDX-License-Identifier: MIT
+import gzip
 import json
 import os
 import re
@@ -313,7 +314,7 @@ def prepare() -> None:
             tun_v = versions.splitlines()[1] if versions else None
             if tun_v:
                 dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/premium/clash-{clash_arch}-{tun_v}.gz",
-                                    os.path.join(tmpdir.name, "clash_tun.tar.gz")))
+                                    os.path.join(tmpdir.name, "clash_tun.gz")))
             dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-{clash_arch}.tar.gz",
                                     os.path.join(tmpdir.name, "clash_meta.tar.gz")))
             dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/dev/clash-{clash_arch}.tar.gz",
@@ -327,12 +328,10 @@ def prepare() -> None:
                 os.chmod(os.path.join(files_path, "usr", "bin", "AdGuardHome", "AdGuardHome"), 0o755)  # noqa: S103
 
         clash_core_path = os.path.join(files_path, "etc", "openclash", "core")
-        if os.path.isfile(os.path.join(tmpdir.name, "clash_tun.tar.gz")):
-            with tarfile.open(os.path.join(tmpdir.name, "clash_tun.tar.gz"), "r:gz") as tar:
-                if file := tar.extractfile("clash"):
-                    with open(os.path.join(clash_core_path, "clash_tun"), "wb") as f:
-                        f.write(file.read())
-                    os.chmod(os.path.join(clash_core_path, "clash_tun"), 0o755)  # noqa: S103
+        if os.path.isfile(os.path.join(tmpdir.name, "clash_tun.gz")):
+            with gzip.open(os.path.join(tmpdir.name, "clash_tun.gz"), 'rb') as f_in, open(os.path.join(clash_core_path, "clash_tun"), 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+            os.chmod(os.path.join(clash_core_path, "clash_tun"), 0o755)  # noqa: S103
 
         if os.path.isfile(os.path.join(tmpdir.name, "clash_meta.tar.gz")):
             with tarfile.open(os.path.join(tmpdir.name, "clash_meta.tar.gz"), "r:gz") as tar:
