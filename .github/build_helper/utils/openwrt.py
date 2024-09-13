@@ -90,10 +90,10 @@ class OpenWrt:
             with open(os.path.join(self.path, '.config')) as f:
                 for line in f:
                     if line.startswith(f'CONFIG_PACKAGE_{package}='):
-                        match = re.match(r'^CONFIG_PACKAGE_{package}=(?P<config>[ymn])$', line)
+                        match = re.match(fr'^CONFIG_PACKAGE_{package}=(?P<config>[ymn])$', line)
                         if match:
                             package_config = match.group("config")
-                            if  package_config in ["y", "n", "m"]:
+                            if  package_config in ("y", "n", "m"):
                                 break
                             package_config = None
         else:
@@ -156,13 +156,13 @@ class OpenWrt:
 
 
     def get_pacthes(self) -> dict:
-        flags = pygit2.enums.DiffOption.INCLUDE_UNTRACKED|pygit2.enums.DiffOption.RECURSE_UNTRACKED_DIRS
-        result = {"openwrt": self.repo.diff(flags=flags).patch,
+        flags = pygit2.enums.DiffOption.INCLUDE_UNTRACKED|pygit2.enums.DiffOption.RECURSE_UNTRACKED_DIRS|pygit2.enums.DiffOption.INCLUDE_TYPECHANGE
+        result = {"openwrt": self.repo.index.diff_to_workdir(flags=flags).patch,
                   "feeds": {}}
         for feed in os.listdir(os.path.join(self.path, "feeds")):
             path = os.path.join(self.path, "feeds", feed)
             if os.path.isdir(path) and os.path.isdir(os.path.join(path, ".git")):
-                diff = pygit2.Repository(path).diff(flags=flags).patch
+                diff = pygit2.Repository(path).index.diff_to_workdir(flags=flags).patch
                 if diff:
                     result["feeds"][feed] = diff
         return result
