@@ -26,10 +26,23 @@ def create_patch_from_unstaged(repo_path: str) -> str | None:
     if not unstaged_changes.deltas:
         logger.debug("%s 没有未提交的更改", repo_path)
         return None
+    # Ensure user.name and user.email are set in the config
+    config = repo.config
+    try:
+        user_name = config['user.name']
+    except KeyError:
+        user_name = "default_user"
+        config['user.name'] = user_name  # Set default user.name if not found
 
+    try:
+        user_email = config['user.email']
+    except KeyError:
+        user_email = "default_email@example.com"
+        config['user.email'] = user_email  # Set default user.email if not found
+
+    author = pygit2.Signature(user_name, user_email)
     # Create a new temporary commit for unstaged changes
     temp_commit_message = "Temporary commit for patch generation"
-    author = repo.default_signature
     index.add_all()  # Add all unstaged files
     tree = index.write_tree()
     temp_commit_oid = repo.create_commit(
