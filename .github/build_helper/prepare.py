@@ -258,8 +258,9 @@ def prepare() -> None:
             shutil.rmtree(os.path.join(openwrt.path, "package", "network", "config", "firewall4"))
             shutil.copytree(os.path.join(turboacc_dir, f"firewall4-{versions['FIREWALL4_VERSION']}"),
                             os.path.join(openwrt.path, "package", "network", "config", "firewall4"))
-            shutil.rmtree(os.path.join(openwrt.path, "package", "utils", "nftables"))
-            shutil.copytree(os.path.join(turboacc_dir, f"nftables-{versions['NFTABLES_VERSION']}"), os.path.join(openwrt.path, "package", "utils", "nftables"))
+            shutil.rmtree(os.path.join(openwrt.path, "package", "network", "utils", "nftables"))
+            shutil.copytree(os.path.join(turboacc_dir, f"nftables-{versions['NFTABLES_VERSION']}"),
+                            os.path.join(openwrt.path, "package", "network", "utils", "nftables"))
 
         logger.info("%s准备自定义文件...", cfg_name)
         files_path = os.path.join(openwrt.path, "files")
