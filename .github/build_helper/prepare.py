@@ -312,11 +312,11 @@ def prepare() -> None:
             versions = request_get("https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version")
             tun_v = versions.splitlines()[1] if versions else None
             if tun_v:
-                dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/premium/clash-{clash_arch}-{tun_v}.gz",
-                                    os.path.join(tmpdir.name, "clash_tun.gz")))
-            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-{clash_arch}.gz",
+                dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/premium/clash-{clash_arch}-{tun_v}.tar.gz",
+                                    os.path.join(tmpdir.name, "clash_tun.tar.gz")))
+            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-{clash_arch}.tar.gz",
                                     os.path.join(tmpdir.name, "clash_meta.tar.gz")))
-            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/dev/clash-{clash_arch}.gz",
+            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/dev/clash-{clash_arch}.tar.gz",
                                     os.path.join(tmpdir.name, "clash.tar.gz")))
 
         wait_dl_tasks(dl_tasks)
@@ -327,22 +327,22 @@ def prepare() -> None:
                 os.chmod(os.path.join(files_path, "usr", "bin", "AdGuardHome", "AdGuardHome"), 0o755)  # noqa: S103
 
         clash_core_path = os.path.join(files_path, "etc", "openclash", "core")
-        if os.path.isfile(os.path.join(tmpdir.name, "clash_tun.gz")):
-            with tarfile.open(os.path.join(tmpdir.name, "clash_tun.gz"), "r:gz") as tar:
+        if os.path.isfile(os.path.join(tmpdir.name, "clash_tun.tar.gz")):
+            with tarfile.open(os.path.join(tmpdir.name, "clash_tun.tar.gz"), "r:gz") as tar:
                 if file := tar.extractfile("clash"):
                     with open(os.path.join(clash_core_path, "clash_tun"), "wb") as f:
                         f.write(file.read())
                     os.chmod(os.path.join(clash_core_path, "clash_tun"), 0o755)  # noqa: S103
 
-        if os.path.isfile(os.path.join(tmpdir.name, "clash_meta.tar.gz")):
-            with tarfile.open(os.path.join(tmpdir.name, "clash_meta.tar.gz"), "r:gz") as tar:
+        if os.path.isfile(os.path.join(tmpdir.name, "clash_meta.tar.tar.gz")):
+            with tarfile.open(os.path.join(tmpdir.name, "clash_meta.tar.tar.gz"), "r:gz") as tar:
                 if file := tar.extractfile("clash"):
                     with open(os.path.join(clash_core_path, "clash_meta"), "wb") as f:
                         f.write(file.read())
                     os.chmod(os.path.join(clash_core_path, "clash_meta"), 0o755)  # noqa: S103
 
-        if os.path.isfile(os.path.join(tmpdir.name, "clash.tar.gz")):
-            with tarfile.open(os.path.join(tmpdir.name, "clash.tar.gz"), "r:gz") as tar:
+        if os.path.isfile(os.path.join(tmpdir.name, "clash.tar.tar.gz")):
+            with tarfile.open(os.path.join(tmpdir.name, "clash.tar.tar.gz"), "r:gz") as tar:
                 if file := tar.extractfile("clash"):
                     with open(os.path.join(clash_core_path, "clash"), "wb") as f:
                         f.write(file.read())
