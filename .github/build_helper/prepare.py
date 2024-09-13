@@ -312,11 +312,11 @@ def prepare() -> None:
             versions = request_get("https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version")
             tun_v = versions.splitlines()[1] if versions else None
             if tun_v:
-                dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/premium/clash-{clash_arch}-{tun_v}.tar.gz",
+                dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/premium/clash-{clash_arch}-{tun_v}.gz",
                                     os.path.join(tmpdir.name, "clash_tun.tar.gz")))
             dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-{clash_arch}.tar.gz",
                                     os.path.join(tmpdir.name, "clash_meta.tar.gz")))
-            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/dev/clash-{clash_arch}.gz",
+            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/dev/clash-{clash_arch}.tar.gz",
                                     os.path.join(tmpdir.name, "clash.tar.gz")))
 
         wait_dl_tasks(dl_tasks)
