@@ -393,7 +393,7 @@ def prepare() -> None:
         logger.info("%s生成源代码归档")
         os.makedirs(os.path.join(paths.uploads, cfg_name), exist_ok=True)
         tar_path = os.path.join(paths.uploads, cfg_name, "openwrt-source.tar.xz")
-        with tarfile.open(tar_path, "w:xz", preset=9) as tar:
+        with tarfile.open(tar_path, "w:xz") as tar:
             tar.add(openwrt.path, arcname="openwrt")
         uploader.add(f"{cfg_name}-openwrt-source", tar_path,retention_days=1,compression_level=0)
 

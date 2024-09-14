@@ -30,15 +30,15 @@ class UpLoader:
             },
         }
         if if_no_files_found is not None:
-            action['if-no-files-found'] = if_no_files_found
+            action["with"]['if-no-files-found'] = if_no_files_found
         if retention_days is not None:
-            action['retention-days'] = retention_days
+            action["with"]['retention-days'] = retention_days
         if compression_level is not None:
-            action['compression-level'] = compression_level
+            action["with"]['compression-level'] = compression_level
         if overwrite is not None:
-            action['overwrite'] = overwrite
+            action["with"]['overwrite'] = overwrite
         if include_hidden_files is not None:
-            action['include-hidden-files'] = include_hidden_files
+            action["with"]['include-hidden-files'] = include_hidden_files
         self.action['runs']['steps'].append(action)
 
     def save(self) -> None:
