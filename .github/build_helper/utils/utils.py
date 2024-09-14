@@ -34,7 +34,7 @@ def parse_config(path: str, prefixs: tuple[str,...]|list[str]) -> dict[str, str 
     return config
 
 
-def setup_compilation_environment(build: bool = False) -> None:
+def setup_env(build: bool = False) -> None:
     def sudo(*args: str) -> None:
         subprocess.run(["sudo", "-E", *list(args)], stdout=subprocess.PIPE)
     def apt(*args: str) -> None:
