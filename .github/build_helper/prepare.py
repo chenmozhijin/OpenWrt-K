@@ -200,6 +200,12 @@ def prepare() -> None:
 
     wait_dl_tasks(dl_tasks)
 
+        # 获取用户信息
+    compiler = Context().repo.owner
+    if user_info := request_get(f"https://api.github.com/users/{compiler}"):
+        compiler = json.loads(user_info).get("name", compiler)
+    logger.info("编译者：%s", compiler)
+
 
     for cfg_name, openwrt in openwrts.items():
         logger.info("%s处理软件包...", cfg_name)
@@ -322,8 +328,10 @@ def prepare() -> None:
         # 解压
         if os.path.isfile(os.path.join(tmpdir.name, "AdGuardHome.tar.gz")):
             with tarfile.open(os.path.join(tmpdir.name, "AdGuardHome.tar.gz"), "r:gz") as tar:
-                tar.extract("AdGuardHome/AdGuardHome", os.path.join(files_path, "usr", "bin", "AdGuardHome"))
-                os.chmod(os.path.join(files_path, "usr", "bin", "AdGuardHome", "AdGuardHome"), 0o755)  # noqa: S103
+                if file := tar.extractfile("./AdGuardHome/AdGuardHome"):
+                    with open(os.path.join(files_path, "usr", "bin", "AdGuardHome", "AdGuardHome"), "wb") as f:
+                        f.write(file.read())
+                    os.chmod(os.path.join(files_path, "usr", "bin", "AdGuardHome", "AdGuardHome"), 0o755)  # noqa: S103
 
         clash_core_path = os.path.join(files_path, "etc", "openclash", "core")
         if not os.path.isdir(clash_core_path):
@@ -335,24 +343,20 @@ def prepare() -> None:
 
         if os.path.isfile(os.path.join(tmpdir.name, "clash_meta.tar.gz")):
             with tarfile.open(os.path.join(tmpdir.name, "clash_meta.tar.gz"), "r:gz") as tar:
-                if file := tar.extractfile("clash"):
+                if file := tar.extractfile("./clash"):
                     with open(os.path.join(clash_core_path, "clash_meta"), "wb") as f:
                         f.write(file.read())
                     os.chmod(os.path.join(clash_core_path, "clash_meta"), 0o755)  # noqa: S103
 
         if os.path.isfile(os.path.join(tmpdir.name, "clash.tar.gz")):
             with tarfile.open(os.path.join(tmpdir.name, "clash.tar.gz"), "r:gz") as tar:
-                if file := tar.extractfile("clash"):
+                if file := tar.extractfile("./clash"):
                     with open(os.path.join(clash_core_path, "clash"), "wb") as f:
                         f.write(file.read())
                     os.chmod(os.path.join(clash_core_path, "clash"), 0o755)  # noqa: S103
 
         tmpdir.cleanup()
 
-        # 获取用户信息
-        compiler = Context().repo.owner
-        if user_info := request_get(f"https://api.github.com/users/{compiler}"):
-            compiler = json.loads(user_info).get("name", compiler)
         # 获取bt_trackers
         bt_tracker = request_get("https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt")
         # 替换信息
