@@ -30,28 +30,8 @@ jobs:
         run: |
           python3 $GITHUB_WORKSPACE/.github/build_helper/prepare.py
 
-      - name: 上传 patches
-        uses: actions/upload-artifact@v4
-        with:
-          name: patches
-          path: uploads/patches
-          retention-days: 1
-          compression-level: 9
-
-      - name: 上传 files
-        uses: actions/upload-artifact@v4
-        with:
-          name: files
-          path: uploads/files
-          retention-days: 1
-          compression-level: 0
-
-      - name: 上传 packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: packages
-          path: uploads/packages
-          retention-days: 1
+      - name: 上传
+        uses: ./.github/action/upload
 
 
   base-builds:

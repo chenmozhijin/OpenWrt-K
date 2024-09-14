@@ -19,6 +19,8 @@ from utils.openwrt import OpenWrt
 from utils.paths import paths
 from utils.utils import parse_config, setup_env
 
+from .utils.upload import uploader
+
 if TYPE_CHECKING:
     from pySmartDL import SmartDL
 
@@ -389,23 +391,17 @@ def prepare() -> None:
                 else:
                     f.write(line + "\n")
 
-        logger.info("生成packages")
-        os.makedirs(os.path.join(paths.uploads, "packages"), exist_ok=True)
-        shutil.move(os.path.join(openwrt.path, "package", "cmzj_packages"), os.path.join(paths.uploads, "packages", cfg_name))
-
-        logger.info("生成pacthes")
-        patches = openwrt.get_pacthes()
-        os.makedirs(os.path.join(paths.uploads, "patches"), exist_ok=True)
-        with open(os.path.join(paths.uploads, "patches", f"{cfg_name}.json"), "w") as f:
-            json.dump(patches, f, indent=4, ensure_ascii=False)
-
-        logger.info("生成files")
-        os.makedirs(os.path.join(paths.uploads, "files"), exist_ok=True)
-        shutil.copytree(files_path, os.path.join(paths.uploads, "files", cfg_name))
+        logger.info("%s生成源代码归档")
+        os.makedirs(os.path.join(paths.uploads, cfg_name), exist_ok=True)
+        tar_path = os.path.join(paths.uploads, cfg_name, "openwrt-source.tar.xz")
+        with tarfile.open(tar_path, "w:xz", preset=9) as tar:
+            tar.add(openwrt.path, arcname="openwrt")
+        uploader.add(f"{cfg_name}-openwrt-source", tar_path,retention_days=1,compression_level=0)
 
 try:
     prepare()
     core.set_output("matrix", get_matrix(configs))
+    uploader.save()
 except Exception as e:
     logger.exception("准备文件时出错")
     core.set_failed(f"准备文件时出错: {e.__class__.__name__}: {e!s}")
