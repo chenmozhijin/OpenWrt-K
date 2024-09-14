@@ -343,14 +343,14 @@ def prepare() -> None:
 
         if os.path.isfile(os.path.join(tmpdir.name, "clash_meta.tar.gz")):
             with tarfile.open(os.path.join(tmpdir.name, "clash_meta.tar.gz"), "r:gz") as tar:
-                if file := tar.extractfile("./clash"):
+                if file := tar.extractfile("clash"):
                     with open(os.path.join(clash_core_path, "clash_meta"), "wb") as f:
                         f.write(file.read())
                     os.chmod(os.path.join(clash_core_path, "clash_meta"), 0o755)  # noqa: S103
 
         if os.path.isfile(os.path.join(tmpdir.name, "clash.tar.gz")):
             with tarfile.open(os.path.join(tmpdir.name, "clash.tar.gz"), "r:gz") as tar:
-                if file := tar.extractfile("./clash"):
+                if file := tar.extractfile("clash"):
                     with open(os.path.join(clash_core_path, "clash"), "wb") as f:
                         f.write(file.read())
                     os.chmod(os.path.join(clash_core_path, "clash"), 0o755)  # noqa: S103
