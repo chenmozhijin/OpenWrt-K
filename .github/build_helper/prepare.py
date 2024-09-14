@@ -17,9 +17,8 @@ from utils.logger import logger
 from utils.network import dl2, get_gh_repo_last_releases, request_get, wait_dl_tasks
 from utils.openwrt import OpenWrt
 from utils.paths import paths
+from utils.upload import uploader
 from utils.utils import parse_config, setup_env
-
-from .utils.upload import uploader
 
 if TYPE_CHECKING:
     from pySmartDL import SmartDL
