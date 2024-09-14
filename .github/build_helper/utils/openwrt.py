@@ -54,10 +54,11 @@ def create_patch_from_unstaged(repo_path: str) -> str | None:
     return diff.patch
 
 class OpenWrt:
-    def __init__(self, path: str, tag_branch: str) -> None:
+    def __init__(self, path: str, tag_branch: str | None = None) -> None:
         self.path = path
         self.repo = pygit2.Repository(self.path)
-        self.set_tag_or_branch(tag_branch)
+        if tag_branch:
+            self.set_tag_or_branch(tag_branch)
 
     def set_tag_or_branch(self, tag_branch: str) -> None:
         if tag_branch in self.repo.branches:

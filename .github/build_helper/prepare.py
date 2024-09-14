@@ -87,16 +87,6 @@ except Exception as e:
 
 
 def prepare() -> None:
-    # clone openwrt源码
-    logger.info("开始克隆openwrt源码...")
-    openwrt_paths = os.path.join(paths.workdir, "openwrts")
-    cfg_names = list(configs.keys())
-    pygit2.clone_repository("https://github.com/openwrt/openwrt", os.path.join(openwrt_paths, cfg_names[0]))
-    if len(cfg_names) > 1:
-        for name in cfg_names[1:]:
-            shutil.copytree(os.path.join(openwrt_paths, cfg_names[0]), os.path.join(openwrt_paths, name), symlinks=True)
-    openwrts = {name: OpenWrt(os.path.join(openwrt_paths, name), configs[name]["compile"]["openwrt_tag/branch"]) for name in cfg_names}
-
     # clone拓展软件源码
     logger.info("开始克隆拓展软件源码...")
     to_clone: set[tuple[str, str]] = {("https://github.com/immortalwrt/packages", ""),
@@ -149,13 +139,33 @@ def prepare() -> None:
                     elif not os.path.isdir(zh_hans) or not os.path.islink(zh_hans):
                         logger.info("%s 中不存在汉化文件，这可能是该luci插件原生为中文或不支持中文", po_path)
 
-    # 复制拓展软件包
-    for name, config in configs.items():
-        logger.info("处理配置 %s的拓展软件包", name)
-        for pkg_name, pkg in config["extpackages"].items():
-            path = os.path.join(openwrt_paths, name, "cmzj_packages", pkg_name)
-            logger.debug("复制拓展软件包 %s 到 %s", pkg_name, path)
-            shutil.copytree(os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"]), path, symlinks=True)
+
+    logger.info("开始克隆openwrt源码...")
+    openwrt_paths = os.path.join(paths.workdir, "openwrts")
+    cfg_names = list(configs.keys())
+    pygit2.clone_repository("https://github.com/openwrt/openwrt", os.path.join(openwrt_paths, cfg_names[0]))
+    logger.info("开始更新feeds...")
+    openwrt = OpenWrt(os.path.join(openwrt_paths, cfg_names[0]))
+    openwrt.feed_update()
+
+    logger.info("开始更新netdata、smartdns...")
+    # 更新netdata
+    shutil.rmtree(os.path.join(openwrt.path, "feeds", "admin", "netdata"), ignore_errors=True)
+    shutil.copytree(os.path.join(cloned_repos[("https://github.com/immortalwrt/packages", "")], "admin", "netdata"),
+                        os.path.join(openwrt.path, "feeds", "admin", "netdata"), symlinks=True)
+    # 更新smartdns
+    shutil.rmtree(os.path.join(openwrt.path, "feeds", "luci", "applications", "luci-app-smartdns"), ignore_errors=True)
+    shutil.rmtree(os.path.join(openwrt.path, "feeds", "packages", "net", "smartdns"), ignore_errors=True)
+    shutil.copytree(cloned_repos[("https://github.com/pymumu/luci-app-smartdns", "master")],
+                    os.path.join(openwrt.path, "feeds", "luci", "applications", "luci-app-smartdns"), symlinks=True)
+    shutil.copytree(cloned_repos[("https://github.com/pymumu/openwrt-smartdns", "master")],
+                    os.path.join(openwrt.path, "feeds", "packages", "net", "smartdns"), symlinks=True)
+
+    # 复制源码
+    if len(cfg_names) > 1:
+        for name in cfg_names[1:]:
+            shutil.copytree(os.path.join(openwrt_paths, cfg_names[0]), os.path.join(openwrt_paths, name), symlinks=True)
+    openwrts = {name: OpenWrt(os.path.join(openwrt_paths, name), configs[name]["compile"]["openwrt_tag/branch"]) for name in cfg_names}
 
     # 下载AdGuardHome规则与配置
     logger.info("下载AdGuardHome规则与配置...")
@@ -198,19 +208,7 @@ def prepare() -> None:
             path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)
             logger.debug("复制拓展软件包 %s 到 %s", pkg_name, path)
             shutil.copytree(os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"]), path, symlinks=True)
-        openwrt.feed_update()
 
-        # 更新netdata
-        shutil.rmtree(os.path.join(openwrt.path, "feeds", "admin", "netdata"), ignore_errors=True)
-        shutil.copytree(os.path.join(cloned_repos[("https://github.com/immortalwrt/packages", "")], "admin", "netdata"),
-                        os.path.join(openwrt.path, "feeds", "admin", "netdata"), symlinks=True)
-        # 更新smartdns
-        shutil.rmtree(os.path.join(openwrt.path, "feeds", "luci", "applications", "luci-app-smartdns"), ignore_errors=True)
-        shutil.rmtree(os.path.join(openwrt.path, "feeds", "packages", "net", "smartdns"), ignore_errors=True)
-        shutil.copytree(cloned_repos[("https://github.com/pymumu/luci-app-smartdns", "master")],
-                        os.path.join(openwrt.path, "feeds", "luci", "applications", "luci-app-smartdns"), symlinks=True)
-        shutil.copytree(cloned_repos[("https://github.com/pymumu/openwrt-smartdns", "master")],
-                        os.path.join(openwrt.path, "feeds", "packages", "net", "smartdns"), symlinks=True)
         # 替换golang版本
         golang_path = os.path.join(openwrt.path, "feeds", "packages", "lang", "golang")
         shutil.rmtree(golang_path)
@@ -303,7 +301,7 @@ def prepare() -> None:
             if releases:
                 for asset in releases["assets"]:
                     if asset["name"] == f"AdGuardHome_linux_{adg_arch}.tar.gz":
-                        dl_tasks.append(dl2(releases["browser_download_url"], os.path.join(tmpdir.name, "AdGuardHome.tar.gz")))
+                        dl_tasks.append(dl2(asset["browser_download_url"], os.path.join(tmpdir.name, "AdGuardHome.tar.gz")))
                         break
                 else:
                     logger.error("未找到可用的AdGuardHome二进制文件")
