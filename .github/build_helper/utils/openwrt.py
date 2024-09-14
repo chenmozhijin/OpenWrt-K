@@ -39,7 +39,7 @@ def create_patch_from_unstaged(repo_path: str) -> str | None:
     author = pygit2.Signature(user_name, user_email)
     # Create a new temporary commit for unstaged changes
     temp_commit_message = "Temporary commit for patch generation"
-    index.add(".")  # Add all unstaged files
+    index.add_all()  # Add all unstaged files
     tree = index.write_tree()
     temp_commit_oid = repo.create_commit(
         'HEAD', author, author, temp_commit_message, tree, [repo.head.target],
