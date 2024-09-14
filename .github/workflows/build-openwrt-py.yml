@@ -46,12 +46,11 @@ jobs:
           retention-days: 1
           compression-level: 0
 
-      - name: 上传 all
-        if: success() || failure()
-        uses: actions/upload-artifact@v4.3.5
+      - name: 上传 packages
+        uses: actions/upload-artifact@v4
         with:
-          name: All-Files
-          path: ./
+          name: packages
+          path: uploads/packages
           retention-days: 1
 
 

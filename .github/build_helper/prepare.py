@@ -214,6 +214,8 @@ def prepare() -> None:
             path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)
             logger.debug("复制拓展软件包 %s 到 %s", pkg_name, path)
             shutil.copytree(os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"]), path, symlinks=True)
+            if os.path.isdir(os.path.join(path, ".git")):
+                shutil.rmtree(os.path.join(path, ".git"))
 
         # 替换golang版本
         golang_path = os.path.join(openwrt.path, "feeds", "packages", "lang", "golang")
@@ -386,6 +388,10 @@ def prepare() -> None:
                                          f"\n		set system.@system[-1].zonename='{config["openwrtext"]["zonename"]}'\n")
                 else:
                     f.write(line + "\n")
+
+        logger.info("生成packages")
+        os.makedirs(os.path.join(paths.uploads, "packages"), exist_ok=True)
+        shutil.move(os.path.join(openwrt.path, "package", "cmzj_packages"), os.path.join(paths.uploads, "packages", cfg_name))
 
         logger.info("生成pacthes")
         patches = openwrt.get_pacthes()
