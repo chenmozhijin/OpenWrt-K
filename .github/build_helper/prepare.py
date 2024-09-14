@@ -302,7 +302,7 @@ def prepare() -> None:
             releases = get_gh_repo_last_releases("AdguardTeam/AdGuardHome")
             if releases:
                 for asset in releases["assets"]:
-                    if asset["name"] == f"/AdGuardHome_linux_${adg_arch}.tar.gz":
+                    if asset["name"] == f"AdGuardHome_linux_{adg_arch}.tar.gz":
                         dl_tasks.append(dl2(releases["browser_download_url"], os.path.join(tmpdir.name, "AdGuardHome.tar.gz")))
                         break
                 else:

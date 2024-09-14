@@ -21,11 +21,7 @@ def create_patch_from_unstaged(repo_path: str) -> str | None:
 
     # Check for unstaged changes
     index = repo.index
-    unstaged_changes = index.diff_to_workdir()
 
-    if not unstaged_changes.deltas:
-        logger.debug("%s 没有未提交的更改", repo_path)
-        return None
     # Ensure user.name and user.email are set in the config
     config = repo.config
     try:
@@ -43,7 +39,7 @@ def create_patch_from_unstaged(repo_path: str) -> str | None:
     author = pygit2.Signature(user_name, user_email)
     # Create a new temporary commit for unstaged changes
     temp_commit_message = "Temporary commit for patch generation"
-    index.add_all()  # Add all unstaged files
+    index.add(".")  # Add all unstaged files
     tree = index.write_tree()
     temp_commit_oid = repo.create_commit(
         'HEAD', author, author, temp_commit_message, tree, [repo.head.target],
