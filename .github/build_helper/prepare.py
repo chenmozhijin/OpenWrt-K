@@ -108,7 +108,7 @@ def prepare() -> None:
                                           config["openwrtext"]["golang_version"]) for config in configs.values()]}
     cloned_repos: dict[tuple[str, str], str] = {}
     for repo, branch in to_clone:
-        path = os.path.join(paths.workdir, "repos", repo.split("/")[-2], repo.split("/")[-1],branch if branch else "<default>")
+        path = os.path.join(paths.workdir, "repos", repo.split("/")[-2], repo.split("/")[-1],branch if branch else "@default@")
         logger.info("开始克隆仓库 %s", repo if not branch else f"{repo} (分支: {branch})")
         pygit2.clone_repository(repo, path, checkout_branch=branch if branch else None, depth=1)
         cloned_repos[(repo, branch)] = path
