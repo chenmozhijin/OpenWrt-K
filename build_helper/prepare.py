@@ -76,7 +76,7 @@ def get_matrix(configs: dict[str, dict]) -> str:
     matrix = {"include": []}
     for name, config in configs.items():
         config["name"] = name
-        matrix["include"].append({"name": name, "config": json.dumps(config, separators=(',', ':'))})
+        matrix["include"].append({"name": name, "config": gzip.compress(json.dumps(config, separators=(',', ':')).encode("utf-8")).hex().upper()})
     return json.dumps(matrix)
 
 
@@ -216,7 +216,7 @@ def prepare_cfg(config: dict[str, Any],
                 openwrt: OpenWrt,
                 cloned_repos: dict[tuple[str, str], str],
                 global_files_path: str,
-                compiler: str):
+                compiler: str) -> tuple[str, dict[str, Any], str]:
     logger.info("%s处理软件包...", cfg_name)
     for pkg_name, pkg in config["extpackages"].items():
         path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)

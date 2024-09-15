@@ -1,11 +1,12 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 沉默の金 <cmzj@cmzj.org>
 # SPDX-License-Identifier: MIT
 import os
+import re
 import shutil
 import tarfile
 import tempfile
 import zipfile
-import re
+
 from actions_toolkit import core
 from actions_toolkit.github import Context
 

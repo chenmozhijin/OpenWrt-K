@@ -16,7 +16,7 @@ def main() -> None:
     args = parser.parse_args()
     if args.config:
         import json
-        config = json.loads(args.config)
+        config = json.loads(bytes.fromhex(args.config).decode("utf-8"))
     match args.task:
         case "prepare":
             from .prepare import get_matrix, parse_configs, prepare
