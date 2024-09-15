@@ -76,7 +76,7 @@ def get_matrix(configs: dict[str, dict]) -> str:
     matrix = {"include": []}
     for name, config in configs.items():
         config["name"] = name
-        matrix["include"].append({"name": name, "config": json.dumps(config)})
+        matrix["include"].append({"name": name, "config": json.dumps(config, separators=(',', ':'))})
     return json.dumps(matrix)
 
 

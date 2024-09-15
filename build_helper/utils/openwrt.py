@@ -289,14 +289,17 @@ class OpenWrt:
         with tarfile.open(path, "w:gz") as tar:
             tar.add(self.path, arcname=os.path.basename(self.path))
 
-    def enable_kmods(self) -> None:
+    def enable_kmods(self, exclude_list: list[str]) -> None:
         for _ in range(5):
             with open(os.path.join(self.path, ".config")) as f:
              config = f.read()
             with open(os.path.join(self.path, ".config"), "w") as f:
                 for line in config.splitlines():
                     if match := re.match(r"# CONFIG_PACKAGE_(?P<name>kmod[^ ] is not set)", line):
-                        f.write(f"CONFIG_PACKAGE_{match.group('name')}=m\n")
+                        if match.group('name') not in exclude_list:
+                            f.write(f"CONFIG_PACKAGE_{match.group('name')}=m\n")
+                        else:
+                            f.write(line + "\n")
                     else:
                         f.write(line + "\n")
                 self.make_defconfig()

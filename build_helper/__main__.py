@@ -8,7 +8,8 @@ from .utils.logger import logger
 from .utils.upload import uploader
 from .utils.utils import setup_env
 
-if __name__ == "__main__":
+
+def main() -> None:
     parser = ArgumentParser()
     parser.add_argument("--task", "-t", help="要执行的任务")
     parser.add_argument("--config", "-c", help="配置")
@@ -40,5 +41,22 @@ if __name__ == "__main__":
         case "base-builds":
             from .build import base_builds
             base_builds(config)
+        case "build_packages":
+            from .build import build_packages
+            build_packages(config)
+        case "build_image_builder":
+            from .build import build_image_builder
+            build_image_builder(config)
 
     uploader.save()
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logger.exception("发生错误")
+        import os
+        for root, _, files in os.walk("."):
+            for file in files:
+                print(f"{root}/{file}")  # noqa: T201
+        core.set_failed(f"发生错误: {e.__class__.__name__}: {e!s}")

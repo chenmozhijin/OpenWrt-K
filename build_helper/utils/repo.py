@@ -2,21 +2,15 @@
 # SPDX-License-Identifier: MIT
 from actions_toolkit import core
 from actions_toolkit.github import Context, get_octokit
-from github.Repository import Repository
 
 from .logger import logger
-from .network import dl2, wait_dl_tasks
+from .network import dl2, gh_api_request, wait_dl_tasks
 
 context = Context()
+user_repo = f'{context.repo.owner}/{context.repo.repo}'
+token = core.get_input('Token')
 
-def get_repo() -> Repository:
-    token = core.get_input('Token')
-    octokit = get_octokit(token)
-
-    user_repo = f'{context.repo.owner}/{context.repo.repo}'
-    return octokit.rest.get_repo(user_repo)
-
-repo = get_repo()
+repo = get_octokit(token).rest.get_repo(user_repo)
 
 
 def dl_artifact(name: str, path: str) -> str:
@@ -32,3 +26,13 @@ def dl_artifact(name: str, path: str) -> str:
     dl = dl2(dl_url, path)
     wait_dl_tasks([dl])
     return dl.get_dest()
+
+def del_cache(key_prefix: str) -> None:
+    if response := gh_api_request(f"https://api.github.com/repos/{user_repo}/actions/caches"):
+        for cache in response["actions_caches"]:
+            cache: dict
+            if cache['key'].startswith(key_prefix):
+                logger.info(f'Deleting cache {cache["key"]}')
+                gh_api_request(f"https://api.github.com/repos/{user_repo}/actions/caches/{cache['id']}")
+    else:
+        logger.error('Failed to get caches list')

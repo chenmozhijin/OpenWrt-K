@@ -56,7 +56,7 @@ jobs:
 
       - name: 准备编译
         id: prepare
-        run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
+        run: python3 -m build_helper --task build-prepare --config '${{ matrix.config }}''
         env:
           Token: ${{ github.token }}
 
@@ -81,7 +81,73 @@ jobs:
 
       - name: 编译
         id: build
-        run: python3 -m build_helper --task base-builds --config ${{ matrix.config }}
+        run: python3 -m build_helper --task base-builds --config '${{ matrix.config }}'
+
+      - name: 上传
+        uses: ./.github/action/upload
+
+  build-packages:
+    runs-on: ubuntu-22.04
+    needs: [prepare,base-builds]
+    name: build-packages-${{ matrix.name }}
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 建立环境
+        uses: ./.github/action/prepare
+
+      - name: 准备编译
+        id: prepare
+        run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
+        env:
+          Token: ${{ github.token }}
+
+      - name: 缓存ccache
+        uses: actions/cache@v4
+        if: ${{ steps.prepare.outputs.use-cache }}
+        with:
+          path: ${{ steps.prepare.outputs.openwrt-path }}/.ccache
+          key: ${{ steps.prepare.outputs.cache-key }}
+          restore-keys: |
+            ${{ steps.prepare.outputs.cache-restore-key }}
+
+      - name: 编译
+        id: build
+        run: python3 -m build_helper --task build_packages --config ${{ matrix.config }}
+
+      - name: 上传
+        uses: ./.github/action/upload
+
+  build-ImageBuilder:
+    runs-on: ubuntu-22.04
+    needs: [prepare,base-builds]
+    name: build-ImageBuilder-${{ matrix.name }}
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 建立环境
+        uses: ./.github/action/prepare
+
+      - name: 准备编译
+        id: prepare
+        run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
+        env:
+          Token: ${{ github.token }}
+
+      - name: 缓存ccache
+        uses: actions/cache@v4
+        if: ${{ steps.prepare.outputs.use-cache }}
+        with:
+          path: ${{ steps.prepare.outputs.openwrt-path }}/.ccache
+          key: ${{ steps.prepare.outputs.cache-key }}
+          restore-keys: |
+            ${{ steps.prepare.outputs.cache-restore-key }}
+
+      - name: 编译
+        id: build
+        run: python3 -m build_helper --task build_image_builder --config ${{ matrix.config }}
 
       - name: 上传
         uses: ./.github/action/upload

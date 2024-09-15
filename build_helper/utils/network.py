@@ -15,10 +15,10 @@ HEADER = {
 }
 
 
-def request_get(url: str, retry: int = 6) -> str | None:
+def request_get(url: str, retry: int = 6, headers: dict | None = None) -> str | None:
     for i in range(retry):
         try:
-            response = requests.get(url, timeout=10, allow_redirects=True)
+            response = requests.get(url, timeout=10, allow_redirects=True, headers=headers)
             response.raise_for_status()
             return response.text  # noqa: TRY300
         except:  # noqa: E722
@@ -47,8 +47,15 @@ def wait_dl_tasks(dl_tasks: list[SmartDL]) -> None:
             task.wait()
     dl_tasks.clear()
 
-def get_gh_repo_last_releases(repo: str) -> dict | None:
-    response = request_get(f"https://api.github.com/repos/{repo}/releases/latest")
+def get_gh_repo_last_releases(repo: str, token: str | None = None) -> dict | None:
+    return gh_api_request(f"https://api.github.com/repos/{repo}/releases/latest", token)
+
+def gh_api_request(url: str, token: str | None = None) -> dict | None:
+    headers = {"Accept": "application/vnd.github+json",
+               "X-GitHub-Api-Version": "2022-11-28"}
+    if token:
+        headers["Authorization"] = f'Bearer {token}'
+    response = request_get(url, headers=headers)
     if isinstance(response, str):
         obj = json.loads(response)
         if isinstance(obj, dict):
