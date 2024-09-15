@@ -75,6 +75,7 @@ def parse_configs() -> dict[str, dict[str, Any]]:
 def get_matrix(configs: dict[str, dict]) -> str:
     matrix = {"include": []}
     for name, config in configs.items():
+        config["name"] = name
         matrix["include"].append({"name": name, "config": json.dumps(config)})
     return json.dumps(matrix)
 
@@ -206,7 +207,7 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
     with Pool(len(cfg_names)) as p:
         for cfg_name, config, tar_path in p.starmap(prepare_cfg, tasks):
             configs[cfg_name] = config
-            uploader.add(f"{cfg_name}-openwrt-source", tar_path,retention_days=1,compression_level=0)
+            uploader.add(f"openwrt-source-{cfg_name}", tar_path,retention_days=1,compression_level=0)
             logger.info("%s处理完成", cfg_name)
 
 
@@ -219,6 +220,10 @@ def prepare_cfg(config: dict[str, Any],
     logger.info("%s处理软件包...", cfg_name)
     for pkg_name, pkg in config["extpackages"].items():
         path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)
+        pkg_path = os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"])
+        if not os.path.exists(pkg_path):
+            msg = f"找不到拓展软件包: {pkg_name} ,这可能是由于仓库 {pkg["REPOSITORIE"]} 目录结构变更导致的,请检查您的拓展软件包配置"
+            raise FileNotFoundError(msg)
         logger.debug("复制拓展软件包 %s 到 %s", pkg_name, path)
         shutil.copytree(os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"]), path, symlinks=True)
         if os.path.isdir(os.path.join(path, ".git")):
@@ -397,9 +402,9 @@ def prepare_cfg(config: dict[str, Any],
             else:
                 f.write(line + "\n")
 
-    logger.info("%s生成源代码归档")
+    logger.info("%s生成源代码归档", cfg_name)
+    shutil.rmtree(os.path.join(openwrt.path, ".git"))
     os.makedirs(os.path.join(paths.uploads, cfg_name), exist_ok=True)
-    tar_path = os.path.join(paths.uploads, cfg_name, "openwrt-source.tar.xz")
-    with tarfile.open(tar_path, "w:xz") as tar:
-        tar.add(openwrt.path, arcname="openwrt")
+    tar_path = os.path.join(paths.uploads, cfg_name, "openwrt-source.tar.gz")
+    openwrt.archive(tar_path)
     return cfg_name, config, tar_path

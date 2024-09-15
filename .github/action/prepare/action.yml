@@ -1,11 +1,12 @@
 name: '准备运行环境'
 description: '准备运行环境'
+
 runs: 
   using: "composite"
   steps:
     # 建立环境
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
         cache: 'pip'

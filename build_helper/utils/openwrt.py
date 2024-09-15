@@ -4,10 +4,10 @@ import os
 import re
 import subprocess
 from typing import Literal
-
+import shutil
 import pygit2
 from actions_toolkit import core
-
+import tarfile
 from .logger import logger
 from .network import request_get
 from .utils import apply_patch
@@ -16,11 +16,17 @@ from .utils import apply_patch
 class OpenWrt:
     def __init__(self, path: str, tag_branch: str | None = None) -> None:
         self.path = path
-        self.repo = pygit2.Repository(self.path)
-        if tag_branch:
-            self.set_tag_or_branch(tag_branch)
+        if os.path.isdir(os.path.join(path, ".git")):
+            self.repo = pygit2.Repository(self.path)
+            if tag_branch:
+                self.set_tag_or_branch(tag_branch)
+        else:
+            self.repo = None
 
     def set_tag_or_branch(self, tag_branch: str) -> None:
+        if not self.repo:
+            msg = "没有找到git仓库"
+            raise ValueError(msg)
         if tag_branch in self.repo.branches:
             # 分支
             self.repo.checkout(tag_branch)
@@ -55,6 +61,45 @@ class OpenWrt:
             raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
         logger.debug("运行命令：make defconfig成功\nstdout: %s\nstderr: %s", result.stdout, result.stderr)
 
+    def make_download(self, debug: bool = False) -> None:
+        args = ['make', 'download']
+        if debug:
+            args.extend(["-j1", "V=s"])
+        else:
+            args.append("-j 16")
+            logger.debug("运行命令：%s", " ".join(args))
+        result = subprocess.run(args, cwd=self.path, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+        logger.debug("运行命令：%s成功\nstdout: %s\nstderr: %s", " ".join(args), result.stdout, result.stderr)
+
+    def make(self, target: str, debug: bool = False) -> None:
+        args = ['make', target]
+        if debug:
+            args.extend(["-j 1", "V=s"])
+        else:
+            if not (cpu_count := os.cpu_count()):
+                cpu_count = 1
+            args.append(f"-j {cpu_count + 1}")
+        logger.debug("运行命令：%s", " ".join(args))
+        result = subprocess.run(args, cwd=self.path)
+        if result.returncode != 0:
+            if not debug:
+                logger.error("编译失败，尝试使用debug模式重新编译")
+                self.make(target, debug=True)
+            else:
+                logger.error("编译失败，请检查错误信息")
+                raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+
+    def download_packages_source(self) -> None:
+        for i in range(2):
+            try:
+                self.make_download(debug=bool(i != 0))
+                break
+            except Exception as e:
+                logger.error(f"下载源码失败: {e}")
+                if i < 1:
+                    logger.info("尝试重新下载源码...")
     def apply_config(self, config: str) -> None:
         with open(os.path.join(self.path, '.config'), 'w') as f:
             f.write(config)
@@ -85,14 +130,33 @@ class OpenWrt:
                         match = re.match(r'^CONFIG_ARCH="(?P<arch>.*)"$', line)
                         if match:
                             arch = match.group("arch")
-                            break
                     elif line.startswith('CONFIG_arm_'):
                         match = re.match(r'^CONFIG_arm_(?P<ver>[0-9]+)=y$', line)
                         if match:
                             version = match.group("ver")
-                            break
+
+                    if arch and version:
+                        break
         logger.debug("仓库%s的架构为%s,版本为%s", self.path, arch, version)
         return arch, version
+
+    def get_target(self) -> tuple[str | None, str | None]:
+        target, subtarget = None, None
+        if os.path.isfile(os.path.join(self.path, '.config')):
+            with open(os.path.join(self.path, '.config')) as f:
+                for line in f:
+                    if line.startswith('CONFIG_TARGET_BOARD='):
+                        match = re.match(r'^CONFIG_TARGET_BOARD="(?P<target>.*)"$', line)
+                        if match:
+                            target = match.group("target")
+                    elif line.startswith('CONFIG_TARGET_SUBTARGET='):
+                        match = re.match(r'^CONFIG_TARGET_SUBTARGET="(?P<subtarget>.*)"$', line)
+                        if match:
+                            subtarget = match.group("subtarget")
+                    if target and subtarget:
+                        return target, subtarget
+        return target, subtarget
+
 
     def get_package_config(self, package: str) -> Literal["y", "n", "m"] | None:
         package_config = None
@@ -163,6 +227,80 @@ class OpenWrt:
             else:
                 core.error("获取libpfring修复补丁失败, 这可能会导致编译错误。\nttps://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865")
 
+    def get_packageinfo(self) -> dict | None:
+        path = os.path.join(self.path, "tmp", ".targetinfo")
+        if not os.path.exists(path):
+            return None
+
+        packages = {}
+
+        makefile = ""
+        package = ""
+        version = ""
+        section = ""
+        category = ""
+        title = ""
+        depends = ""
+
+        count = 0
+        with open(path, encoding='utf-8') as f:
+            for line in f:
+                if line.startswith("Source-Makefile: "):
+                    makefile = line.split("Source-Makefile: ")[1].strip()
+                if line.startswith("Package: "):
+                    if count != 0:
+                        packages[package] = {
+                            "makefile": makefile,
+                            "version": version,
+                            "section": section,
+                            "category": category,
+                            "title": title,
+                            "depends": depends,
+                        }
+                    package = line.split("Package: ")[1].strip()
+                    version = ""
+                    section = ""
+                    category = ""
+                    title = ""
+                    depends = ""
+                    count += 1
+                if line.startswith("Version: "):
+                    version = line.split("Version: ")[1].strip()
+                if line.startswith("Section: "):
+                    section = line.split("Section: ")[1].strip()
+                if line.startswith("Category: "):
+                    category = line.split("Category: ")[1].strip()
+                if line.startswith("Title: "):
+                    title = line.split("Title: ")[1].strip()
+                if line.startswith("Depends: "):
+                    depends = line.split("Depends: ")[1].strip()
+
+        if count == 0:
+            return None
+        return packages
+
+    def archive(self, path: str) -> None:
+        if os.path.exists(os.path.join(self.path, ".git")):
+            shutil.rmtree(os.path.join(self.path, ".git"))
+        if os.path.exists(os.path.join(self.path, "tmp")):
+            shutil.rmtree(os.path.join(self.path, "tmp"))
+        if os.path.exists(os.path.join(self.path, "dl")):
+            shutil.rmtree(os.path.join(self.path, "dl"))
+        with tarfile.open(path, "w:gz") as tar:
+            tar.add(self.path, arcname=os.path.basename(self.path))
+
+    def enable_kmods(self) -> None:
+        for _ in range(5):
+            with open(os.path.join(self.path, ".config")) as f:
+             config = f.read()
+            with open(os.path.join(self.path, ".config"), "w") as f:
+                for line in config.splitlines():
+                    if match := re.match(r"# CONFIG_PACKAGE_(?P<name>kmod[^ ] is not set)", line):
+                        f.write(f"CONFIG_PACKAGE_{match.group('name')}=m\n")
+                    else:
+                        f.write(line + "\n")
+                self.make_defconfig()
+
     def __getstate__(self) -> dict:
         state = self.__dict__.copy()
         del state['repo']
@@ -170,4 +308,7 @@ class OpenWrt:
 
     def __setstate__(self, state: dict) -> None:
         self.__dict__.update(state)
-        self.file = pygit2.Repository(self.path)
+        if os.path.isdir(os.path.join(self.path, ".git")):
+            self.repo = pygit2.Repository(self.path)
+        else:
+            self.repo = None

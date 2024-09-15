@@ -4,7 +4,6 @@ from argparse import ArgumentParser
 
 from actions_toolkit import core
 
-from .prepare import get_matrix, parse_configs, prepare
 from .utils.logger import logger
 from .utils.upload import uploader
 from .utils.utils import setup_env
@@ -14,8 +13,12 @@ if __name__ == "__main__":
     parser.add_argument("--task", "-t", help="要执行的任务")
     parser.add_argument("--config", "-c", help="配置")
     args = parser.parse_args()
+    if args.config:
+        import json
+        config = json.loads(args.config)
     match args.task:
         case "prepare":
+            from .prepare import get_matrix, parse_configs, prepare
             setup_env()
             try:
                 configs = parse_configs()
@@ -30,5 +33,12 @@ if __name__ == "__main__":
             except Exception as e:
                 logger.exception("准备时出错")
                 core.set_failed(f"准备时出错: {e.__class__.__name__}: {e!s}")
+        case "build-prepare":
+            from .build import prepare
+            setup_env(build=True)
+            prepare(config)
+        case "base-builds":
+            from .build import base_builds
+            base_builds(config)
 
     uploader.save()

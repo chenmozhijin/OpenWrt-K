@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 沉默の金 <cmzj@cmzj.org>
 # SPDX-License-Identifier: MIT
+import hashlib
 import os
 import subprocess
 
@@ -136,3 +137,18 @@ def apply_patch(patch: str, target: str) -> bool:
                             capture_output=True,
     )
     return result.returncode == 0
+
+
+def hash_dirs(directories: list[str] | tuple[str,...], hash_algorithm: str = 'sha256') -> str:
+    """计算整个目录的哈希值"""
+    hash_obj = hashlib.new(hash_algorithm)
+
+    # 遍历目录中的所有文件和子目录
+    for directory in directories:
+        for root, _, files in os.walk(directory):
+            for name in sorted(files):
+                with open(os.path.join(root, name), 'rb') as f:
+                    while chunk := f.read(8192):
+                        hash_obj.update(chunk)
+
+    return hash_obj.hexdigest()
