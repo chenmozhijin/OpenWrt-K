@@ -33,15 +33,20 @@ def dl2(url: str, path: str, retry: int = 6) -> SmartDL:
     task.attemps_limit = retry
     try:
         task.start()
-    except Exception as e:
-        logger.exception(f"下载: {url} 失败")
-        raise e
+    except Exception:
+        while not task.isSuccessful() or task.current_attemp > task.attemps_limit:
+            try:
+                logger.warning("下载: %s 失败，重试第%s/%s次...", task.url, task.current_attemp, task.attemps_limit)
+                task.retry()
+                break
+            except Exception:
+                logger.warning("下载: %s 重试失败", task.url)
     return task
 
 def wait_dl_tasks(dl_tasks: list[SmartDL]) -> None:
     for task in dl_tasks:
         task.wait()
-        while not task.isSuccessful():
+        while not task.isSuccessful() or task.current_attemp > task.attemps_limit:
             logger.warning("下载: %s 失败，重试第%s/%s次...", task.url, task.current_attemp, task.attemps_limit)
             task.retry()
             task.wait()
