@@ -3,14 +3,22 @@
 
 name: Build OpenWrt-K
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 4 * * *'
   push:
     paths:
       - '.github/**'
       - 'files/**'
+      - 'scripts/**'
+      - 'build_helper/**'
+      - 'config/**'
+
+      - '!.gitignore'
+      - '!LICENSE'
       - '!README.md'
-  workflow_dispatch:
+      - '!img/**'
+
 permissions:
   actions: write
   contents: write
@@ -37,7 +45,7 @@ jobs:
   base-builds:
     runs-on: ubuntu-22.04
     needs: prepare
-    name: base-builds-${{ matrix.config }}
+    name: base-builds-${{ matrix.name }}
     strategy:
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
