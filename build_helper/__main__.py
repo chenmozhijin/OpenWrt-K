@@ -6,6 +6,7 @@ from actions_toolkit import core
 
 from utils.logger import logger
 from utils.upload import uploader
+from utils.utils import setup_env
 
 from .prepare import get_matrix, parse_configs, prepare
 
@@ -16,6 +17,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     match args.task:
         case "prepare":
+            setup_env()
             try:
                 configs = parse_configs()
                 if not configs:

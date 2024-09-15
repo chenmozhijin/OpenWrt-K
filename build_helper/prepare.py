@@ -19,12 +19,12 @@ from utils.network import dl2, get_gh_repo_last_releases, request_get, wait_dl_t
 from utils.openwrt import OpenWrt
 from utils.paths import paths
 from utils.upload import uploader
-from utils.utils import parse_config, setup_env
+from utils.utils import parse_config
 
 if TYPE_CHECKING:
     from pySmartDL import SmartDL
 
-setup_env()
+
 
 def parse_configs() -> dict[str, dict[str, Any]]:
     """解析配置文件"""

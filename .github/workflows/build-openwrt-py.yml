@@ -28,7 +28,7 @@ jobs:
       - name: Run Build Helper
         id: run
         run: |
-          python3 $GITHUB_WORKSPACE/.github/build_helper/prepare.py
+          python3 -m $GITHUB_WORKSPACE/build_helper --task prepare
 
       - name: 上传
         uses: ./.github/action/upload
