@@ -56,7 +56,7 @@ jobs:
 
       - name: 准备编译
         id: prepare
-        run: python3 -m build_helper --task build-prepare --config '${{ matrix.config }}''
+        run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
         env:
           Token: ${{ github.token }}
 
@@ -81,7 +81,7 @@ jobs:
 
       - name: 编译
         id: build
-        run: python3 -m build_helper --task base-builds --config '${{ matrix.config }}'
+        run: python3 -m build_helper --task base-builds --config ${{ matrix.config }}
 
       - name: 上传
         uses: ./.github/action/upload
@@ -151,3 +151,20 @@ jobs:
 
       - name: 上传
         uses: ./.github/action/upload
+
+  build-Image:
+    runs-on: ubuntu-22.04
+    needs: [prepare,base-builds,build-ImageBuilder,build-packages]
+    name: build-Image-${{ matrix.name }}
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 建立环境
+        uses: ./.github/action/prepare
+
+      - name: 准备构建
+        id: prepare
+        run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
+        env:
+          Token: ${{ github.token }}
