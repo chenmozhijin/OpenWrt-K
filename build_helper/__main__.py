@@ -4,11 +4,10 @@ from argparse import ArgumentParser
 
 from actions_toolkit import core
 
-from utils.logger import logger
-from utils.upload import uploader
-from utils.utils import setup_env
-
 from .prepare import get_matrix, parse_configs, prepare
+from .utils.logger import logger
+from .utils.upload import uploader
+from .utils.utils import setup_env
 
 if __name__ == "__main__":
     parser = ArgumentParser()
