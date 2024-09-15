@@ -162,3 +162,12 @@ class OpenWrt:
                     core.error("修复libpfring失败, 这可能会导致编译错误。\nttps://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865")
             else:
                 core.error("获取libpfring修复补丁失败, 这可能会导致编译错误。\nttps://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865")
+
+    def __getstate__(self) -> dict:
+        state = self.__dict__.copy()
+        del state['repo']
+        return state
+
+    def __setstate__(self, state: dict) -> None:
+        self.__dict__.update(state)
+        self.file = pygit2.Repository(self.path)

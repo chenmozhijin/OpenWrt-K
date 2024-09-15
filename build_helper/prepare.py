@@ -202,7 +202,7 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
     tasks = []
     for cfg_name, openwrt in openwrts.items():
         config = configs[cfg_name]
-        tasks.append((config, cfg_name, openwrt.path, cloned_repos, global_files_path, compiler))
+        tasks.append((config, cfg_name, openwrt, cloned_repos, global_files_path, compiler))
     with Pool(len(cfg_names)) as p:
         for cfg_name, config, tar_path in p.starmap(prepare_cfg, tasks):
             configs[cfg_name] = config
@@ -212,11 +212,10 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
 
 def prepare_cfg(config: dict[str, Any],
                 cfg_name: str,
-                openwrt_path: str,
+                openwrt: OpenWrt,
                 cloned_repos: dict[tuple[str, str], str],
                 global_files_path: str,
                 compiler: str):
-    openwrt = OpenWrt(openwrt_path)
     logger.info("%s处理软件包...", cfg_name)
     for pkg_name, pkg in config["extpackages"].items():
         path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)
