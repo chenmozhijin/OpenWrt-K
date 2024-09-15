@@ -13,46 +13,6 @@ from .network import request_get
 from .utils import apply_patch
 
 
-def create_patch_from_unstaged(repo_path: str) -> str | None:
-    # Open the repository
-    repo = pygit2.Repository(repo_path)
-
-    orig = repo.head.target
-
-    # Check for unstaged changes
-    index = repo.index
-
-    # Ensure user.name and user.email are set in the config
-    config = repo.config
-    try:
-        user_name = config['user.name']
-    except KeyError:
-        user_name = "default_user"
-        config['user.name'] = user_name  # Set default user.name if not found
-
-    try:
-        user_email = config['user.email']
-    except KeyError:
-        user_email = "default_email@example.com"
-        config['user.email'] = user_email  # Set default user.email if not found
-
-    author = pygit2.Signature(user_name, user_email)
-    # Create a new temporary commit for unstaged changes
-    temp_commit_message = "Temporary commit for patch generation"
-    index.add_all()  # Add all unstaged files
-    tree = index.write_tree()
-    temp_commit_oid = repo.create_commit(
-        'HEAD', author, author, temp_commit_message, tree, [repo.head.target],
-    )
-
-    # Generate a diff between the temporary commit and the previous commit
-    diff = repo.diff(orig, temp_commit_oid)
-
-    # Reset the repository to the previous commit to undo the temporary commit
-    repo.reset(orig, pygit2.enums.ResetMode.MIXED)
-
-    return diff.patch
-
 class OpenWrt:
     def __init__(self, path: str, tag_branch: str | None = None) -> None:
         self.path = path
@@ -78,13 +38,22 @@ class OpenWrt:
         self.tag_branch = tag_branch
 
     def feed_update(self) -> None:
-        subprocess.run([os.path.join(self.path, "scripts", "feeds"), 'update', '-a'], cwd=self.path)
+        result = subprocess.run([os.path.join(self.path, "scripts", "feeds"), 'update', '-a'], cwd=self.path, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+        logger.debug("运行命令：scripts/feeds update -a成功\nstdout: %s\nstderr: %s", result.stdout, result.stderr)
 
     def feed_install(self) -> None:
-        subprocess.run([os.path.join(self.path, "scripts", "feeds"), 'install', '-a'], cwd=self.path)
+        result = subprocess.run([os.path.join(self.path, "scripts", "feeds"), 'install', '-a'], cwd=self.path, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+        logger.debug("运行命令：scripts/feeds install -a成功\nstdout: %s\nstderr: %s", result.stdout, result.stderr)
 
     def make_defconfig(self) -> None:
-        subprocess.run(['make', 'defconfig'], cwd=self.path)
+        result = subprocess.run(['make', 'defconfig'], cwd=self.path, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+        logger.debug("运行命令：make defconfig成功\nstdout: %s\nstderr: %s", result.stdout, result.stderr)
 
     def apply_config(self, config: str) -> None:
         with open(os.path.join(self.path, '.config'), 'w') as f:
@@ -193,14 +162,3 @@ class OpenWrt:
                     core.error("修复libpfring失败, 这可能会导致编译错误。\nttps://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865")
             else:
                 core.error("获取libpfring修复补丁失败, 这可能会导致编译错误。\nttps://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865")
-
-
-
-    def get_pacthes(self) -> dict:
-        result = {"openwrt": create_patch_from_unstaged(self.path),
-                  "feeds": {}}
-        for feed in os.listdir(os.path.join(self.path, "feeds")):
-            path = os.path.join(self.path, "feeds", feed)
-            if os.path.isdir(path) and os.path.isdir(os.path.join(path, ".git")) and (patch := create_patch_from_unstaged(path)):
-                result["feeds"][feed] = patch
-        return result

@@ -42,7 +42,8 @@ class UpLoader:
         self.action['runs']['steps'].append(action)
 
     def save(self) -> None:
-        with open(os.path.join(paths.root, ".github", "action", "upload", "action.yml"), 'w', encoding='utf-8') as file:
-            yaml.dump(self.action, file, allow_unicode=True, sort_keys=False)
+        if self.action['runs']['steps']:
+            with open(os.path.join(paths.root, ".github", "action", "upload", "action.yml"), 'w', encoding='utf-8') as file:
+                yaml.dump(self.action, file, allow_unicode=True, sort_keys=False)
 
 uploader = UpLoader()

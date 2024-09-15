@@ -7,6 +7,7 @@ import re
 import shutil
 import tarfile
 import tempfile
+from multiprocessing.pool import Pool
 from typing import TYPE_CHECKING, Any
 
 import pygit2
@@ -77,17 +78,8 @@ def get_matrix(configs: dict[str, dict]) -> str:
         matrix["include"].append({"name": name, "config": json.dumps(config)})
     return json.dumps(matrix)
 
-try:
-    configs = parse_configs()
-    if not configs:
-        core.set_failed("未找到任何可用的配置")
-    logger.debug("解析配置成功: %s", configs)
-except Exception as e:
-    logger.exception("解析配置时出错")
-    core.set_failed(f"解析配置时出错: {e.__class__.__name__}: {e!s}")
 
-
-def prepare() -> None:
+def prepare(configs: dict[str, dict[str, Any]]) -> None:
     # clone拓展软件源码
     logger.info("开始克隆拓展软件源码...")
     to_clone: set[tuple[str, str]] = {("https://github.com/immortalwrt/packages", ""),
@@ -207,200 +199,206 @@ def prepare() -> None:
         compiler = json.loads(user_info).get("name", compiler)
     logger.info("编译者：%s", compiler)
 
-
+    tasks = []
     for cfg_name, openwrt in openwrts.items():
-        logger.info("%s处理软件包...", cfg_name)
         config = configs[cfg_name]
-        for pkg_name, pkg in config["extpackages"].items():
-            path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)
-            logger.debug("复制拓展软件包 %s 到 %s", pkg_name, path)
-            shutil.copytree(os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"]), path, symlinks=True)
-            if os.path.isdir(os.path.join(path, ".git")):
-                shutil.rmtree(os.path.join(path, ".git"))
+        tasks.append((config, cfg_name, openwrt, cloned_repos, global_files_path, compiler))
+    with Pool(len(cfg_names)) as p:
+        for cfg_name, config, tar_path in p.starmap(prepare_cfg, tasks):
+            configs[cfg_name] = config
+            uploader.add(f"{cfg_name}-openwrt-source", tar_path,retention_days=1,compression_level=0)
+            logger.info("%s处理完成", cfg_name)
 
-        # 替换golang版本
-        golang_path = os.path.join(openwrt.path, "feeds", "packages", "lang", "golang")
-        shutil.rmtree(golang_path)
-        shutil.copytree(cloned_repos[("https://github.com/sbwml/packages_lang_golang", config["openwrtext"]["golang_version"])], golang_path)
-        openwrt.feed_install()
-        # 修复问题
-        openwrt.fix_problems()
-        # 应用配置
-        openwrt.apply_config(config["openwrt"])
-        openwrt.make_defconfig()
-        config["openwrt"] = openwrt.get_diff_config()
 
-        # 添加turboacc补丁
-        turboacc_dir = os.path.join(cloned_repos[("https://github.com/chenmozhijin/turboacc", "package")])
-        versions = parse_config(os.path.join(turboacc_dir, "version"), ("FIREWALL4_VERSION", "NFTABLES_VERSION", "LIBNFTNL_VERSION"))
-        kernel_version = openwrt.get_kernel_version()
-        enable_sfe = (openwrt.get_package_config("kmod-shortcut-fe") in ("y", "m") or
-                   openwrt.get_package_config("kmod-shortcut-fe-drv") in ("y", "m") or
-                   openwrt.get_package_config("kmod-shortcut-fe-cm") in ("y", "m") or
-                   openwrt.get_package_config("kmod-fast-classifier") in ("y", "m"))
-        enable_fullcone = openwrt.get_package_config("kmod-nft-fullcone") in ("y", "m")
-        if enable_fullcone or enable_sfe:
-            logger.info("添加952补丁")
-            patch925 = f"952{"-add" if kernel_version != "5.10" else ""}-net-conntrack-events-support-multiple-registrant.patch"
-            shutil.copy2(os.path.join(turboacc_dir, f"hack-{kernel_version}", patch925),
-                         os.path.join(openwrt.path, "target", "linux", "generic", f"hack-{kernel_version}", patch925))
-            logger.info("附加内核配置CONFIG_NF_CONNTRACK_CHAIN_EVENTS")
-            with open(os.path.join(openwrt.path, "target", "linux", "generic", f"config-{kernel_version}"), "a") as f:
-                f.write("\n# CONFIG_NF_CONNTRACK_CHAIN_EVENTS is not set")
-        if enable_sfe:
-            logger.info("添加953补丁")
-            patch953 = "953-net-patch-linux-kernel-to-support-shortcut-fe.patch"
-            shutil.copy2(os.path.join(turboacc_dir, f"hack-{kernel_version}", patch953),
-                         os.path.join(openwrt.path, "target", "linux", "generic", f"hack-{kernel_version}", patch953))
-            logger.info("添加613补丁")
-            patch613 = "613-netfilter_optional_tcp_window_check.patch"
-            shutil.copy2(os.path.join(turboacc_dir, f"pending-{kernel_version}", patch613),
-                         os.path.join(openwrt.path, "target", "linux", "generic", f"pending-{kernel_version}", patch613))
-            logger.info("附加内核配置CONFIG_SHORTCUT_FE")
-            with open(os.path.join(openwrt.path, "target", "linux", "generic", f"config-{kernel_version}"), "a") as f:
-                f.write("\nCONFIG_SHORTCUT_FE=y")
-        if enable_fullcone:
-            logger.info("添加libnftnl、firewall4、nftables补丁")
-            shutil.rmtree(os.path.join(openwrt.path, "package", "libs", "libnftnl"))
-            shutil.copytree(os.path.join(turboacc_dir, f"libnftnl-{versions['LIBNFTNL_VERSION']}"), os.path.join(openwrt.path, "package", "libs", "libnftnl"))
-            shutil.rmtree(os.path.join(openwrt.path, "package", "network", "config", "firewall4"))
-            shutil.copytree(os.path.join(turboacc_dir, f"firewall4-{versions['FIREWALL4_VERSION']}"),
-                            os.path.join(openwrt.path, "package", "network", "config", "firewall4"))
-            shutil.rmtree(os.path.join(openwrt.path, "package", "network", "utils", "nftables"))
-            shutil.copytree(os.path.join(turboacc_dir, f"nftables-{versions['NFTABLES_VERSION']}"),
-                            os.path.join(openwrt.path, "package", "network", "utils", "nftables"))
+def prepare_cfg(config: dict[str, Any],
+                cfg_name: str, openwrt: OpenWrt,
+                cloned_repos: dict[tuple[str, str], str],
+                global_files_path: str,
+                compiler: str):
+    logger.info("%s处理软件包...", cfg_name)
+    for pkg_name, pkg in config["extpackages"].items():
+        path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)
+        logger.debug("复制拓展软件包 %s 到 %s", pkg_name, path)
+        shutil.copytree(os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"]), path, symlinks=True)
+        if os.path.isdir(os.path.join(path, ".git")):
+            shutil.rmtree(os.path.join(path, ".git"))
 
-        logger.info("%s准备自定义文件...", cfg_name)
-        files_path = os.path.join(openwrt.path, "files")
-        shutil.copytree(global_files_path, files_path)
-        arch, version = openwrt.get_arch()
-        match arch:
-            case "i386":
-                adg_arch, clash_arch = "386", "linux-386"
-            case "i686":
-                adg_arch, clash_arch = "386", None
-            case "x86_64":
-                adg_arch, clash_arch = "amd64", "linux-amd64"
-            case "mipsel":
-                adg_arch, clash_arch = "mipsel", "linux-mipsle-softfloat"
-            case "mips64el":
-                adg_arch, clash_arch = "mips64el", None
-            case "mips":
-                adg_arch, clash_arch = "mips", "linux-mips-softfloat"
-            case "mips64":
-                adg_arch, clash_arch = "mips64", "linux-mips64"
-            case "arm":
-                if version:
-                    adg_arch, clash_arch = f"arm{version}", f"linux-arm{version}"
-                else:
-                    adg_arch, clash_arch = "armv5", "linux-armv5"
-            case "aarch64":
-                adg_arch, clash_arch = "arm64", "linux-arm64"
-            case "powerpc":
-                adg_arch, clash_arch = "powerpc", None
-            case "powerpc64":
-                adg_arch, clash_arch = "ppc64", None
-            case _:
-                adg_arch, clash_arch = None, None
+    # 替换golang版本
+    golang_path = os.path.join(openwrt.path, "feeds", "packages", "lang", "golang")
+    shutil.rmtree(golang_path)
+    shutil.copytree(cloned_repos[("https://github.com/sbwml/packages_lang_golang", config["openwrtext"]["golang_version"])], golang_path)
+    openwrt.feed_install()
+    # 修复问题
+    openwrt.fix_problems()
+    # 应用配置
+    openwrt.apply_config(config["openwrt"])
+    openwrt.make_defconfig()
+    config["openwrt"] = openwrt.get_diff_config()
 
-        tmpdir = tempfile.TemporaryDirectory()
-        if adg_arch and openwrt.get_package_config("luci-app-adguardhome") == "y":
-            logger.info("%s下载架构为%s的AdGuardHome核心", cfg_name, adg_arch)
-            releases = get_gh_repo_last_releases("AdguardTeam/AdGuardHome")
-            if releases:
-                for asset in releases["assets"]:
-                    if asset["name"] == f"AdGuardHome_linux_{adg_arch}.tar.gz":
-                        dl_tasks.append(dl2(asset["browser_download_url"], os.path.join(tmpdir.name, "AdGuardHome.tar.gz")))
-                        break
-                else:
-                    logger.error("未找到可用的AdGuardHome二进制文件")
+    # 添加turboacc补丁
+    turboacc_dir = os.path.join(cloned_repos[("https://github.com/chenmozhijin/turboacc", "package")])
+    versions = parse_config(os.path.join(turboacc_dir, "version"), ("FIREWALL4_VERSION", "NFTABLES_VERSION", "LIBNFTNL_VERSION"))
+    kernel_version = openwrt.get_kernel_version()
+    enable_sfe = (openwrt.get_package_config("kmod-shortcut-fe") in ("y", "m") or
+               openwrt.get_package_config("kmod-shortcut-fe-drv") in ("y", "m") or
+               openwrt.get_package_config("kmod-shortcut-fe-cm") in ("y", "m") or
+               openwrt.get_package_config("kmod-fast-classifier") in ("y", "m"))
+    enable_fullcone = openwrt.get_package_config("kmod-nft-fullcone") in ("y", "m")
+    if enable_fullcone or enable_sfe:
+        logger.info("添加952补丁")
+        patch925 = f"952{"-add" if kernel_version != "5.10" else ""}-net-conntrack-events-support-multiple-registrant.patch"
+        shutil.copy2(os.path.join(turboacc_dir, f"hack-{kernel_version}", patch925),
+                     os.path.join(openwrt.path, "target", "linux", "generic", f"hack-{kernel_version}", patch925))
+        logger.info("附加内核配置CONFIG_NF_CONNTRACK_CHAIN_EVENTS")
+        with open(os.path.join(openwrt.path, "target", "linux", "generic", f"config-{kernel_version}"), "a") as f:
+            f.write("\n# CONFIG_NF_CONNTRACK_CHAIN_EVENTS is not set")
+    if enable_sfe:
+        logger.info("添加953补丁")
+        patch953 = "953-net-patch-linux-kernel-to-support-shortcut-fe.patch"
+        shutil.copy2(os.path.join(turboacc_dir, f"hack-{kernel_version}", patch953),
+                     os.path.join(openwrt.path, "target", "linux", "generic", f"hack-{kernel_version}", patch953))
+        logger.info("添加613补丁")
+        patch613 = "613-netfilter_optional_tcp_window_check.patch"
+        shutil.copy2(os.path.join(turboacc_dir, f"pending-{kernel_version}", patch613),
+                     os.path.join(openwrt.path, "target", "linux", "generic", f"pending-{kernel_version}", patch613))
+        logger.info("附加内核配置CONFIG_SHORTCUT_FE")
+        with open(os.path.join(openwrt.path, "target", "linux", "generic", f"config-{kernel_version}"), "a") as f:
+            f.write("\nCONFIG_SHORTCUT_FE=y")
+    if enable_fullcone:
+        logger.info("添加libnftnl、firewall4、nftables补丁")
+        shutil.rmtree(os.path.join(openwrt.path, "package", "libs", "libnftnl"))
+        shutil.copytree(os.path.join(turboacc_dir, f"libnftnl-{versions['LIBNFTNL_VERSION']}"), os.path.join(openwrt.path, "package", "libs", "libnftnl"))
+        shutil.rmtree(os.path.join(openwrt.path, "package", "network", "config", "firewall4"))
+        shutil.copytree(os.path.join(turboacc_dir, f"firewall4-{versions['FIREWALL4_VERSION']}"),
+                        os.path.join(openwrt.path, "package", "network", "config", "firewall4"))
+        shutil.rmtree(os.path.join(openwrt.path, "package", "network", "utils", "nftables"))
+        shutil.copytree(os.path.join(turboacc_dir, f"nftables-{versions['NFTABLES_VERSION']}"),
+                        os.path.join(openwrt.path, "package", "network", "utils", "nftables"))
 
-        if clash_arch and openwrt.get_package_config("luci-app-openclash") == "y":
-            logger.info("%s下载架构为%s的OpenClash核心", cfg_name, clash_arch)
-            versions = request_get("https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version")
-            tun_v = versions.splitlines()[1] if versions else None
-            if tun_v:
-                dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/premium/clash-{clash_arch}-{tun_v}.gz",
-                                    os.path.join(tmpdir.name, "clash_tun.gz")))
-            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-{clash_arch}.tar.gz",
-                                    os.path.join(tmpdir.name, "clash_meta.tar.gz")))
-            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/dev/clash-{clash_arch}.tar.gz",
-                                    os.path.join(tmpdir.name, "clash.tar.gz")))
+    logger.info("%s准备自定义文件...", cfg_name)
+    files_path = os.path.join(openwrt.path, "files")
+    shutil.copytree(global_files_path, files_path)
+    arch, version = openwrt.get_arch()
+    match arch:
+        case "i386":
+            adg_arch, clash_arch = "386", "linux-386"
+        case "i686":
+            adg_arch, clash_arch = "386", None
+        case "x86_64":
+            adg_arch, clash_arch = "amd64", "linux-amd64"
+        case "mipsel":
+            adg_arch, clash_arch = "mipsel", "linux-mipsle-softfloat"
+        case "mips64el":
+            adg_arch, clash_arch = "mips64el", None
+        case "mips":
+            adg_arch, clash_arch = "mips", "linux-mips-softfloat"
+        case "mips64":
+            adg_arch, clash_arch = "mips64", "linux-mips64"
+        case "arm":
+            if version:
+                adg_arch, clash_arch = f"arm{version}", f"linux-arm{version}"
+            else:
+                adg_arch, clash_arch = "armv5", "linux-armv5"
+        case "aarch64":
+            adg_arch, clash_arch = "arm64", "linux-arm64"
+        case "powerpc":
+            adg_arch, clash_arch = "powerpc", None
+        case "powerpc64":
+            adg_arch, clash_arch = "ppc64", None
+        case _:
+            adg_arch, clash_arch = None, None
 
-        wait_dl_tasks(dl_tasks)
-        # 解压
-        if os.path.isfile(os.path.join(tmpdir.name, "AdGuardHome.tar.gz")):
-            with tarfile.open(os.path.join(tmpdir.name, "AdGuardHome.tar.gz"), "r:gz") as tar:
-                if file := tar.extractfile("./AdGuardHome/AdGuardHome"):
-                    with open(os.path.join(files_path, "usr", "bin", "AdGuardHome", "AdGuardHome"), "wb") as f:
-                        f.write(file.read())
-                    os.chmod(os.path.join(files_path, "usr", "bin", "AdGuardHome", "AdGuardHome"), 0o755)  # noqa: S103
+    tmpdir = tempfile.TemporaryDirectory()
+    dl_tasks: list[SmartDL] = []
+    if adg_arch and openwrt.get_package_config("luci-app-adguardhome") == "y":
+        logger.info("%s下载架构为%s的AdGuardHome核心", cfg_name, adg_arch)
+        releases = get_gh_repo_last_releases("AdguardTeam/AdGuardHome")
+        if releases:
+            for asset in releases["assets"]:
+                if asset["name"] == f"AdGuardHome_linux_{adg_arch}.tar.gz":
+                    dl_tasks.append(dl2(asset["browser_download_url"], os.path.join(tmpdir.name, "AdGuardHome.tar.gz")))
+                    break
+            else:
+                logger.error("未找到可用的AdGuardHome二进制文件")
 
-        clash_core_path = os.path.join(files_path, "etc", "openclash", "core")
-        if not os.path.isdir(clash_core_path):
-            os.makedirs(clash_core_path)
-        if os.path.isfile(os.path.join(tmpdir.name, "clash_tun.gz")):
-            with gzip.open(os.path.join(tmpdir.name, "clash_tun.gz"), 'rb') as f_in, open(os.path.join(clash_core_path, "clash_tun"), 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-            os.chmod(os.path.join(clash_core_path, "clash_tun"), 0o755)  # noqa: S103
+    if clash_arch and openwrt.get_package_config("luci-app-openclash") == "y":
+        logger.info("%s下载架构为%s的OpenClash核心", cfg_name, clash_arch)
+        versions = request_get("https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version")
+        tun_v = versions.splitlines()[1] if versions else None
+        if tun_v:
+            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/premium/clash-{clash_arch}-{tun_v}.gz",
+                                os.path.join(tmpdir.name, "clash_tun.gz")))
+        dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-{clash_arch}.tar.gz",
+                                os.path.join(tmpdir.name, "clash_meta.tar.gz")))
+        dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/dev/clash-{clash_arch}.tar.gz",
+                                os.path.join(tmpdir.name, "clash.tar.gz")))
 
-        if os.path.isfile(os.path.join(tmpdir.name, "clash_meta.tar.gz")):
-            with tarfile.open(os.path.join(tmpdir.name, "clash_meta.tar.gz"), "r:gz") as tar:
-                if file := tar.extractfile("clash"):
-                    with open(os.path.join(clash_core_path, "clash_meta"), "wb") as f:
-                        f.write(file.read())
-                    os.chmod(os.path.join(clash_core_path, "clash_meta"), 0o755)  # noqa: S103
+    wait_dl_tasks(dl_tasks)
+    # 解压
+    if os.path.isfile(os.path.join(tmpdir.name, "AdGuardHome.tar.gz")):
+        with tarfile.open(os.path.join(tmpdir.name, "AdGuardHome.tar.gz"), "r:gz") as tar:
+            if file := tar.extractfile("./AdGuardHome/AdGuardHome"):
+                with open(os.path.join(files_path, "usr", "bin", "AdGuardHome", "AdGuardHome"), "wb") as f:
+                    f.write(file.read())
+                os.chmod(os.path.join(files_path, "usr", "bin", "AdGuardHome", "AdGuardHome"), 0o755)  # noqa: S103
 
-        if os.path.isfile(os.path.join(tmpdir.name, "clash.tar.gz")):
-            with tarfile.open(os.path.join(tmpdir.name, "clash.tar.gz"), "r:gz") as tar:
-                if file := tar.extractfile("clash"):
-                    with open(os.path.join(clash_core_path, "clash"), "wb") as f:
-                        f.write(file.read())
-                    os.chmod(os.path.join(clash_core_path, "clash"), 0o755)  # noqa: S103
+    clash_core_path = os.path.join(files_path, "etc", "openclash", "core")
+    if not os.path.isdir(clash_core_path):
+        os.makedirs(clash_core_path)
+    if os.path.isfile(os.path.join(tmpdir.name, "clash_tun.gz")):
+        with gzip.open(os.path.join(tmpdir.name, "clash_tun.gz"), 'rb') as f_in, open(os.path.join(clash_core_path, "clash_tun"), 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+        os.chmod(os.path.join(clash_core_path, "clash_tun"), 0o755)  # noqa: S103
 
-        tmpdir.cleanup()
+    if os.path.isfile(os.path.join(tmpdir.name, "clash_meta.tar.gz")):
+        with tarfile.open(os.path.join(tmpdir.name, "clash_meta.tar.gz"), "r:gz") as tar:
+            if file := tar.extractfile("clash"):
+                with open(os.path.join(clash_core_path, "clash_meta"), "wb") as f:
+                    f.write(file.read())
+                os.chmod(os.path.join(clash_core_path, "clash_meta"), 0o755)  # noqa: S103
 
-        # 获取bt_trackers
-        bt_tracker = request_get("https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt")
-        # 替换信息
-        with open(os.path.join(files_path, "etc", "uci-defaults", "zzz-chenmozhijin"), encoding="utf-8") as f:
-            content = f.read()
-        with open(os.path.join(files_path, "etc", "uci-defaults", "zzz-chenmozhijin"), "w", encoding="utf-8") as f:
-            for line in content.splitlines():
-                if line.startswith("  uci set aria2.main.bt_tracker="):
-                    f.write(f"  uci set aria2.main.bt_tracker='{bt_tracker}'\n")
-                elif line.startswith("uci set network.lan.ipaddr="):
-                    f.write(f"uci set network.lan.ipaddr='{config["openwrtext"]["ipaddr"]}'\n")
-                elif "Compiled by 沉默の金" in line:
-                    f.write(line.replace("Compiled by 沉默の金", f"Compiled by {compiler}") + "\n")
-                else:
-                    f.write(line + "\n")
+    if os.path.isfile(os.path.join(tmpdir.name, "clash.tar.gz")):
+        with tarfile.open(os.path.join(tmpdir.name, "clash.tar.gz"), "r:gz") as tar:
+            if file := tar.extractfile("clash"):
+                with open(os.path.join(clash_core_path, "clash"), "wb") as f:
+                    f.write(file.read())
+                os.chmod(os.path.join(clash_core_path, "clash"), 0o755)  # noqa: S103
 
-        logger.info("其他处理")
-        with open(os.path.join(openwrt.path, "package", "base-files", "files", "bin", "config_generate"), encoding="utf-8") as f:
-            content = f.read()
-        with open(os.path.join(openwrt.path, "package", "base-files", "files", "bin", "config_generate"), "w", encoding="utf-8") as f:
-            for line in content.splitlines():
-                if "set system.@system[-1].hostname='OpenWrt'" in line:
-                    f.write(line.replace("set system.@system[-1].hostname='OpenWrt'", "set system.@system[-1].hostname='OpenWrt-k'") + "\n")
-                elif "set system.@system[-1].timezone='UTC'" in line:
-                    f.write(line.replace("set system.@system.@system[-1].timezone='UTC'",
-                                         f"set system.@system[-1].timezone='{config['openwrtext']['timezone']}'") +
-                                         f"\n		set system.@system[-1].zonename='{config["openwrtext"]["zonename"]}'\n")
-                else:
-                    f.write(line + "\n")
+    tmpdir.cleanup()
 
-        logger.info("%s生成源代码归档")
-        os.makedirs(os.path.join(paths.uploads, cfg_name), exist_ok=True)
-        tar_path = os.path.join(paths.uploads, cfg_name, "openwrt-source.tar.xz")
-        with tarfile.open(tar_path, "w:xz") as tar:
-            tar.add(openwrt.path, arcname="openwrt")
-        uploader.add(f"{cfg_name}-openwrt-source", tar_path,retention_days=1,compression_level=0)
+    # 获取bt_trackers
+    bt_tracker = request_get("https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt")
+    # 替换信息
+    with open(os.path.join(files_path, "etc", "uci-defaults", "zzz-chenmozhijin"), encoding="utf-8") as f:
+        content = f.read()
+    with open(os.path.join(files_path, "etc", "uci-defaults", "zzz-chenmozhijin"), "w", encoding="utf-8") as f:
+        for line in content.splitlines():
+            if line.startswith("  uci set aria2.main.bt_tracker="):
+                f.write(f"  uci set aria2.main.bt_tracker='{bt_tracker}'\n")
+            elif line.startswith("uci set network.lan.ipaddr="):
+                f.write(f"uci set network.lan.ipaddr='{config["openwrtext"]["ipaddr"]}'\n")
+            elif "Compiled by 沉默の金" in line:
+                f.write(line.replace("Compiled by 沉默の金", f"Compiled by {compiler}") + "\n")
+            else:
+                f.write(line + "\n")
 
-try:
-    prepare()
-    core.set_output("matrix", get_matrix(configs))
-    uploader.save()
-except Exception as e:
-    logger.exception("准备文件时出错")
-    core.set_failed(f"准备文件时出错: {e.__class__.__name__}: {e!s}")
+    logger.info("其他处理")
+    with open(os.path.join(openwrt.path, "package", "base-files", "files", "bin", "config_generate"), encoding="utf-8") as f:
+        content = f.read()
+    with open(os.path.join(openwrt.path, "package", "base-files", "files", "bin", "config_generate"), "w", encoding="utf-8") as f:
+        for line in content.splitlines():
+            if "set system.@system[-1].hostname='OpenWrt'" in line:
+                f.write(line.replace("set system.@system[-1].hostname='OpenWrt'", "set system.@system[-1].hostname='OpenWrt-k'") + "\n")
+            elif "set system.@system[-1].timezone='UTC'" in line:
+                f.write(line.replace("set system.@system.@system[-1].timezone='UTC'",
+                                     f"set system.@system[-1].timezone='{config['openwrtext']['timezone']}'") +
+                                     f"\n		set system.@system[-1].zonename='{config["openwrtext"]["zonename"]}'\n")
+            else:
+                f.write(line + "\n")
+
+    logger.info("%s生成源代码归档")
+    os.makedirs(os.path.join(paths.uploads, cfg_name), exist_ok=True)
+    tar_path = os.path.join(paths.uploads, cfg_name, "openwrt-source.tar.xz")
+    with tarfile.open(tar_path, "w:xz") as tar:
+        tar.add(openwrt.path, arcname="openwrt")
+    return cfg_name, config, tar_path
