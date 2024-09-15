@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 沉默の金 <cmzj@cmzj.org>
 # SPDX-License-Identifier: MIT
+import gzip
 from argparse import ArgumentParser
 
 from actions_toolkit import core
@@ -16,7 +17,7 @@ def main() -> None:
     args = parser.parse_args()
     if args.config:
         import json
-        config = json.loads(bytes.fromhex(args.config).decode("utf-8"))
+        config = json.loads(gzip.decompress(bytes.fromhex(args.config)).decode("utf-8"))
     match args.task:
         case "prepare":
             from .prepare import get_matrix, parse_configs, prepare
