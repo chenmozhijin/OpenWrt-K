@@ -37,8 +37,8 @@ def main() -> None:
                 core.set_failed(f"准备时出错: {e.__class__.__name__}: {e!s}")
         case "build-prepare":
             from .build import prepare
-            setup_env(build=True)
             prepare(config)
+            setup_env(build=True)
         case "base-builds":
             from .build import base_builds
             base_builds(config)

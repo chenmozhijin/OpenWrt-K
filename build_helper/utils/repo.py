@@ -40,7 +40,7 @@ def dl_artifact(name: str, path: str) -> str:
     headers = {
                 "Accept": "application/vnd.github+json",
                 "X-GitHub-Api-Version": "2022-11-28",
-                "Authorization": f'token {token}',
+                "Authorization": f'Bearer {token}',
             }
     dl = dl2(dl_url, path, headers=headers)
     wait_dl_tasks([dl])

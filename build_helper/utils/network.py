@@ -62,7 +62,7 @@ def gh_api_request(url: str, token: str | None = None) -> dict | None:
                 "X-GitHub-Api-Version": "2022-11-28",
                 }
     if token:
-        headers["Authorization"] = f'token {token}'
+        headers["Authorization"] = f'Bearer {token}'
     response = request_get(url, headers=headers)
     if isinstance(response, str):
         obj = json.loads(response)
