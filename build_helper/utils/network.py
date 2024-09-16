@@ -28,7 +28,7 @@ def request_get(url: str, retry: int = 6, headers: dict | None = None) -> str | 
 
 
 def dl2(url: str, path: str, retry: int = 6, headers: dict | None = None) -> SmartDL:
-    logger.debug("下载 %s 到 %s", url, path)
+    logger.debug("下载 %s 到 %s, headers: %s", url, path, headers)
     task = SmartDL(urls=url, dest=path, progress_bar=False, request_args={"headers": HEADER if headers is None else headers})
     task.attemps_limit = retry
     try:
@@ -39,17 +39,21 @@ def dl2(url: str, path: str, retry: int = 6, headers: dict | None = None) -> Sma
                 logger.warning("下载: %s 失败，重试第%s/%s次...", task.url, task.current_attemp, task.attemps_limit)
                 task.retry()
                 break
-            except Exception:
-                logger.warning("下载: %s 重试失败", task.url)
+            except Exception as e:
+                logger.exception("下载: %s 重试失败： %s", task.url, f"{e.__class__.__name__}: {e!s}")
     return task
 
 def wait_dl_tasks(dl_tasks: list[SmartDL]) -> None:
     for task in dl_tasks:
         task.wait()
-        while not task.isSuccessful() or task.current_attemp > task.attemps_limit:
+        while not task.isSuccessful() or task.attemps_limit < task.current_attemp:
             logger.warning("下载: %s 失败，重试第%s/%s次...", task.url, task.current_attemp, task.attemps_limit)
             task.retry()
             task.wait()
+        if task.isSuccessful():
+            logger.info("下载: %s 成功", task.url)
+        else:
+            logger.error("下载: %s 失败", task.url)
     dl_tasks.clear()
 
 def get_gh_repo_last_releases(repo: str, token: str | None = None) -> dict | None:
