@@ -42,7 +42,6 @@ def prepare(cfg: dict) -> None:
     context = Context()
     logger.debug("job: %s", context.job)
 
-    os.makedirs(paths.workdir)
     tmpdir = tempfile.TemporaryDirectory()
 
     logger.info("还原openwrt源码...")
