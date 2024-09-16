@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 import io
 import logging
+import os
 import sys
 
 from actions_toolkit import core
@@ -19,8 +20,7 @@ if isinstance(sys.stdout, io.TextIOWrapper):
 handler.setFormatter(formatter)
 
 # 日志等级
-# if core.is_debug():
-if True:
+if core.is_debug() or os.getenv("DEBUG") == "1" or os.getenv("DEBUG", "").lower() == "true":
     handler.setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
 else:
