@@ -14,7 +14,7 @@ def main() -> None:
     parser = ArgumentParser()
     parser.add_argument("--task", "-t", help="要执行的任务")
     parser.add_argument("--config", "-c", help="配置")
-    parser.add_argument("--cache-hit", "-h", help="缓存命中")
+    parser.add_argument("--cache-hit", help="缓存命中")
     args = parser.parse_args()
     if args.config:
         import json
