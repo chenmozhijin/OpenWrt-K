@@ -29,4 +29,5 @@ def releases(cfg: dict) -> None:
     os.makedirs(firmware_path)
     firmware_archive_path = dl_artifact(f"firmware-{cfg['name']}", firmware_path)
     with zipfile.ZipFile(firmware_archive_path, "r") as zip_ref:
-        zip_ref.extractall(firmware_path)
+        zip_ref.extractall(firmware_path)  # noqa: S202
+    
