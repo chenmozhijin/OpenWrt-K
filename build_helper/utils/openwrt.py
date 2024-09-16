@@ -63,11 +63,11 @@ class OpenWrtBase:
     def make(self, target: str, debug: bool = False) -> None:
         args = ['make', target]
         if debug:
-            args.extend(["-j 1", "V=s"])
+            args.extend(["-j1", "V=s"])
         else:
             if not (cpu_count := os.cpu_count()):
                 cpu_count = 1
-            args.append(f"-j {cpu_count + 1}")
+            args.append(f"-j{cpu_count + 1}")
         logger.debug("运行命令：%s", " ".join(args))
         result = subprocess.run(args, cwd=self.path)
         if result.returncode != 0:
