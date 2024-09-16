@@ -3,6 +3,7 @@
 import os
 from datetime import datetime, timedelta, timezone
 
+import requests
 import github
 import github.GitRelease
 import pygit2
@@ -37,12 +38,20 @@ def dl_artifact(name: str, path: str) -> str:
     if not token:
         msg = "没有可用的token"
         raise KeyError(msg)
+    
+    # https://github.com/orgs/community/discussions/88698
     headers = {
                 "Accept": "application/vnd.github+json",
                 "X-GitHub-Api-Version": "2022-11-28",
                 "Authorization": f'Bearer {token}',
             }
-    dl = dl2(dl_url, path, headers=headers)
+    response = requests.get(dl_url, allow_redirects=False, headers=headers)
+    if 300 <= response.status_code < 400:
+        redirect_url = response.headers['Location']
+    else:
+        raise ValueError(f'无法获取重定向URL: {response.status_code} {response.text}')
+    
+    dl = dl2(redirect_url, path)
     wait_dl_tasks([dl])
     return dl.get_dest()
 
