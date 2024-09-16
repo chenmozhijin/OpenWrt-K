@@ -292,7 +292,7 @@ class OpenWrt(OpenWrtBase):
         if os.path.exists(os.path.join(self.path, "dl")):
             shutil.rmtree(os.path.join(self.path, "dl"))
         with tarfile.open(path, "w:gz") as tar:
-            tar.add(self.path, arcname=os.path.basename(self.path))
+            tar.add(self.path, arcname="openwrt")
 
     def enable_kmods(self, exclude_list: list[str]) -> None:
         for _ in range(5):
