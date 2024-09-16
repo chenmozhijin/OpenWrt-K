@@ -48,6 +48,12 @@ def main() -> None:
         case "build_image_builder":
             from .build import build_image_builder
             build_image_builder(config)
+        case "build_images":
+            from .build import build_images
+            build_images(config)
+        case "releases":
+            from .releases import releases
+            releases(config)
 
     uploader.save()
 

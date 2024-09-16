@@ -12,12 +12,12 @@ from typing import TYPE_CHECKING, Any
 
 import pygit2
 from actions_toolkit import core
-from actions_toolkit.github import Context
 
 from .utils.logger import logger
 from .utils.network import dl2, get_gh_repo_last_releases, request_get, wait_dl_tasks
 from .utils.openwrt import OpenWrt
 from .utils.paths import paths
+from .utils.repo import compiler
 from .utils.upload import uploader
 from .utils.utils import parse_config
 
@@ -194,10 +194,7 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
 
     wait_dl_tasks(dl_tasks)
 
-        # 获取用户信息
-    compiler = Context().repo.owner
-    if user_info := request_get(f"https://api.github.com/users/{compiler}"):
-        compiler = json.loads(user_info).get("name", compiler)
+    # 获取用户信息
     logger.info("编译者：%s", compiler)
 
     tasks = []
@@ -215,8 +212,7 @@ def prepare_cfg(config: dict[str, Any],
                 cfg_name: str,
                 openwrt: OpenWrt,
                 cloned_repos: dict[tuple[str, str], str],
-                global_files_path: str,
-                compiler: str) -> tuple[str, dict[str, Any], str]:
+                global_files_path: str) -> tuple[str, dict[str, Any], str]:
     logger.info("%s处理软件包...", cfg_name)
     for pkg_name, pkg in config["extpackages"].items():
         path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)

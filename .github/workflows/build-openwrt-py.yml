@@ -32,11 +32,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: 建立环境
         uses: ./.github/action/prepare
-      # 运行准备脚本
-      - name: Run Build Helper
+
+      - name: 准备
         id: run
         run: python3 -m build_helper --task prepare
-
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: 上传
         uses: ./.github/action/upload
 
@@ -58,7 +59,7 @@ jobs:
         id: prepare
         run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
         env:
-          Token: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: 缓存toolchain
         uses: actions/cache@v4
@@ -101,7 +102,7 @@ jobs:
         id: prepare
         run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
         env:
-          Token: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: 缓存ccache
         uses: actions/cache@v4
@@ -134,7 +135,7 @@ jobs:
         id: prepare
         run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
         env:
-          Token: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: 缓存ccache
         uses: actions/cache@v4
@@ -151,3 +152,43 @@ jobs:
 
       - name: 上传
         uses: ./.github/action/upload
+
+  build-images:
+    runs-on: ubuntu-22.04
+    needs: [prepare,base-builds,build-ImageBuilder,build-packages]
+    name: build-Image-${{ matrix.name }}
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 建立环境
+        uses: ./.github/action/prepare
+
+      - name: 准备构建
+        id: prepare
+        run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: 构建
+        id: build
+        run: python3 -m build_helper --task build_images --config ${{ matrix.config }}
+
+      - name: 上传
+        uses: ./.github/action/upload
+
+  releases:
+    runs-on: ubuntu-22.04
+    needs: [prepare, build-images]
+    name: releases-${{ matrix.name }}
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 建立环境
+        uses: ./.github/action/prepare
+
+      - name: 发布
+        run: python3 -m build_helper --task releases --config ${{ matrix.config }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

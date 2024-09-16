@@ -11,7 +11,7 @@ from actions_toolkit import core
 from actions_toolkit.github import Context
 
 from .utils.logger import logger
-from .utils.openwrt import OpenWrt
+from .utils.openwrt import ImageBuilder, OpenWrt
 from .utils.paths import paths
 from .utils.repo import del_cache, dl_artifact
 from .utils.upload import uploader
@@ -40,7 +40,9 @@ def get_cache_restore_key(openwrt: OpenWrt, cfg: dict) -> str:
 
 def prepare(cfg: dict) -> None:
     context = Context()
-    os.makedirs(os.path.join(paths.root, "workdir"))
+    logger.debug("job: %s", context.job)
+
+    os.makedirs(paths.workdir)
     tmpdir = tempfile.TemporaryDirectory()
 
     logger.info("还原openwrt源码...")
@@ -48,8 +50,8 @@ def prepare(cfg: dict) -> None:
     with zipfile.ZipFile(path, "r") as zip_ref:
         zip_ref.extract("openwrt-source.tar.gz", tmpdir.name)
     with tarfile.open(os.path.join(tmpdir.name, "openwrt-source.tar.gz"), "r") as tar_ref:
-        tar_ref.extractall(os.path.join(paths.root, "workdir"))  # noqa: S202
-    openwrt = OpenWrt(os.path.join(paths.root, "workdir", "openwrt"))
+        tar_ref.extractall(paths.workdir)  # noqa: S202
+    openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
     if context.job.startswith("base-builds"):
         logger.info("构建toolchain缓存key...")
@@ -68,6 +70,28 @@ def prepare(cfg: dict) -> None:
         with tarfile.open(base_builds_path, "r:gz") as tar:
             tar.extractall(openwrt.path)  # noqa: S202
 
+    elif context.job.startswith("build-images"):
+        ib_path = dl_artifact(f"Image_Builder-{cfg["name"]}", tmpdir.name)
+        with zipfile.ZipFile(ib_path, "r") as zip_ref:
+            zip_ref.extract("openwrt-imagebuilder.tar.xz", tmpdir.name)
+        with tarfile.open(os.path.join(tmpdir.name, "openwrt-imagebuilder.tar.xz"), "r:xz") as tar:
+            tar.extractall(paths.workdir)  # noqa: S202
+            shutil.move(os.path.join(paths.workdir, tar.getnames()[0]), os.path.join(paths.workdir, "ImageBuilder"))
+        ib = ImageBuilder(os.path.join(paths.workdir, "ImageBuilder"))
+
+        pkgs_path = dl_artifact(f"packages-{cfg['name']}", tmpdir.name)
+        with zipfile.ZipFile(pkgs_path, "r") as zip_ref:
+            zip_ref.extract("packages.tar.gz", tmpdir.name)
+        with tarfile.open(os.path.join(tmpdir.name, "packages.tar.gz"), "r:gz") as tar:
+            for membber in tar.getmembers():
+                if not os.path.exists(os.path.join(ib.packages_path, membber.name)):
+                    tar.extract(membber, ib.packages_path)
+
+        shutil.copytree(os.path.join(openwrt.path, "files"), os.path.join(ib.path, "files"))
+        if os.path.exists(os.path.join(ib.path, ".config")):
+            os.remove(os.path.join(ib.path, ".config"))
+        shutil.copy2(os.path.join(openwrt.path, ".config"), os.path.join(ib.path, ".config"))
+
     else:
         msg = f"未知的工作流 {context.job}"
         raise ValueError(msg)
@@ -79,7 +103,7 @@ def prepare(cfg: dict) -> None:
     core.set_output("openwrt-path", openwrt.path)
 
 def base_builds(cfg: dict) -> None:
-    openwrt = OpenWrt(os.path.join(paths.root, "workdir", "openwrt"))
+    openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
     logger.info("修改配置(设置编译所有kmod)...")
     openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"])
@@ -106,7 +130,7 @@ def base_builds(cfg: dict) -> None:
 
 
 def build_packages(cfg: dict) -> None:
-    openwrt = OpenWrt(os.path.join(paths.root, "workdir", "openwrt"))
+    openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
     logger.info("下载编译所需源码...")
     openwrt.download_packages_source()
@@ -130,7 +154,7 @@ def build_packages(cfg: dict) -> None:
     del_cache(get_cache_restore_key(openwrt, cfg))
 
 def build_image_builder(cfg: dict) -> None:
-    openwrt = OpenWrt(os.path.join(paths.root, "workdir", "openwrt"))
+    openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
     logger.info("修改配置(设置编译所有kmod/取消生成镜像)...")
     openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"])
@@ -181,7 +205,27 @@ def build_image_builder(cfg: dict) -> None:
         msg = "无法获取target信息"
         raise RuntimeError(msg)
     bl_path = os.path.join(openwrt.path, "bin", "targets", target, subtarget, f"openwrt-imagebuilder-{target}-{subtarget}.Linux-x86_64.tar.xz")
+    shutil.move(bl_path, os.path.join(paths.uploads, "openwrt-imagebuilder.tar.xz"))
+    bl_path = os.path.join(paths.uploads, "openwrt-imagebuilder.tar.xz")
     uploader.add(f"Image_Builder-{cfg['name']}", bl_path, retention_days=1, compression_level=0)
 
     logger.info("删除旧缓存...")
     del_cache(get_cache_restore_key(openwrt, cfg))
+
+def build_images(cfg: dict) -> None:
+    ib = ImageBuilder(os.path.join(paths.workdir, "ImageBuilder"))
+
+    logger.info("收集镜像信息...")
+    ib.make_info()
+    ib.make_manifest()
+
+    logger.info("开始构建镜像...")
+    ib.make_image()
+
+    target, subtarget = ib.get_target()
+    if target is None or subtarget is None:
+        msg = "无法获取target信息"
+        raise RuntimeError(msg)
+
+    logger.info("准备上传...")
+    uploader.add(f"firmware-{cfg['name']}", os.path.join(ib.path, "bin", "targets", target, subtarget, "*"), retention_days=1, compression_level=0)

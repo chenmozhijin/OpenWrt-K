@@ -2,20 +2,84 @@
 # SPDX-License-Identifier: MIT
 import os
 import re
-import subprocess
-from typing import Literal
 import shutil
+import subprocess
+import tarfile
+from typing import Literal
+
 import pygit2
 from actions_toolkit import core
-import tarfile
+
 from .logger import logger
 from .network import request_get
 from .utils import apply_patch
 
 
-class OpenWrt:
-    def __init__(self, path: str, tag_branch: str | None = None) -> None:
+class OpenWrtBase:
+    def __init__(self, path: str) -> None:
         self.path = path
+
+    def get_arch(self) -> tuple[str | None, str | None]:
+        arch = None
+        version = None
+        if os.path.isfile(os.path.join(self.path, '.config')):
+            with open(os.path.join(self.path, '.config')) as f:
+                for line in f:
+                    if line.startswith('CONFIG_ARCH='):
+                        match = re.match(r'^CONFIG_ARCH="(?P<arch>.*)"$', line)
+                        if match:
+                            arch = match.group("arch")
+                    elif line.startswith('CONFIG_arm_'):
+                        match = re.match(r'^CONFIG_arm_(?P<ver>[0-9]+)=y$', line)
+                        if match:
+                            version = match.group("ver")
+
+                    if arch and version:
+                        break
+        logger.debug("仓库%s的架构为%s,版本为%s", self.path, arch, version)
+        return arch, version
+
+    def apply_config(self, config: str) -> None:
+        with open(os.path.join(self.path, '.config'), 'w') as f:
+            f.write(config)
+
+    def get_target(self) -> tuple[str | None, str | None]:
+        target, subtarget = None, None
+        if os.path.isfile(os.path.join(self.path, '.config')):
+            with open(os.path.join(self.path, '.config')) as f:
+                for line in f:
+                    if line.startswith('CONFIG_TARGET_BOARD='):
+                        match = re.match(r'^CONFIG_TARGET_BOARD="(?P<target>.*)"$', line)
+                        if match:
+                            target = match.group("target")
+                    elif line.startswith('CONFIG_TARGET_SUBTARGET='):
+                        match = re.match(r'^CONFIG_TARGET_SUBTARGET="(?P<subtarget>.*)"$', line)
+                        if match:
+                            subtarget = match.group("subtarget")
+                    if target and subtarget:
+                        return target, subtarget
+        return target, subtarget
+
+    def make(self, target: str, debug: bool = False) -> None:
+        args = ['make', target]
+        if debug:
+            args.extend(["-j 1", "V=s"])
+        else:
+            if not (cpu_count := os.cpu_count()):
+                cpu_count = 1
+            args.append(f"-j {cpu_count + 1}")
+        logger.debug("运行命令：%s", " ".join(args))
+        result = subprocess.run(args, cwd=self.path)
+        if result.returncode != 0:
+            if not debug:
+                logger.error("编译失败，尝试使用debug模式重新编译")
+                self.make(target, debug=True)
+            else:
+                logger.error("编译失败，请检查错误信息")
+                raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+class OpenWrt(OpenWrtBase):
+    def __init__(self, path: str, tag_branch: str | None = None) -> None:
+        super().__init__(path)
         if os.path.isdir(os.path.join(path, ".git")):
             self.repo = pygit2.Repository(self.path)
             if tag_branch:
@@ -73,24 +137,6 @@ class OpenWrt:
             raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
         logger.debug("运行命令：%s成功\nstdout: %s\nstderr: %s", " ".join(args), result.stdout, result.stderr)
 
-    def make(self, target: str, debug: bool = False) -> None:
-        args = ['make', target]
-        if debug:
-            args.extend(["-j 1", "V=s"])
-        else:
-            if not (cpu_count := os.cpu_count()):
-                cpu_count = 1
-            args.append(f"-j {cpu_count + 1}")
-        logger.debug("运行命令：%s", " ".join(args))
-        result = subprocess.run(args, cwd=self.path)
-        if result.returncode != 0:
-            if not debug:
-                logger.error("编译失败，尝试使用debug模式重新编译")
-                self.make(target, debug=True)
-            else:
-                logger.error("编译失败，请检查错误信息")
-                raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
-
     def download_packages_source(self) -> None:
         for i in range(2):
             try:
@@ -100,9 +146,6 @@ class OpenWrt:
                 logger.error(f"下载源码失败: {e}")
                 if i < 1:
                     logger.info("尝试重新下载源码...")
-    def apply_config(self, config: str) -> None:
-        with open(os.path.join(self.path, '.config'), 'w') as f:
-            f.write(config)
 
     def get_diff_config(self) -> str:
         return subprocess.run([os.path.join(self.path, "scripts", "diffconfig.sh")], cwd=self.path, capture_output=True, text=True).stdout
@@ -117,46 +160,8 @@ class OpenWrt:
                         if match:
                             kernel_version = f"{match.group("major")}.{match.group("minor")}"
                             break
-        logger.debug("仓库%s的内核版本为%s", self.path, kernel_version)
+        logger.debug("配置%s的内核版本为%s", self.path, kernel_version)
         return kernel_version
-
-    def get_arch(self) -> tuple[str | None, str | None]:
-        arch = None
-        version = None
-        if os.path.isfile(os.path.join(self.path, '.config')):
-            with open(os.path.join(self.path, '.config')) as f:
-                for line in f:
-                    if line.startswith('CONFIG_ARCH='):
-                        match = re.match(r'^CONFIG_ARCH="(?P<arch>.*)"$', line)
-                        if match:
-                            arch = match.group("arch")
-                    elif line.startswith('CONFIG_arm_'):
-                        match = re.match(r'^CONFIG_arm_(?P<ver>[0-9]+)=y$', line)
-                        if match:
-                            version = match.group("ver")
-
-                    if arch and version:
-                        break
-        logger.debug("仓库%s的架构为%s,版本为%s", self.path, arch, version)
-        return arch, version
-
-    def get_target(self) -> tuple[str | None, str | None]:
-        target, subtarget = None, None
-        if os.path.isfile(os.path.join(self.path, '.config')):
-            with open(os.path.join(self.path, '.config')) as f:
-                for line in f:
-                    if line.startswith('CONFIG_TARGET_BOARD='):
-                        match = re.match(r'^CONFIG_TARGET_BOARD="(?P<target>.*)"$', line)
-                        if match:
-                            target = match.group("target")
-                    elif line.startswith('CONFIG_TARGET_SUBTARGET='):
-                        match = re.match(r'^CONFIG_TARGET_SUBTARGET="(?P<subtarget>.*)"$', line)
-                        if match:
-                            subtarget = match.group("subtarget")
-                    if target and subtarget:
-                        return target, subtarget
-        return target, subtarget
-
 
     def get_package_config(self, package: str) -> Literal["y", "n", "m"] | None:
         package_config = None
@@ -303,6 +308,7 @@ class OpenWrt:
                     else:
                         f.write(line + "\n")
                 self.make_defconfig()
+        logger.debug("启用所有kmod, 配置差异: %s", self.get_diff_config())
 
     def __getstate__(self) -> dict:
         state = self.__dict__.copy()
@@ -315,3 +321,26 @@ class OpenWrt:
             self.repo = pygit2.Repository(self.path)
         else:
             self.repo = None
+
+
+class ImageBuilder(OpenWrtBase):
+    def __init__(self, path: str) -> None:
+        super().__init__(path)
+        self.packages_path = os.path.join(path, "packages")
+
+    def make_info(self) -> None:
+        subprocess.run(["make", "info"], cwd=self.path, check=True)
+
+    def make_manifest(self) -> None:
+        subprocess.run(["make", "manifest", f'PACKAGES="{" ".join(self.get_packages())}"'], cwd=self.path, check=True)
+
+    def make_image(self) -> None:
+        subprocess.run(["make", "image", f'PACKAGES="{" ".join(self.get_packages())}"', f'FILES="{os.path.join(self.path, "files")}"'], cwd=self.path, check=True)
+
+    def get_packages(self) -> list[str]:
+        packages = []
+        with open(os.path.join(self.path, ".config")) as f:
+            for line in f:
+                if match := re.match(r"CONFIG_PACKAGE_(?P<name>.+)=y", line):
+                    packages.append(match.group('name'))  # noqa: PERF401
+        return packages
