@@ -88,13 +88,14 @@ def setup_env(build: bool = False) -> None:
     if build:
         # 清理空间
         logger.info("清理空间")
-        try:
-            sudo("rm", "-rf", "/etc/apt/sources.list.d/*", "/usr/share/dotnet", "/usr/local/lib/android", "/opt/ghc",
-                 "/etc/mysql", "/etc/php")
+        sudo("rm", "-rf", "/etc/apt/sources.list.d/*", "/usr/share/dotnet", "/usr/local/lib/android", "/opt/ghc",
+                "/etc/mysql", "/etc/php")
+
+
+        if False:
             # 移除 swap 文件
             sudo("swapoff", "-a")
             sudo("rm", "-f", "/mnt/swapfile")
-
             # 创建根分区映像文件
             root_avail_kb = int(subprocess.check_output(["df", "--block-size=1024", "--output=avail", "/"]).decode().splitlines()[-1])
             root_size_kb = (root_avail_kb - 1048576) * 1024
@@ -125,9 +126,6 @@ def setup_env(build: bool = False) -> None:
             sudo("chown", "-R", "runner:runner", github_workspace)
             subprocess.run(["df", "-hT", github_workspace])
             sudo("btrfs", "filesystem", "usage", github_workspace)
-
-        except subprocess.CalledProcessError as e:
-            logger.exception(f"创建或挂载分区时发生错误: {e}")
 
 
 def apply_patch(patch: str, target: str) -> bool:
