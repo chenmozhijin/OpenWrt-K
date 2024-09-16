@@ -297,7 +297,7 @@ class OpenWrt(OpenWrtBase):
              config = f.read()
             with open(os.path.join(self.path, ".config"), "w") as f:
                 for line in config.splitlines():
-                    if match := re.match(r"# CONFIG_PACKAGE_(?P<name>kmod[^ ]) is not set", line):
+                    if match := re.match(r"# CONFIG_PACKAGE_(?P<name>kmod[^ ]+) is not set", line):
                         if match.group('name') not in exclude_list:
                             f.write(f"CONFIG_PACKAGE_{match.group('name')}=m\n")
                         else:

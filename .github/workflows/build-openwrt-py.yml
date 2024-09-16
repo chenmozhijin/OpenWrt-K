@@ -52,8 +52,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: 建立环境
         uses: ./.github/action/prepare
-        with:
-          job: base-builds
 
       - name: 准备编译
         id: prepare
