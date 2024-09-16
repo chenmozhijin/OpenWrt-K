@@ -130,12 +130,9 @@ class OpenWrt(OpenWrtBase):
         if debug:
             args.extend(["-j1", "V=s"])
         else:
-            args.append("-j 16")
-            logger.debug("运行命令：%s", " ".join(args))
-        result = subprocess.run(args, cwd=self.path, capture_output=True, text=True)
-        if result.returncode != 0:
-            raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
-        logger.debug("运行命令：%s成功\nstdout: %s\nstderr: %s", " ".join(args), result.stdout, result.stderr)
+            args.append("-j16")
+        logger.debug("运行命令：%s", " ".join(args))
+        subprocess.run(args, cwd=self.path, check=True)
 
     def download_packages_source(self) -> None:
         for i in range(2):
