@@ -200,7 +200,7 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
     tasks = []
     for cfg_name, openwrt in openwrts.items():
         config = configs[cfg_name]
-        tasks.append((config, cfg_name, openwrt, cloned_repos, global_files_path, compiler))
+        tasks.append((config, cfg_name, openwrt, cloned_repos, global_files_path))
     with Pool(len(cfg_names)) as p:
         for cfg_name, config, tar_path in p.starmap(prepare_cfg, tasks):
             configs[cfg_name] = config
