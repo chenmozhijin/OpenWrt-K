@@ -403,4 +403,7 @@ def prepare_cfg(config: dict[str, Any],
     os.makedirs(os.path.join(paths.uploads, cfg_name), exist_ok=True)
     tar_path = os.path.join(paths.uploads, cfg_name, "openwrt-source.tar.gz")
     openwrt.archive(tar_path)
+
+    config["target"], config["subtarget"] = openwrt.get_target()
+
     return cfg_name, config, tar_path

@@ -80,11 +80,9 @@ def prepare(cfg: dict) -> None:
 
         pkgs_path = dl_artifact(f"packages-{cfg['name']}", tmpdir.name)
         with zipfile.ZipFile(pkgs_path, "r") as zip_ref:
-            zip_ref.extract("packages.tar.gz", tmpdir.name)
-        with tarfile.open(os.path.join(tmpdir.name, "packages.tar.gz"), "r:gz") as tar:
-            for membber in tar.getmembers():
-                if not os.path.exists(os.path.join(ib.packages_path, membber.name)):
-                    tar.extract(membber, ib.packages_path)
+            for membber in zip_ref.infolist():
+                if not os.path.exists(os.path.join(ib.packages_path, membber.filename)) and not membber.is_dir():
+                    zip_ref.extract(membber, ib.packages_path)
 
         shutil.copytree(os.path.join(openwrt.path, "files"), os.path.join(ib.path, "files"))
         if os.path.exists(os.path.join(ib.path, ".config")):
@@ -141,13 +139,12 @@ def build_packages(cfg: dict) -> None:
     openwrt.make("package/install")
 
     logger.info("打包软件包...")
-    tar_path = os.path.join(paths.uploads, "packages.tar.gz")
-    with tarfile.open(tar_path, "w:gz") as tar:
-        for root, _dirs, files in os.walk(os.path.join(openwrt.path, "bin")):
-            for file in files:
-                if file.endswith(".ipk"):
-                    tar.add(os.path.join(root, file), arcname=os.path.join(file))
-    uploader.add(f"packages-{cfg['name']}", tar_path, retention_days=1, compression_level=0)
+    packages = []
+    for root, _dirs, files in os.walk(os.path.join(openwrt.path, "bin")):
+        for file in files:
+            if file.endswith(".ipk"):
+                packages.append(os.path.join(root, file))  # noqa: PERF401
+    uploader.add(f"packages-{cfg['name']}", packages, retention_days=1, compression_level=0)
 
     logger.info("删除旧缓存...")
     del_cache(get_cache_restore_key(openwrt, cfg))
@@ -191,13 +188,13 @@ def build_image_builder(cfg: dict) -> None:
     openwrt.make("checksum")
 
     logger.info("打包kmods...")
-    tar_path = os.path.join(paths.uploads, "kmods.tar.gz")
-    with tarfile.open(tar_path, "w:gz") as tar:
-        for root, _dirs, files in os.walk(os.path.join(openwrt.path, "bin")):
-            for file in files:
-                if file.startswith("kmod-") and file.endswith(".ipk"):
-                    tar.add(os.path.join(root, file), arcname=file)
-    uploader.add(f"kmods-{cfg['name']}", tar_path, retention_days=1, compression_level=0)
+
+    kmods = []
+    for root, _dirs, files in os.walk(os.path.join(openwrt.path, "bin")):
+        for file in files:
+            if file.startswith("kmod-") and file.endswith(".ipk"):
+                kmods.append(os.path.join(root, file))  # noqa: PERF401
+    uploader.add(f"kmods-{cfg['name']}", kmods, retention_days=1)
 
     target, subtarget = openwrt.get_target()
     if target is None or subtarget is None:
@@ -227,4 +224,5 @@ def build_images(cfg: dict) -> None:
         raise RuntimeError(msg)
 
     logger.info("准备上传...")
-    uploader.add(f"firmware-{cfg['name']}", os.path.join(ib.path, "bin", "targets", target, subtarget, "*"), retention_days=1, compression_level=0)
+    files = [f for f in os.listdir(os.path.join(ib.path, "bin", "targets", target, subtarget)) if os.path.isfile(f)]
+    uploader.add(f"firmware-{cfg['name']}", files, retention_days=1, compression_level=0)

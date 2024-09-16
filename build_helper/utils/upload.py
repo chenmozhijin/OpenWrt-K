@@ -15,12 +15,14 @@ class UpLoader:
 
     def add(self,
             name: str,
-            path: str,
+            path: str | list[str],
             if_no_files_found: str | None = None,
             retention_days: int | None = None,
             compression_level: int | None = None,
             overwrite: bool | None = None,
             include_hidden_files: bool | None = None) -> None:
+        if isinstance(path, list):
+            path = "\n".join(path)
         action = {
             "name": name,
             "uses": "actions/upload-artifact@v4",

@@ -27,14 +27,14 @@ def request_get(url: str, retry: int = 6, headers: dict | None = None) -> str | 
     return None
 
 
-def dl2(url: str, path: str, retry: int = 6) -> SmartDL:
+def dl2(url: str, path: str, retry: int = 6, headers: dict | None = None) -> SmartDL:
     logger.debug("下载 %s 到 %s", url, path)
-    task = SmartDL(urls=url, dest=path, progress_bar=False, request_args={"headers": HEADER})
+    task = SmartDL(urls=url, dest=path, progress_bar=False, request_args={"headers": HEADER if headers is None else headers})
     task.attemps_limit = retry
     try:
         task.start()
     except Exception:
-        while not task.isSuccessful() or task.current_attemp > task.attemps_limit:
+        while not task.isSuccessful() or task.attemps_limit < task.current_attemp:
             try:
                 logger.warning("下载: %s 失败，重试第%s/%s次...", task.url, task.current_attemp, task.attemps_limit)
                 task.retry()
