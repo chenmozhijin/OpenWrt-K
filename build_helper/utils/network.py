@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 沉默の金 <cmzj@cmzj.org>
 # SPDX-License-Identifier: MIT
 import json
-
+from concurrent.futures import ThreadPoolExecutor
 import requests
 from pySmartDL import SmartDL
 import urllib.error
@@ -69,3 +69,44 @@ def gh_api_request(url: str, token: str | None = None) -> dict | None:
         if isinstance(obj, dict):
             return obj
     return None
+
+def download_chunk(url, start, end, file_name, headers):
+    headers = headers.copy() 
+    headers["Range"] = f"bytes={start}-{end}"
+    
+    response = requests.get(url, headers=headers, stream=True, allow_redirects=True)
+    
+    if response.status_code in [200, 206]:  # 200 for non-ranged, 206 for ranged requests
+        with open(file_name, "r+b") as f:
+            f.seek(start)
+            f.write(response.content)
+
+    else:
+        print(f"Failed to download chunk: {start}-{end}, status code: {response.status_code}")
+
+def multi_thread_download(url, file_path, headers=None, num_threads=4):
+    if headers is None:
+        headers = {}
+
+    # 获取文件总大小，处理重定向
+    response = requests.head(url, headers=headers, allow_redirects=True)
+    file_size = int(response.headers['Content-Length'])
+
+    # 创建同等大小的空文件
+    with open(file_path, "wb") as f:
+        f.truncate(file_size)
+
+    # 定义每个线程要下载的块大小
+    chunk_size = file_size // num_threads
+
+    # 使用线程池并发下载
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        futures = []
+        for i in range(num_threads):
+            start = i * chunk_size
+            end = start + chunk_size - 1 if i < num_threads - 1 else file_size - 1
+            futures.append(executor.submit(download_chunk, url, start, end, file_path, headers))
+
+        # 等待所有线程完成
+        for future in futures:
+            future.result()

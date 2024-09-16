@@ -10,7 +10,7 @@ import pygit2
 from actions_toolkit.github import Context, get_octokit
 
 from .logger import logger
-from .network import dl2, gh_api_request, wait_dl_tasks
+from .network import dl2, gh_api_request, wait_dl_tasks, multi_thread_download
 from .paths import paths
 
 context = Context()
@@ -45,15 +45,8 @@ def dl_artifact(name: str, path: str) -> str:
                 "X-GitHub-Api-Version": "2022-11-28",
                 "Authorization": f'Bearer {token}',
             }
-    response = requests.get(dl_url, allow_redirects=False, headers=headers)
-    if 300 <= response.status_code < 400:
-        redirect_url = response.headers['Location']
-    else:
-        raise ValueError(f'无法获取重定向URL: {response.status_code} {response.text}')
-    logger.debug(f'Redirected to {redirect_url}, response_headers: {response.headers}, cookies: {response.cookies}, content: {response.content}')
-    dl = dl2(redirect_url, path, headers=dict(response.headers))
-    wait_dl_tasks([dl])
-    return dl.get_dest()
+    multi_thread_download(dl_url, os.path.join(path, name + ".zip"), headers=headers)
+    return os.path.join(path, name + ".zip")
 
 def del_cache(key_prefix: str) -> None:
     if response := gh_api_request(f"https://api.github.com/repos/{user_repo}/actions/caches", token):
