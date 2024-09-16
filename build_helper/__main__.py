@@ -14,10 +14,14 @@ def main() -> None:
     parser = ArgumentParser()
     parser.add_argument("--task", "-t", help="要执行的任务")
     parser.add_argument("--config", "-c", help="配置")
+    parser.add_argument("--cache-hit", "-h", help="缓存命中")
     args = parser.parse_args()
     if args.config:
         import json
         config = json.loads(gzip.decompress(bytes.fromhex(args.config)).decode("utf-8"))
+    if args.cache_hit:
+        cache_hit = args.cache_hit == "true"
+        logger.info("缓存命中: %s", cache_hit)
     match args.task:
         case "prepare":
             from .prepare import get_matrix, parse_configs, prepare
@@ -41,7 +45,7 @@ def main() -> None:
             setup_env(build=True)
         case "base-builds":
             from .build import base_builds
-            base_builds(config)
+            base_builds(config, cache_hit)
         case "build_packages":
             from .build import build_packages
             build_packages(config)

@@ -99,7 +99,7 @@ def prepare(cfg: dict) -> None:
     core.set_output("use-cache", cfg["compile"]["use_cache"])
     core.set_output("openwrt-path", openwrt.path)
 
-def base_builds(cfg: dict) -> None:
+def base_builds(cfg: dict, cache_hit: bool) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
     logger.info("修改配置(设置编译所有kmod)...")
@@ -107,7 +107,7 @@ def base_builds(cfg: dict) -> None:
 
     logger.info("下载编译所需源码...")
     openwrt.download_packages_source()
-    if not any(directory.startswith("toolchain-") for directory in os.listdir(os.path.join(openwrt.path, "staging_dir"))):
+    if cache_hit is not True:
         logger.info("开始编译tools...")
         openwrt.make("tools/install")
         logger.info("开始编译toolchain...")
