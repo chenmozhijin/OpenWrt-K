@@ -45,12 +45,12 @@ def dl_artifact(name: str, path: str) -> str:
                 "X-GitHub-Api-Version": "2022-11-28",
                 "Authorization": f'Bearer {token}',
             }
-    response = requests.get(dl_url, allow_redirects=False, headers=headers)
+    response = requests.get(dl_url, allow_redirects=True, headers=headers)
     if 300 <= response.status_code < 400:
         redirect_url = response.headers['Location']
     else:
         raise ValueError(f'无法获取重定向URL: {response.status_code} {response.text}')
-    
+    logger.debug(f'Redirected to {redirect_url}, response_headers: {response.headers}, cookies: {response.cookies}, content: {response.content}')
     dl = dl2(redirect_url, path, headers={"Authorization": f'Bearer {token}'})
     wait_dl_tasks([dl])
     return dl.get_dest()
