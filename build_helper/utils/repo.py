@@ -37,7 +37,12 @@ def dl_artifact(name: str, path: str) -> str:
     if not token:
         msg = "没有可用的token"
         raise KeyError(msg)
-    dl = dl2(dl_url, path, headers={"Authorization": f"Bearer {token}"})
+    headers = {
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "Authorization": f'token {token}',
+            }
+    dl = dl2(dl_url, path, headers=headers)
     wait_dl_tasks([dl])
     return dl.get_dest()
 

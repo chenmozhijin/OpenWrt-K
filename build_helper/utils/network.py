@@ -4,7 +4,7 @@ import json
 
 import requests
 from pySmartDL import SmartDL
-
+import urllib.error
 from .logger import logger
 
 HEADER = {
@@ -46,24 +46,23 @@ def dl2(url: str, path: str, retry: int = 6, headers: dict | None = None) -> Sma
 def wait_dl_tasks(dl_tasks: list[SmartDL]) -> None:
     for task in dl_tasks:
         task.wait()
-        while not task.isSuccessful() or task.attemps_limit < task.current_attemp:
-            logger.warning("下载: %s 失败，重试第%s/%s次...", task.url, task.current_attemp, task.attemps_limit)
-            task.retry()
-            task.wait()
         if task.isSuccessful():
             logger.info("下载: %s 成功", task.url)
         else:
             logger.error("下载: %s 失败", task.url)
+            raise task.errors[-1]
     dl_tasks.clear()
 
 def get_gh_repo_last_releases(repo: str, token: str | None = None) -> dict | None:
     return gh_api_request(f"https://api.github.com/repos/{repo}/releases/latest", token)
 
 def gh_api_request(url: str, token: str | None = None) -> dict | None:
-    headers = {"Accept": "application/vnd.github+json",
-               "X-GitHub-Api-Version": "2022-11-28"}
+    headers = {
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                }
     if token:
-        headers["Authorization"] = f'Bearer {token}'
+        headers["Authorization"] = f'token {token}'
     response = request_get(url, headers=headers)
     if isinstance(response, str):
         obj = json.loads(response)
