@@ -82,7 +82,9 @@ jobs:
 
       - name: 编译
         id: build
-        run: python3 -m build_helper --task base-builds --config ${{ matrix.config }} --cache-hit ${{ steps.cache-toolchain.outputs.cache-hit }}
+        run: python3 -m build_helper --task base-builds --config ${{ matrix.config }}
+        env:
+          CACHE_HIT: ${{ steps.cache-toolchain.outputs.cache-hit }}
 
       - name: 上传
         uses: ./.github/action/upload
