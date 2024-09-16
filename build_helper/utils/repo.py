@@ -38,7 +38,7 @@ def dl_artifact(name: str, path: str) -> str:
     if not token:
         msg = "没有可用的token"
         raise KeyError(msg)
-    
+
     # https://github.com/orgs/community/discussions/88698
     headers = {
                 "Accept": "application/vnd.github+json",
@@ -51,7 +51,7 @@ def dl_artifact(name: str, path: str) -> str:
     else:
         raise ValueError(f'无法获取重定向URL: {response.status_code} {response.text}')
     
-    dl = dl2(redirect_url, path)
+    dl = dl2(redirect_url, path, headers={"Authorization": f'Bearer {token}'})
     wait_dl_tasks([dl])
     return dl.get_dest()
 
