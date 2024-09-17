@@ -21,9 +21,10 @@ def request_get(url: str, retry: int = 6, headers: dict | None = None) -> str | 
             response = requests.get(url, timeout=10, allow_redirects=True, headers=headers)
             response.raise_for_status()
             return response.text  # noqa: TRY300
-        except:  # noqa: E722
+        except Exception as e:
             logger.warning(f"请求{url}失败， 重试次数：{i + 1}")
-    logger.error("请求失败，重试次数已用完")
+            error = e
+    logger.error("请求失败，重试次数已用完 %s", f"{error.__class__.__name__}: {error!s}")
     return None
 
 

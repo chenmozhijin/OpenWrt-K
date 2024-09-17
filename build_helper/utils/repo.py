@@ -1,26 +1,25 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 沉默の金 <cmzj@cmzj.org>
 # SPDX-License-Identifier: MIT
+import contextlib
 import os
 from datetime import datetime, timedelta, timezone
 
-import requests
 import github
 import github.GitRelease
 import pygit2
+import requests
 from actions_toolkit.github import Context, get_octokit
 
 from .logger import logger
-from .network import dl2, gh_api_request, wait_dl_tasks, multi_thread_download
+from .network import gh_api_request, multi_thread_download
 from .paths import paths
 
 context = Context()
 user_repo = f'{context.repo.owner}/{context.repo.repo}'
 
 token = os.getenv('GITHUB_TOKEN')
-try:
+with contextlib.suppress(Exception):
     repo = get_octokit(token).rest.get_repo(user_repo)
-except Exception:
-    pass
 
 compiler = context.repo.owner
 if user_info := gh_api_request(f"https://api.github.com/users/{compiler}"):
@@ -49,12 +48,17 @@ def dl_artifact(name: str, path: str) -> str:
     return os.path.join(path, name + ".zip")
 
 def del_cache(key_prefix: str) -> None:
+    headers = {
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "Authorization": f'Bearer {token}',
+            }
     if response := gh_api_request(f"https://api.github.com/repos/{user_repo}/actions/caches", token):
         for cache in response["actions_caches"]:
             cache: dict
             if cache['key'].startswith(key_prefix):
                 logger.info(f'Deleting cache {cache["key"]}')
-                gh_api_request(f"https://api.github.com/repos/{user_repo}/actions/caches/{cache['id']}", token)
+                requests.delete(f"https://api.github.com/repos/{user_repo}/actions/caches/{cache['id']}", headers=headers, timeout=10)
     else:
         logger.error('Failed to get caches list')
 
@@ -95,9 +99,9 @@ def new_release(cfg: dict, assets: list[str], body: str) -> None:
             if release.tag_name.endswith(suffix) and release.tag_name != release_name:
                 logger.info("删除旧版本: %s", release.tag_name)
                 release.delete_release()
-    except Exception as e:
+    except Exception:
         logger.exception("删除旧版本失败")
-                
+
 
 def match_releases(cfg: dict) -> github.GitRelease.GitRelease | None:
     suffix = f"({cfg["target"]}-{cfg["subtarget"]})-[{cfg["compile"]["openwrt_tag/branch"]}]-{cfg["name"]}"
