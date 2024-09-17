@@ -29,7 +29,7 @@ def get_cache_restore_key(openwrt: OpenWrt, cfg: dict) -> str:
     else:
         msg = "Invalid job"
         raise ValueError(msg)
-    cache_restore_key = f"{job_prefix}-{cfg["compile"]["openwrt_tag/branch"]}"
+    cache_restore_key = f"{job_prefix}-{cfg["compile"]["openwrt_tag/branch"]}-{cfg["name"]}"
     target, subtarget = openwrt.get_target()
     if target:
         cache_restore_key += f"-{target}"
