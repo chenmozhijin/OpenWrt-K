@@ -163,6 +163,8 @@ def build_image_builder(cfg: dict) -> None:
         for line in config.splitlines():
             if match := re.match(r"CONFIG_(?P<name>.+)_IMAGES=y", line):
                 f.write(f"CONFIG_{match.group('name')}_IMAGE=n\n")
+            elif match := re.match(r"CONFIG_PACKAGE_(?P<name>(?!kmod)[^ ]+)=[ym]", line):
+                f.write(f"CONFIG_PACKAGE_{match.group('name')}=n\n")
             else:
                 match line:
                     case "CONFIG_TARGET_ROOTFS_TARGZ=y":

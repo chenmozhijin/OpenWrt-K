@@ -144,9 +144,9 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
 
     logger.info("开始更新netdata、smartdns...")
     # 更新netdata
-    shutil.rmtree(os.path.join(openwrt.path, "feeds", "admin", "netdata"), ignore_errors=True)
+    shutil.rmtree(os.path.join(openwrt.path, "feeds", "packages", "admin", "netdata"), ignore_errors=True)
     shutil.copytree(os.path.join(cloned_repos[("https://github.com/immortalwrt/packages", "")], "admin", "netdata"),
-                        os.path.join(openwrt.path, "feeds", "admin", "netdata"), symlinks=True)
+                        os.path.join(openwrt.path, "feeds", "packages", "admin", "netdata"), symlinks=True)
     # 更新smartdns
     shutil.rmtree(os.path.join(openwrt.path, "feeds", "luci", "applications", "luci-app-smartdns"), ignore_errors=True)
     shutil.rmtree(os.path.join(openwrt.path, "feeds", "packages", "net", "smartdns"), ignore_errors=True)
