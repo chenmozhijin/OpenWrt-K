@@ -20,7 +20,7 @@ if isinstance(sys.stdout, io.TextIOWrapper):
 handler.setFormatter(formatter)
 
 # 日志等级
-if core.is_debug() or os.getenv("DEBUG") == "1" or os.getenv("DEBUG", "").lower() == "true":
+if core.is_debug() or os.getenv("BUILD_HELPER_DEBUG") == "1" or os.getenv("BUILD_HELPER_DEBUG", "").lower() == "true":
     handler.setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
 else:

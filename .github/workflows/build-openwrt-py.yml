@@ -25,7 +25,7 @@ permissions:
   discussions: write
 env:
   GITHUB_TOKEN: ${{ github.token }}
-  DEBUG: true
+  BUILD_HELPER_DEBUG: true
 jobs:
 
   prepare:
