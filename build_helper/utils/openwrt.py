@@ -110,18 +110,21 @@ class OpenWrt(OpenWrtBase):
     def feed_update(self) -> None:
         result = subprocess.run([os.path.join(self.path, "scripts", "feeds"), 'update', '-a'], cwd=self.path, capture_output=True, text=True)
         if result.returncode != 0:
+            logger.error("运行命令：scripts/feeds update -a失败\nstdout: %s\nstderr: %s", result.stdout, result.stderr)
             raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
         logger.debug("运行命令：scripts/feeds update -a成功\nstdout: %s\nstderr: %s", result.stdout, result.stderr)
 
     def feed_install(self) -> None:
         result = subprocess.run([os.path.join(self.path, "scripts", "feeds"), 'install', '-a'], cwd=self.path, capture_output=True, text=True)
         if result.returncode != 0:
+            logger.error("运行命令：scripts/feeds install -a失败\nstdout: %s\nstderr: %s", result.stdout, result.stderr)
             raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
         logger.debug("运行命令：scripts/feeds install -a成功\nstdout: %s\nstderr: %s", result.stdout, result.stderr)
 
     def make_defconfig(self) -> None:
         result = subprocess.run(['make', 'defconfig'], cwd=self.path, capture_output=True, text=True)
         if result.returncode != 0:
+            logger.error("运行命令：make defconfig失败\nstdout: %s\nstderr: %s", result.stdout, result.stderr)
             raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
         logger.debug("运行命令：make defconfig成功\nstdout: %s\nstderr: %s", result.stdout, result.stderr)
 
