@@ -66,7 +66,9 @@ def prepare(cfg: dict) -> None:
         if os.path.exists(os.path.join(openwrt.path, "staging_dir")):
             shutil.rmtree(os.path.join(openwrt.path, "staging_dir"))
         base_builds_path = dl_artifact(f"base-builds-{cfg['name']}", tmpdir.name)
-        with tarfile.open(base_builds_path, "r:gz") as tar:
+        with zipfile.ZipFile(base_builds_path, "r") as zip_ref:
+            zip_ref.extract("builds.tar.gz", tmpdir.name)
+        with tarfile.open(os.path.join(tmpdir.name, "builds.tar.gz"), "r:gz") as tar:
             tar.extractall(openwrt.path)  # noqa: S202
 
     elif context.job.startswith("build-images"):
@@ -120,6 +122,7 @@ def base_builds(cfg: dict) -> None:
     tar_path = os.path.join(paths.uploads, "builds.tar.gz")
     with tarfile.open(tar_path, "w:gz") as tar:
         tar.add(os.path.join(openwrt.path, "staging_dir"), arcname="staging_dir")
+        tar.add(os.path.join(openwrt.path, "build_dir"), arcname="build_dir")
     uploader.add(f"base-builds-{cfg["name"]}", tar_path, retention_days=1, compression_level=0)
 
     logger.info("删除旧缓存...")
