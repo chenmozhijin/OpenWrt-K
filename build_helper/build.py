@@ -107,9 +107,9 @@ def prepare(cfg: dict) -> None:
 def base_builds(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
-    logger.info("下载编译所需源码...")
-    openwrt.download_packages_source()
     if os.getenv("CACHE_HIT", "").lower().strip() != "true":
+        logger.info("下载编译所需源码...")
+        openwrt.download_packages_source()
         logger.info("开始编译tools...")
         openwrt.make("tools/install")
         logger.info("开始编译toolchain...")
