@@ -15,7 +15,7 @@ from .utils.openwrt import ImageBuilder, OpenWrt
 from .utils.paths import paths
 from .utils.repo import del_cache, dl_artifact
 from .utils.upload import uploader
-from .utils.utils import hash_dirs
+from .utils.utils import hash_dirs, setup_env
 
 
 def get_cache_restore_key(openwrt: OpenWrt, cfg: dict) -> str:
@@ -53,6 +53,7 @@ def prepare(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
     if context.job.startswith("base-builds"):
+        setup_env()
         logger.info("构建toolchain缓存key...")
         toolchain_key = f"toolchain-{hash_dirs((os.path.join(openwrt.path, "tools"), os.path.join(openwrt.path, "toolchain")))}"
         target, subtarget = openwrt.get_target()
@@ -63,6 +64,7 @@ def prepare(cfg: dict) -> None:
         core.set_output("toolchain-key", toolchain_key)
 
     elif context.job.startswith(("build-packages", "build-ImageBuilder")):
+        setup_env(True, True)
         if os.path.exists(os.path.join(openwrt.path, "staging_dir")):
             shutil.rmtree(os.path.join(openwrt.path, "staging_dir"))
         base_builds_path = dl_artifact(f"base-builds-{cfg['name']}", tmpdir.name)
@@ -72,6 +74,7 @@ def prepare(cfg: dict) -> None:
             tar.extractall(openwrt.path)  # noqa: S202
 
     elif context.job.startswith("build-images"):
+        setup_env()
         ib_path = dl_artifact(f"Image_Builder-{cfg["name"]}", tmpdir.name)
         with zipfile.ZipFile(ib_path, "r") as zip_ref:
             zip_ref.extract("openwrt-imagebuilder.tar.xz", tmpdir.name)
@@ -104,9 +107,6 @@ def prepare(cfg: dict) -> None:
 def base_builds(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
-    logger.info("修改配置(设置编译所有kmod)...")
-    openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"])
-
     logger.info("下载编译所需源码...")
     openwrt.download_packages_source()
     if os.getenv("CACHE_HIT", "").lower().strip() != "true":
@@ -115,14 +115,10 @@ def base_builds(cfg: dict) -> None:
         logger.info("开始编译toolchain...")
         openwrt.make("toolchain/install")
 
-    logger.info("开始编译内核...")
-    openwrt.make("target/compile")
-
     logger.info("归档文件...")
     tar_path = os.path.join(paths.uploads, "builds.tar.gz")
     with tarfile.open(tar_path, "w:gz") as tar:
         tar.add(os.path.join(openwrt.path, "staging_dir"), arcname="staging_dir")
-        tar.add(os.path.join(openwrt.path, "build_dir"), arcname="build_dir")
     uploader.add(f"base-builds-{cfg["name"]}", tar_path, retention_days=1, compression_level=0)
 
     logger.info("删除旧缓存...")
@@ -134,6 +130,9 @@ def build_packages(cfg: dict) -> None:
 
     logger.info("下载编译所需源码...")
     openwrt.download_packages_source()
+
+    logger.info("开始编译内核...")
+    openwrt.make("target/compile")
 
     logger.info("开始编译软件包...")
     openwrt.make("package/compile")
@@ -177,6 +176,9 @@ def build_image_builder(cfg: dict) -> None:
 
     logger.info("下载编译所需源码...")
     openwrt.download_packages_source()
+
+    logger.info("开始编译内核...")
+    openwrt.make("target/compile")
 
     logger.info("开始编译软件包...")
     openwrt.make("package/compile")

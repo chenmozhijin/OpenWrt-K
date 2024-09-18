@@ -35,19 +35,19 @@ def parse_config(path: str, prefixs: tuple[str,...]|list[str]) -> dict[str, str 
     return config
 
 
-def setup_env(build: bool = False) -> None:
+def setup_env(full: bool = False, clear: bool = False) -> None:
     def sudo(*args: str) -> None:
         subprocess.run(["sudo", "-E", *list(args)], stdout=subprocess.PIPE)
     def apt(*args: str) -> None:
         subprocess.run(["sudo", "-E", "apt-get", "-y", *list(args)], stdout=subprocess.PIPE)
-    logger.info("开始设置编译环境...")
+    logger.info("开始准备编译环境...")
     # https://github.com/community/community/discussions/47863
     sudo("apt-mark", "hold", "grub-efi-amd64-signed")
     # 1. 更新包列表
     logger.info("更新包列表")
     apt("update")
     # 2.删除不需要的包
-    if build:
+    if clear:
         logger.info("删除不需要的包")
         try:
             apt("purge", "azure-cli*", "docker*", "ghc*", "zulu*", "llvm*", "firefox", "google*", "dotnet*",
@@ -55,7 +55,7 @@ def setup_env(build: bool = False) -> None:
         except subprocess.CalledProcessError:
             logger.exception("删除不需要的包时发生错误")
 
-    if build:
+    if full:
         # 3. 完整更新所有包
         logger.info("完整更新所有包")
         apt("dist-upgrade")
@@ -85,7 +85,7 @@ def setup_env(build: bool = False) -> None:
     # 8.调整时区
     logger.info("调整时区")
     sudo("timedatectl", "set-timezone", "Asia/Shanghai")
-    if build:
+    if clear:
         # 清理空间
         logger.info("清理空间")
         sudo("rm", "-rf", "/etc/apt/sources.list.d/*", "/usr/share/dotnet", "/usr/local/lib/android", "/opt/ghc",

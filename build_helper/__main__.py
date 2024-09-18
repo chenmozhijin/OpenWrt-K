@@ -39,7 +39,6 @@ def main() -> None:
         case "build-prepare":
             from .build import prepare
             prepare(config)
-            setup_env(build=True)
         case "base-builds":
             from .build import base_builds
             base_builds(config)
