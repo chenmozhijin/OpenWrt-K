@@ -138,22 +138,6 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
     openwrt_paths = os.path.join(paths.workdir, "openwrts")
     cfg_names = list(configs.keys())
     pygit2.clone_repository("https://github.com/openwrt/openwrt", os.path.join(openwrt_paths, cfg_names[0]))
-    logger.info("开始更新feeds...")
-    openwrt = OpenWrt(os.path.join(openwrt_paths, cfg_names[0]))
-    openwrt.feed_update()
-
-    logger.info("开始更新netdata、smartdns...")
-    # 更新netdata
-    shutil.rmtree(os.path.join(openwrt.path, "feeds", "packages", "admin", "netdata"), ignore_errors=True)
-    shutil.copytree(os.path.join(cloned_repos[("https://github.com/immortalwrt/packages", "")], "admin", "netdata"),
-                        os.path.join(openwrt.path, "feeds", "packages", "admin", "netdata"), symlinks=True)
-    # 更新smartdns
-    shutil.rmtree(os.path.join(openwrt.path, "feeds", "luci", "applications", "luci-app-smartdns"), ignore_errors=True)
-    shutil.rmtree(os.path.join(openwrt.path, "feeds", "packages", "net", "smartdns"), ignore_errors=True)
-    shutil.copytree(cloned_repos[("https://github.com/pymumu/luci-app-smartdns", "master")],
-                    os.path.join(openwrt.path, "feeds", "luci", "applications", "luci-app-smartdns"), symlinks=True)
-    shutil.copytree(cloned_repos[("https://github.com/pymumu/openwrt-smartdns", "master")],
-                    os.path.join(openwrt.path, "feeds", "packages", "net", "smartdns"), symlinks=True)
 
     # 复制源码
     if len(cfg_names) > 1:
@@ -213,6 +197,23 @@ def prepare_cfg(config: dict[str, Any],
                 openwrt: OpenWrt,
                 cloned_repos: dict[tuple[str, str], str],
                 global_files_path: str) -> tuple[str, dict[str, Any], str]:
+
+    logger.info("%s开始更新feeds...", cfg_name)
+    openwrt.feed_update()
+
+    logger.info("%s开始更新netdata、smartdns...", cfg_name)
+    # 更新netdata
+    shutil.rmtree(os.path.join(openwrt.path, "feeds", "packages", "admin", "netdata"), ignore_errors=True)
+    shutil.copytree(os.path.join(cloned_repos[("https://github.com/immortalwrt/packages", "")], "admin", "netdata"),
+                        os.path.join(openwrt.path, "feeds", "packages", "admin", "netdata"), symlinks=True)
+    # 更新smartdns
+    shutil.rmtree(os.path.join(openwrt.path, "feeds", "luci", "applications", "luci-app-smartdns"), ignore_errors=True)
+    shutil.rmtree(os.path.join(openwrt.path, "feeds", "packages", "net", "smartdns"), ignore_errors=True)
+    shutil.copytree(cloned_repos[("https://github.com/pymumu/luci-app-smartdns", "master")],
+                    os.path.join(openwrt.path, "feeds", "luci", "applications", "luci-app-smartdns"), symlinks=True)
+    shutil.copytree(cloned_repos[("https://github.com/pymumu/openwrt-smartdns", "master")],
+                    os.path.join(openwrt.path, "feeds", "packages", "net", "smartdns"), symlinks=True)
+
     logger.info("%s处理软件包...", cfg_name)
     for pkg_name, pkg in config["extpackages"].items():
         path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)

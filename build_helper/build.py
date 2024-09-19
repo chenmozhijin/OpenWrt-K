@@ -53,7 +53,7 @@ def prepare(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
     if context.job.startswith("base-builds"):
-        setup_env()
+        setup_env(True)
         logger.info("构建toolchain缓存key...")
         toolchain_key = f"toolchain-{hash_dirs((os.path.join(openwrt.path, "tools"), os.path.join(openwrt.path, "toolchain")))}"
         target, subtarget = openwrt.get_target()
@@ -107,9 +107,16 @@ def prepare(cfg: dict) -> None:
 def base_builds(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
+    logger.info("修改配置(设置编译所有kmod)...")
+    openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"])
+
+    logger.info("下载编译所需源码...")
+    openwrt.download_packages_source()
+
+    logger.info("开始编译内核...")
+    openwrt.make("target/compile")
+
     if os.getenv("CACHE_HIT", "").lower().strip() != "true":
-        logger.info("下载编译所需源码...")
-        openwrt.download_packages_source()
         logger.info("开始编译tools...")
         openwrt.make("tools/install")
         logger.info("开始编译toolchain...")
@@ -119,6 +126,7 @@ def base_builds(cfg: dict) -> None:
     tar_path = os.path.join(paths.uploads, "builds.tar.gz")
     with tarfile.open(tar_path, "w:gz") as tar:
         tar.add(os.path.join(openwrt.path, "staging_dir"), arcname="staging_dir")
+        tar.add(os.path.join(openwrt.path, "build_dir"), arcname="build_dir")
     uploader.add(f"base-builds-{cfg["name"]}", tar_path, retention_days=1, compression_level=0)
 
     logger.info("删除旧缓存...")
@@ -130,9 +138,6 @@ def build_packages(cfg: dict) -> None:
 
     logger.info("下载编译所需源码...")
     openwrt.download_packages_source()
-
-    logger.info("开始编译内核...")
-    openwrt.make("target/compile")
 
     logger.info("开始编译软件包...")
     openwrt.make("package/compile")
@@ -154,7 +159,7 @@ def build_packages(cfg: dict) -> None:
 def build_image_builder(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
-    logger.info("修改配置(设置编译所有kmod/取消生成镜像)...")
+    logger.info("修改配置(设置编译所有kmod/取消编译其他软件包/取消生成镜像/)...")
     openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"])
     with open(os.path.join(openwrt.path, ".config")) as f:
         config = f.read()
@@ -176,9 +181,6 @@ def build_image_builder(cfg: dict) -> None:
 
     logger.info("下载编译所需源码...")
     openwrt.download_packages_source()
-
-    logger.info("开始编译内核...")
-    openwrt.make("target/compile")
 
     logger.info("开始编译软件包...")
     openwrt.make("package/compile")

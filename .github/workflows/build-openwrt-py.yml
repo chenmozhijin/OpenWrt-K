@@ -71,6 +71,15 @@ jobs:
             ${{ steps.prepare.outputs.openwrt-path }}/staging_dir/tool*
           key: ${{ steps.prepare.outputs.toolchain-key }}
 
+      - name: 缓存ccache
+        uses: actions/cache@v4
+        if: ${{ steps.prepare.outputs.use-cache }}
+        with:
+          path: ${{ steps.prepare.outputs.openwrt-path }}/.ccache
+          key: ${{ steps.prepare.outputs.cache-key }}
+          restore-keys: |
+            ${{ steps.prepare.outputs.cache-restore-key }}
+
       - name: 编译
         id: build
         run: python3 -m build_helper --task base-builds --config ${{ matrix.config }}

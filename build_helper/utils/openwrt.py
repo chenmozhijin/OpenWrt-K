@@ -197,23 +197,6 @@ class OpenWrt(OpenWrtBase):
             else:
                 core.error("获取内核模块依赖修复补丁失败, 这可能会导致编译错误。\nhttps://github.com/openwrt/openwrt/commit/ecc53240945c95bc77663b79ccae6e2bd046c9c8")
 
-            patchs = [request_get("https://github.com/openwrt/openwrt/commit/5636ffc22d784a2a4acc5e406e54f8a5858f1435.patch"),
-                      request_get("https://github.com/openwrt/openwrt/commit/446178dc367661e4277260a72a89a58a69e55751.patch"),
-                      request_get("https://github.com/openwrt/openwrt/commit/ca788d615fbf780b1a1665475ed304de4276f512.patch"),
-                      request_get("https://github.com/openwrt/openwrt/commit/cbf8c76d0a30838961553b75ba038ecc7a29a621.patch"),
-                      request_get("https://github.com/openwrt/openwrt/commit/fcdc629144983cf5e3f5509e35149096aa2701b3.patch")]
-
-            logger.info("更新meson")
-            if patchs:
-                for patch in patchs:
-                    if patch:
-                        if not apply_patch(patch, self.path):
-                            core.error("修复meson依赖失败, 这可能会导致编译错误。")
-                    else:
-                        core.error("获取meson依赖修复补丁失败, 这可能会导致编译错误。")
-            else:
-                core.error("获取meson依赖修复补丁失败, 这可能会导致编译错误。")
-
         # 替换dnsmasq为dnsmasq-full
         logger.info("替换dnsmasq为dnsmasq-full")
         with open(os.path.join(self.path, 'include', 'target.mk'), encoding='utf-8') as f:
