@@ -22,7 +22,7 @@ with contextlib.suppress(Exception):
     repo = get_octokit(token).rest.get_repo(user_repo)
 
 compiler = context.repo.owner
-if user_info := gh_api_request(f"https://api.github.com/users/{compiler}"):
+if user_info := gh_api_request(f"https://api.github.com/users/{compiler}", token):
     compiler = user_info.get("name", compiler)
 
 def dl_artifact(name: str, path: str) -> str:
