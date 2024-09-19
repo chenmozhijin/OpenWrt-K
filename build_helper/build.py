@@ -113,14 +113,14 @@ def base_builds(cfg: dict) -> None:
     logger.info("下载编译所需源码...")
     openwrt.download_packages_source()
 
-    logger.info("开始编译内核...")
-    openwrt.make("target/compile")
-
     if os.getenv("CACHE_HIT", "").lower().strip() != "true":
         logger.info("开始编译tools...")
         openwrt.make("tools/install")
         logger.info("开始编译toolchain...")
         openwrt.make("toolchain/install")
+
+    logger.info("开始编译内核...")
+    openwrt.make("target/compile")
 
     logger.info("归档文件...")
     tar_path = os.path.join(paths.uploads, "builds.tar.gz")
