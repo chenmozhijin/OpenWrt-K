@@ -200,7 +200,7 @@ class OpenWrt(OpenWrtBase):
         # 替换dnsmasq为dnsmasq-full
         logger.info("替换dnsmasq为dnsmasq-full")
         with open(os.path.join(self.path, 'include', 'target.mk'), encoding='utf-8') as f:
-            content = re.sub(r"^	dnsmasq \\", r"	dnsmasq-full \\", f.read())
+            content = f.read().replace(r"	dnsmasq ", r"	dnsmasq-full ")
         with open(os.path.join(self.path, 'include', 'target.mk'), 'w', encoding='utf-8') as f:
             f.write(content)
         # 修复broadcom.mk中的路径错误
