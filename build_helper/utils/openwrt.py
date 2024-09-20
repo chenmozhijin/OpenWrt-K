@@ -231,7 +231,7 @@ class OpenWrt(OpenWrtBase):
                 core.error("获取libpfring修复补丁失败, 这可能会导致编译错误。\nttps://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865")
 
     def get_packageinfo(self) -> dict:
-        path = os.path.join(self.path, "tmp", ".targetinfo")
+        path = os.path.join(self.path, "tmp", ".packageinfo")
         if not os.path.exists(path):
             self.make_defconfig()
 
@@ -270,17 +270,17 @@ class OpenWrt(OpenWrtBase):
                     depends = None
                     type_ = None
                     count += 1
-                if line.startswith("Version: "):
+                elif line.startswith("Version: "):
                     version = line.split("Version: ")[1].strip()
-                if line.startswith("Section: "):
+                elif line.startswith("Section: "):
                     section = line.split("Section: ")[1].strip()
-                if line.startswith("Category: "):
+                elif line.startswith("Category: "):
                     category = line.split("Category: ")[1].strip()
-                if line.startswith("Title: "):
+                elif line.startswith("Title: "):
                     title = line.split("Title: ")[1].strip()
-                if line.startswith("Depends: "):
+                elif line.startswith("Depends: "):
                     depends = line.split("Depends: ")[1].strip()
-                if line.startswith("Type: "):
+                elif line.startswith("Type: "):
                     type_ = line.split("Type: ")[1].strip()
 
             if package and package not in packages:
@@ -293,7 +293,6 @@ class OpenWrt(OpenWrtBase):
                     "depends": depends,
                     "type": type_,
                 }
-                count += 1
 
         if count == 0:
             msg = "没有获取到任何包信息"
