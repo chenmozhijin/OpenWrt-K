@@ -9,16 +9,19 @@ from .utils.logger import logger
 from .utils.upload import uploader
 from .utils.utils import setup_env
 
+parser = ArgumentParser()
+parser.add_argument("--task", "-t", help="要执行的任务")
+parser.add_argument("--config", "-c", help="配置")
+
+args = parser.parse_args()
+if args.config:
+    import json
+    config = json.loads(gzip.decompress(bytes.fromhex(args.config)).decode("utf-8"))
+else:
+    config = {}
+
 
 def main() -> None:
-    parser = ArgumentParser()
-    parser.add_argument("--task", "-t", help="要执行的任务")
-    parser.add_argument("--config", "-c", help="配置")
-
-    args = parser.parse_args()
-    if args.config:
-        import json
-        config = json.loads(gzip.decompress(bytes.fromhex(args.config)).decode("utf-8"))
     match args.task:
         case "prepare":
             from .prepare import get_matrix, parse_configs, prepare
@@ -63,7 +66,26 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception("发生错误")
         import os
-        for root, _, files in os.walk("."):
-            for file in files:
-                print(f"{root}/{file}")  # noqa: T201
+        import time
+
+        from actions_toolkit.github import Context
+
+        from .utils.paths import paths
+        errorinfo_path = paths.errorinfo
+        openwrt_path = os.path.join(paths.workdir, "openwrt")
+        if os.path.exists(openwrt_path):
+            import shutil
+            if os.path.exists(os.path.join(openwrt_path, ".config")):
+                shutil.copy2(os.path.join(openwrt_path, ".config"), os.path.join(errorinfo_path, "openwrt.config"))
+            if os.path.exists(os.path.join(openwrt_path, "logs")):
+                shutil.copytree(os.path.join(openwrt_path, "logs"), os.path.join(errorinfo_path, "openwrt-logs"))
+
+        with open(os.path.join(errorinfo_path, "files.txt"), "w") as f:
+            for root, _, files in os.walk("."):
+                for file in files:
+                    f.write(f"{root}/{file}")
+
+
+        uploader.add(f"{Context().job}-{config.get("name") if config else ''}-errorinfo-{time.time()}", errorinfo_path, retention_days=90, compression_level=9)
+        uploader.save()
         core.set_failed(f"发生错误: {e.__class__.__name__}: {e!s}")

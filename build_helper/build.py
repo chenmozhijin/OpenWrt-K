@@ -160,15 +160,13 @@ def build_image_builder(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
     logger.info("修改配置(设置编译所有kmod/取消编译其他软件包/取消生成镜像/)...")
-    openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"])
+    openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"], only_kmods=True)
     with open(os.path.join(openwrt.path, ".config")) as f:
         config = f.read()
     with open(os.path.join(openwrt.path, ".config"), "w") as f:
         for line in config.splitlines():
             if match := re.match(r"CONFIG_(?P<name>.+)_IMAGES=y", line):
                 f.write(f"CONFIG_{match.group('name')}_IMAGE=n\n")
-            elif match := re.match(r"CONFIG_PACKAGE_(?P<name>(?!kmod)[^ ]+)=[ym]", line):
-                f.write(f"CONFIG_PACKAGE_{match.group('name')}=n\n")
             else:
                 match line:
                     case "CONFIG_TARGET_ROOTFS_TARGZ=y":

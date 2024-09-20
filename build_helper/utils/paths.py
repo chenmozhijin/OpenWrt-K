@@ -56,4 +56,13 @@ class Paths:
     def log(self) -> str:
         return os.path.join(self.uploads, "build_helper.log")
 
+    @property
+    def errorinfo(self) -> str:
+        errorinfo = os.path.join(self.root, "errorinfo")
+        if not os.path.exists(errorinfo):
+            os.makedirs(errorinfo)
+        elif not os.path.isdir(errorinfo):
+            core.set_failed(f"错误信息路径 {errorinfo} 不是一个目录")
+        return errorinfo
+
 paths = Paths()

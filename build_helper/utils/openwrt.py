@@ -200,7 +200,7 @@ class OpenWrt(OpenWrtBase):
         # 替换dnsmasq为dnsmasq-full
         logger.info("替换dnsmasq为dnsmasq-full")
         with open(os.path.join(self.path, 'include', 'target.mk'), encoding='utf-8') as f:
-            content = re.sub(r"^	dnsmasq \\", r"	dnsmasq \\", f.read())
+            content = re.sub(r"^	dnsmasq \\", r"	dnsmasq-full \\", f.read())
         with open(os.path.join(self.path, 'include', 'target.mk'), 'w', encoding='utf-8') as f:
             f.write(content)
         # 修复broadcom.mk中的路径错误
@@ -230,20 +230,21 @@ class OpenWrt(OpenWrtBase):
             else:
                 core.error("获取libpfring修复补丁失败, 这可能会导致编译错误。\nttps://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865")
 
-    def get_packageinfo(self) -> dict | None:
+    def get_packageinfo(self) -> dict:
         path = os.path.join(self.path, "tmp", ".targetinfo")
         if not os.path.exists(path):
-            return None
+            self.make_defconfig()
 
         packages = {}
 
-        makefile = ""
-        package = ""
-        version = ""
-        section = ""
-        category = ""
-        title = ""
-        depends = ""
+        makefile = None
+        package = None
+        version = None
+        section = None
+        category = None
+        title = None
+        depends = None
+        type_ = None
 
         count = 0
         with open(path, encoding='utf-8') as f:
@@ -259,13 +260,15 @@ class OpenWrt(OpenWrtBase):
                             "category": category,
                             "title": title,
                             "depends": depends,
+                            "type": type_,
                         }
                     package = line.split("Package: ")[1].strip()
-                    version = ""
-                    section = ""
-                    category = ""
-                    title = ""
-                    depends = ""
+                    version = None
+                    section = None
+                    category = None
+                    title = None
+                    depends = None
+                    type_ = None
                     count += 1
                 if line.startswith("Version: "):
                     version = line.split("Version: ")[1].strip()
@@ -277,9 +280,25 @@ class OpenWrt(OpenWrtBase):
                     title = line.split("Title: ")[1].strip()
                 if line.startswith("Depends: "):
                     depends = line.split("Depends: ")[1].strip()
+                if line.startswith("Type: "):
+                    type_ = line.split("Type: ")[1].strip()
+
+            if package and package not in packages:
+                packages[package] = {
+                    "makefile": makefile,
+                    "version": version,
+                    "section": section,
+                    "category": category,
+                    "title": title,
+                    "depends": depends,
+                    "type": type_,
+                }
+                count += 1
 
         if count == 0:
-            return None
+            msg = "没有获取到任何包信息"
+            raise ValueError(msg)
+        logger.debug("解析出%s个包信息", count)
         return packages
 
     def archive(self, path: str) -> None:
@@ -292,17 +311,30 @@ class OpenWrt(OpenWrtBase):
         with tarfile.open(path, "w:gz") as tar:
             tar.add(self.path, arcname="openwrt")
 
-    def enable_kmods(self, exclude_list: list[str]) -> None:
+    def enable_kmods(self, exclude_list: list[str], only_kmods: bool = False) -> None:
+        packages = self.get_packageinfo()
+        kmods = [package for package in packages if (packages[package]["section"] == "kernel" or packages[package]["category"] == "Kernel modules")]
+        logger.debug("获取到kmods: %s", kmods)
+
         for _ in range(5):
             with open(os.path.join(self.path, ".config")) as f:
              config = f.read()
             with open(os.path.join(self.path, ".config"), "w") as f:
                 for line in config.splitlines():
-                    if match := re.match(r"# CONFIG_PACKAGE_(?P<name>kmod[^ ]+) is not set", line):
-                        if match.group('name') not in exclude_list:
+                    if match := re.match(r"# CONFIG_PACKAGE_(?P<name>[^ ]+) is not set", line):
+                        name = match.group('name')
+                        if name not in exclude_list and name in kmods:
                             f.write(f"CONFIG_PACKAGE_{match.group('name')}=m\n")
                         else:
                             f.write(line + "\n")
+                    elif only_kmods and (match := re.match(r"CONFIG_PACKAGE_(?P<name>[^=]+)=[ym]", line)):
+                        name = match.group('name')
+                        package = packages.get(name)
+                        if package and (package["section"] not in ("kernel", "base", "boot", "firmware", "sys", "system") and
+                                        package["category"] not in ("Boot Loaders", "Firmware", "Base system", "Kernel modules", "System")):
+                            logger.debug("取消编译包: %s", name)
+                            continue
+                        f.write(line + "\n")
                     else:
                         f.write(line + "\n")
                 self.make_defconfig()

@@ -87,6 +87,7 @@ jobs:
           CACHE_HIT: ${{ steps.cache-toolchain.outputs.cache-hit }}
 
       - name: 上传
+        if: success() || failure()
         uses: ./.github/action/upload
 
   build-packages:
@@ -119,6 +120,7 @@ jobs:
         run: python3 -m build_helper --task build_packages --config ${{ matrix.config }}
 
       - name: 上传
+        if: success() || failure()
         uses: ./.github/action/upload
 
   build-ImageBuilder:
@@ -151,6 +153,7 @@ jobs:
         run: python3 -m build_helper --task build_image_builder --config ${{ matrix.config }}
 
       - name: 上传
+        if: success() || failure()
         uses: ./.github/action/upload
 
   build-images:
@@ -174,6 +177,7 @@ jobs:
         run: python3 -m build_helper --task build_images --config ${{ matrix.config }}
 
       - name: 上传
+        if: success() || failure()
         uses: ./.github/action/upload
 
   releases:
