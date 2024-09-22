@@ -29,7 +29,7 @@ def dl_artifact(name: str, path: str) -> str:
     for artifact in repo.get_artifacts():
         if artifact.workflow_run.id == context.run_id and artifact.name == name:
             dl_url = artifact.archive_download_url
-            logger.info(f'Downloading artifact {name} from {dl_url}')
+            logger.debug(f'Downloading artifact {name} from {dl_url}')
             break
     else:
         msg = f'Artifact {name} not found'

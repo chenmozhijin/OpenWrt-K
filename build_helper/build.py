@@ -163,16 +163,13 @@ def build_image_builder(cfg: dict) -> None:
         config = f.read()
     with open(os.path.join(openwrt.path, ".config"), "w") as f:
         for line in config.splitlines():
-            if match := re.match(r"CONFIG_(?P<name>.+)_IMAGES=y", line):
-                f.write(f"CONFIG_{match.group('name')}_IMAGE=n\n")
+            if match := re.match(r"CONFIG_(?P<name>[^_=]+)_IMAGES=y", line) or (match := re.match(r"CONFIG_TARGET_ROOTFS_(?P<name>[^_=]+)=y", line)):
+                name = match.group("name")
+                if name in ("ISO", "VMDK", "TARGZ", "CPIOGZ", "EXT4FS", "SQUASHF", "GZIP"):
+                    logger.debug(f"不构建 {name} 格式镜像")
+                    f.write(line.replace("=y", "=n") + "\n")
             else:
-                match line:
-                    case "CONFIG_TARGET_ROOTFS_TARGZ=y":
-                        f.write("CONFIG_TARGET_ROOTFS_TARGZ=n\n")
-                    case "CONFIG_TARGET_ROOTFS_CPIOGZ=y":
-                        f.write("CONFIG_TARGET_ROOTFS_CPIOGZ=n\n")
-                    case _:
-                        f.write(line + "\n")
+                f.write(line + "\n")
     openwrt.make_defconfig()
 
     logger.info("下载编译所需源码...")
