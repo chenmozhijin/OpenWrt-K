@@ -4,6 +4,9 @@ runs:
   using: "composite"
   steps:
     # 建立环境
+    - name: 复制文件
+      run: mkdir -p /opt/OpenWrt-K && cp -RT $GITHUB_WORKSPACE /opt/OpenWrt-K
+      shell: bash
     - name: Setup Python
       uses: actions/setup-python@v5
       with:

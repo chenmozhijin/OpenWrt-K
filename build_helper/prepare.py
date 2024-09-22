@@ -147,7 +147,7 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
 
     # 下载AdGuardHome规则与配置
     logger.info("下载AdGuardHome规则与配置...")
-    global_files_path = os.path.join(paths.root, "files")
+    global_files_path = os.path.join(paths.workdir, "files")
     shutil.copytree(os.path.join(paths.openwrt_k, "files"), global_files_path, symlinks=True)
     adg_filters_path = os.path.join(global_files_path, "usr", "bin", "AdGuardHome", "data", "filters")
     os.makedirs(adg_filters_path, exist_ok=True)
@@ -220,7 +220,7 @@ def prepare_cfg(config: dict[str, Any],
         path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)
         pkg_path = os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"])
         if not os.path.exists(pkg_path):
-            msg = f"找不到拓展软件包: {pkg_name} ,这可能是由于仓库 {pkg["REPOSITORIE"]} 目录结构变更导致的,请检查您的拓展软件包配置"
+            msg = f"找不到{cfg_name}配置中的拓展软件包: {pkg_name} ,这可能是由于仓库 {pkg["REPOSITORIE"]} 目录结构变更导致的,请检查您的拓展软件包配置"
             raise FileNotFoundError(msg)
         logger.debug("复制拓展软件包 %s 到 %s", pkg_name, path)
         shutil.copytree(os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"]), path, symlinks=True)
@@ -249,27 +249,27 @@ def prepare_cfg(config: dict[str, Any],
                openwrt.get_package_config("kmod-fast-classifier") in ("y", "m"))
     enable_fullcone = openwrt.get_package_config("kmod-nft-fullcone") in ("y", "m")
     if enable_fullcone or enable_sfe:
-        logger.info("添加952补丁")
+        logger.info("%s添加952补丁", cfg_name)
         patch925 = f"952{"-add" if kernel_version != "5.10" else ""}-net-conntrack-events-support-multiple-registrant.patch"
         shutil.copy2(os.path.join(turboacc_dir, f"hack-{kernel_version}", patch925),
                      os.path.join(openwrt.path, "target", "linux", "generic", f"hack-{kernel_version}", patch925))
-        logger.info("附加内核配置CONFIG_NF_CONNTRACK_CHAIN_EVENTS")
+        logger.info("%s附加内核配置CONFIG_NF_CONNTRACK_CHAIN_EVENTS", cfg_name)
         with open(os.path.join(openwrt.path, "target", "linux", "generic", f"config-{kernel_version}"), "a") as f:
             f.write("\n# CONFIG_NF_CONNTRACK_CHAIN_EVENTS is not set")
     if enable_sfe:
-        logger.info("添加953补丁")
+        logger.info("%s添加953补丁", cfg_name)
         patch953 = "953-net-patch-linux-kernel-to-support-shortcut-fe.patch"
         shutil.copy2(os.path.join(turboacc_dir, f"hack-{kernel_version}", patch953),
                      os.path.join(openwrt.path, "target", "linux", "generic", f"hack-{kernel_version}", patch953))
-        logger.info("添加613补丁")
+        logger.info("%s添加613补丁", cfg_name)
         patch613 = "613-netfilter_optional_tcp_window_check.patch"
         shutil.copy2(os.path.join(turboacc_dir, f"pending-{kernel_version}", patch613),
                      os.path.join(openwrt.path, "target", "linux", "generic", f"pending-{kernel_version}", patch613))
-        logger.info("附加内核配置CONFIG_SHORTCUT_FE")
+        logger.info("%s附加内核配置CONFIG_SHORTCUT_FE", cfg_name)
         with open(os.path.join(openwrt.path, "target", "linux", "generic", f"config-{kernel_version}"), "a") as f:
             f.write("\nCONFIG_SHORTCUT_FE=y")
     if enable_fullcone:
-        logger.info("添加libnftnl、firewall4、nftables补丁")
+        logger.info("%s添加libnftnl、firewall4、nftables补丁", cfg_name)
         shutil.rmtree(os.path.join(openwrt.path, "package", "libs", "libnftnl"))
         shutil.copytree(os.path.join(turboacc_dir, f"libnftnl-{versions['LIBNFTNL_VERSION']}"), os.path.join(openwrt.path, "package", "libs", "libnftnl"))
         shutil.rmtree(os.path.join(openwrt.path, "package", "network", "config", "firewall4"))

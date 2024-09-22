@@ -35,9 +35,8 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
-      - run: mkdir -p /opt/OpenWrt-K && cp -RT $GITHUB_WORKSPACE /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./../../../../../opt/OpenWrt-K/.github/action/prepare
+        uses: ./.github/action/prepare
 
       - name: 准备
         id: run
@@ -55,9 +54,8 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
-      - run: mkdir -p /opt/OpenWrt-K && cp -RT $GITHUB_WORKSPACE /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./../../../../../opt/OpenWrt-K/.github/action/prepare
+        uses: ./.github/action/prepare
 
       - name: 准备编译
         id: prepare
@@ -101,9 +99,8 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
-      - run: mkdir -p /opt/OpenWrt-K && cp -RT $GITHUB_WORKSPACE /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./../../../../../opt/OpenWrt-K/.github/action/prepare
+        uses: ./.github/action/prepare
 
       - name: 准备编译
         id: prepare
@@ -135,9 +132,8 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
-      - run: mkdir -p /opt/OpenWrt-K && cp -RT $GITHUB_WORKSPACE /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./../../../../../opt/OpenWrt-K/.github/action/prepare
+        uses: ./.github/action/prepare
 
       - name: 准备编译
         id: prepare
@@ -169,9 +165,8 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
-      - run: mkdir -p /opt/OpenWrt-K && cp -RT $GITHUB_WORKSPACE /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./../../../../../opt/OpenWrt-K/.github/action/prepare
+        uses: ./.github/action/prepare
 
       - name: 准备构建
         id: prepare
@@ -193,9 +188,8 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir -p /opt/OpenWrt-K && cp -RT $GITHUB_WORKSPACE /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./../../../../../opt/OpenWrt-K/.github/action/prepare
+        uses: ./.github/action/prepare
 
       - name: 发布
         run: PYTHONPATH=/opt/OpenWrt-K python3 -m build_helper --task releases --config ${{ matrix.config }}
