@@ -124,6 +124,9 @@ def setup_env(full: bool = False, clear: bool = False) -> None:
         sudo("mount", "-o", "compress=zstd", lv_devname, paths.root)
         sudo("chown", "-R", "runner:runner", paths.root)
 
+        if not os.path.exists(os.path.join(paths.root, ".github")):
+            os.makedirs(os.path.join(paths.root, ".github"))
+            os.symlink(os.path.join(paths.openwrt_k, ".github"), os.path.join(paths.root, ".github"))
         # 打印剩余空间
         total, used, free = shutil.disk_usage(paths.root)
         logger.info(f"工作区空间使用情况: {used / (1024**3):.2f}/{total / (1024**3):.2f}GB,剩余:  {free / (1024**3):.2f}GB")
