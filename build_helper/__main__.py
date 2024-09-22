@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 
 from actions_toolkit import core
 
+from .utils.error import ConfigParseError, PrePareError
 from .utils.logger import debug, logger
 from .utils.upload import uploader
 from .utils.utils import setup_env
@@ -28,17 +29,15 @@ def main() -> None:
             setup_env()
             try:
                 configs = parse_configs()
-                if not configs:
-                    core.set_failed("未找到任何可用的配置")
             except Exception as e:
-                logger.exception("解析配置时出错")
-                core.set_failed(f"解析配置时出错: {e.__class__.__name__}: {e!s}")
+                msg = f"解析配置时出错: {e.__class__.__name__}: {e!s}"
+                raise ConfigParseError(msg) from e
             try:
                 prepare(configs)
                 core.set_output("matrix", get_matrix(configs))
             except Exception as e:
-                logger.exception("准备时出错")
-                core.set_failed(f"准备时出错: {e.__class__.__name__}: {e!s}")
+                msg = f"准备时出错: {e.__class__.__name__}: {e!s}"
+                raise PrePareError(msg) from e
         case "build-prepare":
             from .build import prepare
             prepare(config)

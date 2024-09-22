@@ -49,7 +49,7 @@ class UpLoader:
 
     def save(self) -> None:
         if self.action['runs']['steps']:
-            logger.debug("Save UpLoad Action file to %s0", self.action_file)
+            logger.debug("Save UpLoad Action file to %s", self.action_file)
             with open(self.action_file, 'w', encoding='utf-8') as file:
                 yaml.dump(self.action, file, allow_unicode=True, sort_keys=False)
 

@@ -10,8 +10,8 @@ from multiprocessing.pool import Pool
 from typing import TYPE_CHECKING, Any
 
 import pygit2
-from actions_toolkit import core
 
+from .utils.error import ConfigError, ConfigParseError
 from .utils.logger import logger
 from .utils.network import dl2, get_gh_repo_last_releases, request_get, wait_dl_tasks
 from .utils.openwrt import OpenWrt
@@ -33,7 +33,8 @@ def parse_configs() -> dict[str, dict[str, Any]]:
         configs[name] = {"path": path}
         k_config_path = os.path.join(path, "OpenWrt-K")
         if not os.path.isdir(k_config_path):
-            core.set_failed(f"未找到配置{name}的openwrt文件夹: {k_config_path}")
+            msg = f"未找到配置{name}的openwrt文件夹: {k_config_path}"
+            raise NotADirectoryError(msg)
 
         configs[name]["compile"] = parse_config(os.path.join(k_config_path, "compile.config"),
                                                 ("openwrt_tag/branch", "kmod_compile_exclude_list", "use_cache"))
@@ -55,12 +56,14 @@ def parse_configs() -> dict[str, dict[str, Any]]:
                 keys = ("NAME", "PATH", "REPOSITORIE", "BRANCH")
                 for key in keys:
                     if key not in pkg:
-                        core.set_failed(f"配置{name}的extpackages{i}缺少{key}")
+                        msg = f"配置{name}的extpackages{i}缺少{key}"
+                        raise ConfigParseError(msg)
                 pkg_name = pkg["NAME"]
                 if name not in configs[name]["extpackages"]:
                     configs[name]["extpackages"][pkg["NAME"]] = {k:v for k, v in pkg.items() if k != "NAME"}
                 else:
-                    core.set_failed(f"配置{name}的extpackages中存在重复的包名: {pkg_name}")
+                    msg = f"配置{name}的extpackages中存在重复的包名: {pkg_name}"
+                    raise ConfigParseError(msg)
 
         configs[name]["openwrt"] = ""
         for file in os.listdir(path):
@@ -69,6 +72,9 @@ def parse_configs() -> dict[str, dict[str, Any]]:
                     configs[name]["openwrt"] += f.read() + "\n"
         if configs[name]["compile"]["use_cache"] is True:
             configs[name]["openwrt"] += "CONFIG_DEVEL=y\nCONFIG_CCACHE=y"
+    if not configs:
+        msg = "没有找到任何可用配置文件"
+        raise ConfigError(msg)
     return configs
 
 def get_matrix(configs: dict[str, dict]) -> str:

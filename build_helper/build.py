@@ -108,7 +108,7 @@ def base_builds(cfg: dict) -> None:
     tmp_ccache_path = None
     if os.path.exists(ccache_path):
         tmp_ccache_path = paths.get_tmpdir()
-        shutil.move(ccache_path, tmp_ccache_path.name)
+        os.replace(ccache_path, tmp_ccache_path.name)
 
     logger.info("修改配置(设置编译所有kmod)...")
     openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"])
@@ -123,9 +123,9 @@ def base_builds(cfg: dict) -> None:
         openwrt.make("toolchain/install")
 
     logger.info("开始编译内核...")
-    openwrt.make("clean")
     if tmp_ccache_path:
-        shutil.move(tmp_ccache_path.name, ccache_path)
+        os.replace(tmp_ccache_path.name, ccache_path)
+        tmp_ccache_path.cleanup()
     openwrt.make("target/compile")
 
     logger.info("归档文件...")

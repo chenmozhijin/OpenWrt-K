@@ -5,15 +5,15 @@ import os
 import shutil
 import subprocess
 
-from actions_toolkit import core
-
+from .error import ConfigParseError
 from .logger import logger
 from .paths import paths
 
 
 def parse_config(path: str, prefixs: tuple[str,...]|list[str]) -> dict[str, str | list[str] | bool]:
     if not os.path.isfile(path):
-        core.set_failed(f"配置文件 {path} 不存在")
+        msg = f"配置文件 {path} 不存在"
+        raise ConfigParseError(msg)
 
     config = {}
     with open(path, encoding="utf-8") as f:
@@ -33,7 +33,8 @@ def parse_config(path: str, prefixs: tuple[str,...]|list[str]) -> dict[str, str 
                                 config[prefix] = content
                     break
             else:
-                core.set_failed(f"无法在配置文件 {path} 中找到配置项{prefix}")
+                msg = f"无法在配置文件 {path} 中找到配置项{prefix}"
+                raise ConfigParseError(msg)
     return config
 
 
@@ -125,7 +126,6 @@ def setup_env(full: bool = False, clear: bool = False) -> None:
         sudo("chown", "-R", "runner:runner", paths.root)
 
         if not os.path.exists(os.path.join(paths.root, ".github")):
-            os.makedirs(os.path.join(paths.root, ".github"))
             os.symlink(os.path.join(paths.openwrt_k, ".github"), os.path.join(paths.root, ".github"))
         # 打印剩余空间
         total, used, free = shutil.disk_usage(paths.root)
