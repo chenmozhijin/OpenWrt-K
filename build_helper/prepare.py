@@ -79,6 +79,11 @@ def get_matrix(configs: dict[str, dict]) -> str:
         matrix["include"].append({"name": name, "config": gzip.compress(json.dumps(config, separators=(',', ':')).encode("utf-8")).hex().upper()})
     return json.dumps(matrix)
 
+def clone(repo: str, path: str, branch: str | None) -> tuple[str, str | None, str]:
+    logger.info("开始克隆仓库 %s", repo if not branch else f"{repo} (分支: {branch})")
+    pygit2.clone_repository(repo, path, checkout_branch=branch if branch else None, depth=1)
+    logger.info("仓库 %s 克隆完成", repo if not branch else f"{repo} (分支: {branch})")
+    return repo, branch, path
 
 def prepare(configs: dict[str, dict[str, Any]]) -> None:
     # clone拓展软件源码
@@ -91,11 +96,6 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
                                        *[("https://github.com/sbwml/packages_lang_golang",
                                           config["openwrtext"]["golang_version"]) for config in configs.values()]}
     cloned_repos: dict[tuple[str, str | None], str] = {}
-    def clone(repo: str, path: str, branch: str | None) -> tuple[str, str | None, str]:
-        logger.info("开始克隆仓库 %s", repo if not branch else f"{repo} (分支: {branch})")
-        pygit2.clone_repository(repo, path, checkout_branch=branch if branch else None, depth=1)
-        logger.info("仓库 %s 克隆完成", repo if not branch else f"{repo} (分支: {branch})")
-        return repo, branch, path
     with Pool(8) as p:
         for repo, branch, path in p.starmap(clone,[
                                              (repo,
