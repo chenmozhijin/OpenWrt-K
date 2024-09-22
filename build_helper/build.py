@@ -127,7 +127,8 @@ def base_builds(cfg: dict) -> None:
     openwrt.download_source("target/download")
     logger.info("开始编译内核...")
     if tmp_ccache_path:
-        shutil.rmtree(ccache_path)
+        if os.path.exists(ccache_path):
+            shutil.rmtree(ccache_path)
         os.replace(tmp_ccache_path.name, ccache_path)
         tmp_ccache_path.cleanup()
     openwrt.make("target/compile")
