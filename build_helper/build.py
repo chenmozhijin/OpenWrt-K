@@ -169,7 +169,6 @@ def build_packages(cfg: dict) -> None:
 
 def build_image_builder(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
-    targetinfo = openwrt.get_targetinfo()
 
     logger.info("修改配置(设置编译所有kmod/取消编译其他软件包/取消生成镜像/)...")
     openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"], only_kmods=True)
@@ -199,12 +198,6 @@ def build_image_builder(cfg: dict) -> None:
 
     logger.info("开始生成软件包...")
     openwrt.make("package/install")
-
-    if targetinfo and "bcm27xx-gpu-fw" in targetinfo["default_packages"]:
-        # 不知道为什么它就是没有被执行Build/InstallDev中的命令把东西复制到KERNEL_BUILD_DIR下
-        # https://github.com/openwrt/openwrt/blob/main/package/kernel/bcm27xx-gpu-fw/Makefile
-        logger.info("编译bcm27xx-gpu-fw...")
-        openwrt.make("package/bcm27xx-gpu-fw/compile", debug=True)
 
     logger.info("制作Image Builder包...")
     openwrt.make("target/install")
