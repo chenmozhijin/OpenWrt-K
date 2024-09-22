@@ -18,7 +18,7 @@ def releases(cfg: dict) -> None:
     logger.info("下载artifact...")
 
 
-    tmpdir = tempfile.TemporaryDirectory()
+    tmpdir = paths.get_tmpdir()
     pkgs_archive_path = dl_artifact(f"packages-{cfg['name']}", tmpdir.name)
     shutil.move(pkgs_archive_path, os.path.join(paths.uploads, "packages.zip"))
     pkgs_archive_path = os.path.join(paths.uploads, "packages.zip")

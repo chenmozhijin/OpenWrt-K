@@ -4,7 +4,6 @@ import os
 import re
 import shutil
 import tarfile
-import tempfile
 import zipfile
 
 from actions_toolkit import core
@@ -39,11 +38,11 @@ def get_cache_restore_key(openwrt: OpenWrt, cfg: dict) -> str:
 
 
 def prepare(cfg: dict) -> None:
-    setup_env(cfg["name"] in ("base-builds", "build-packages", "build-ImageBuilder"), cfg["name"] in ("build-packages", "build-ImageBuilder"))
     context = Context()
     logger.debug("job: %s", context.job)
+    setup_env(context.job in ("build-packages", "build-ImageBuilder"), context.job in ("build-packages", "build-ImageBuilder"))
 
-    tmpdir = tempfile.TemporaryDirectory()
+    tmpdir = paths.get_tmpdir()
 
     logger.info("还原openwrt源码...")
     path = dl_artifact(f"openwrt-source-{cfg["name"]}", tmpdir.name)
@@ -53,7 +52,7 @@ def prepare(cfg: dict) -> None:
         tar_ref.extractall(paths.workdir)  # noqa: S202
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
-    if context.job.startswith("base-builds"):
+    if context.job == "base-builds":
         logger.info("构建toolchain缓存key...")
         toolchain_key = f"toolchain-{hash_dirs((os.path.join(openwrt.path, "tools"), os.path.join(openwrt.path, "toolchain")))}"
         target, subtarget = openwrt.get_target()
@@ -63,7 +62,7 @@ def prepare(cfg: dict) -> None:
             toolchain_key += f"-{subtarget}"
         core.set_output("toolchain-key", toolchain_key)
 
-    elif context.job.startswith(("build-packages", "build-ImageBuilder")):
+    elif context.job in ("build-packages", "build-ImageBuilder"):
         if os.path.exists(os.path.join(openwrt.path, "staging_dir")):
             shutil.rmtree(os.path.join(openwrt.path, "staging_dir"))
         base_builds_path = dl_artifact(f"base-builds-{cfg['name']}", tmpdir.name)
@@ -72,7 +71,7 @@ def prepare(cfg: dict) -> None:
         with tarfile.open(os.path.join(tmpdir.name, "builds.tar.gz"), "r:gz") as tar:
             tar.extractall(openwrt.path)  # noqa: S202
 
-    elif context.job.startswith("build-images"):
+    elif context.job == "build-images":
         ib_path = dl_artifact(f"Image_Builder-{cfg["name"]}", tmpdir.name)
         with zipfile.ZipFile(ib_path, "r") as zip_ref:
             zip_ref.extract("openwrt-imagebuilder.tar.xz", tmpdir.name)
@@ -105,6 +104,12 @@ def prepare(cfg: dict) -> None:
 def base_builds(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
+    ccache_path = os.path.join(openwrt.path, ".ccache")
+    tmp_ccache_path = None
+    if os.path.exists(ccache_path):
+        tmp_ccache_path = paths.get_tmpdir()
+        shutil.move(ccache_path, tmp_ccache_path.name)
+
     logger.info("修改配置(设置编译所有kmod)...")
     openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"])
 
@@ -118,6 +123,9 @@ def base_builds(cfg: dict) -> None:
         openwrt.make("toolchain/install")
 
     logger.info("开始编译内核...")
+    openwrt.make("clean")
+    if tmp_ccache_path:
+        shutil.move(tmp_ccache_path.name, ccache_path)
     openwrt.make("target/compile")
 
     logger.info("归档文件...")
@@ -156,6 +164,7 @@ def build_packages(cfg: dict) -> None:
 
 def build_image_builder(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
+    targetinfo = openwrt.get_targetinfo()
 
     logger.info("修改配置(设置编译所有kmod/取消编译其他软件包/取消生成镜像/)...")
     openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"], only_kmods=True)
@@ -180,6 +189,12 @@ def build_image_builder(cfg: dict) -> None:
 
     logger.info("开始生成软件包...")
     openwrt.make("package/install")
+
+    if targetinfo and "bcm27xx-gpu-fw" in targetinfo["default_packages"]:
+        # 不知道为什么它就是没有被执行Build/InstallDev中的命令把东西复制到KERNEL_BUILD_DIR下
+        # https://github.com/openwrt/openwrt/blob/main/package/kernel/bcm27xx-gpu-fw/Makefile
+        logger.info("编译bcm27xx-gpu-fw...")
+        openwrt.make("package/bcm27xx-gpu-fw/compile", debug=True)
 
     logger.info("制作Image Builder包...")
     openwrt.make("target/install")

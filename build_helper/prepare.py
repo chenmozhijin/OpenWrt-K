@@ -6,7 +6,6 @@ import os
 import re
 import shutil
 import tarfile
-import tempfile
 from multiprocessing.pool import Pool
 from typing import TYPE_CHECKING, Any
 
@@ -319,7 +318,7 @@ def prepare_cfg(config: dict[str, Any],
         case _:
             adg_arch, clash_arch = None, None
 
-    tmpdir = tempfile.TemporaryDirectory()
+    tmpdir = paths.get_tmpdir()
     dl_tasks: list[SmartDL] = []
     if adg_arch and openwrt.get_package_config("luci-app-adguardhome") == "y":
         logger.info("%s下载架构为%s的AdGuardHome核心", cfg_name, adg_arch)

@@ -405,13 +405,15 @@ class OpenWrt(OpenWrtBase):
 
     def get_targetinfo(self) -> dict | None:
         targets = self.get_targetinfos()
-        target = None
+        targetinfos = None
         with open(os.path.join(self.path, ".config")) as f:
             for line in f:
                 if match := re.match(r"CONFIG_TARGET_(?P<target>[^=]+)=", line):
-                    target = targets.get(match.group('target').replace("_", "/"), target)
-
-        return target
+                    target = match.group('target').replace("_", "/")
+                    targetinfos = targets.get(target, targetinfos)
+                    if targetinfos and target:
+                        targetinfos["target"] = target
+        return targetinfos
 
     def enable_kmods(self, exclude_list: list[str], only_kmods: bool = False) -> None:
         packages = self.get_packageinfos()

@@ -3,7 +3,7 @@
 import os
 
 from actions_toolkit import core
-
+import tempfile
 
 class Paths:
 
@@ -68,5 +68,9 @@ class Paths:
         elif not os.path.isdir(errorinfo):
             core.set_failed(f"错误信息路径 {errorinfo} 不是一个目录")
         return errorinfo
+    
+    def get_tmpdir(self) -> tempfile.TemporaryDirectory:
+        return tempfile.TemporaryDirectory(dir=os.path.join(self.root, "tmp"))
+
 
 paths = Paths()
