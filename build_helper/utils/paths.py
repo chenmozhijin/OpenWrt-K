@@ -69,6 +69,10 @@ class Paths:
             raise NotADirectoryError(f"错误信息路径 {errorinfo} 不是一个目录")
         return errorinfo
     
+    @property
+    def patches(self) -> str:
+        return os.path.join(self.openwrt_k, "patches")
+    
     def get_tmpdir(self) -> tempfile.TemporaryDirectory:
         tmpdir = os.path.join(self.root, "tmp")
         if not os.path.exists(tmpdir):

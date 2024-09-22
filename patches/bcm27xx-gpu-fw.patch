@@ -1,0 +1,28 @@
+diff --git a/package/kernel/bcm27xx-gpu-fw/Makefile b/package/kernel/bcm27xx-gpu-fw/Makefile
+index 048dd0d3a9..d8c467f770 100644
+--- a/package/kernel/bcm27xx-gpu-fw/Makefile
++++ b/package/kernel/bcm27xx-gpu-fw/Makefile
+@@ -158,14 +158,6 @@ define Build/Prepare
+ endef
+ 
+ define Build/Compile
+-	true
+-endef
+-
+-define Package/bcm27xx-gpu-fw/install
+-	true
+-endef
+-
+-define Build/InstallDev
+ 	$(CP) $(PKG_BUILD_DIR)/bootcode.bin $(KERNEL_BUILD_DIR)
+ 	$(CP) $(PKG_BUILD_DIR)/LICENCE.broadcom $(KERNEL_BUILD_DIR)
+ 	$(CP) $(PKG_BUILD_DIR)/start.elf $(KERNEL_BUILD_DIR)
+@@ -182,4 +174,8 @@ define Build/InstallDev
+ 	$(CP) $(PKG_BUILD_DIR)/fixup4x.dat $(KERNEL_BUILD_DIR)
+ endef
+ 
++define Package/bcm27xx-gpu-fw/install
++	true
++endef
++
+ $(eval $(call BuildPackage,bcm27xx-gpu-fw))

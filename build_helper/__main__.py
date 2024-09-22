@@ -81,9 +81,12 @@ if __name__ == "__main__":
                 shutil.copytree(os.path.join(openwrt_path, "logs"), os.path.join(errorinfo_path, "openwrt-logs"))
             if debug:
                 import tarfile
+                tmp_dir = paths.get_tmpdir()
                 logger.info("正在打包 openwrt 文件夹...")
-                with tarfile.open(os.path.join(errorinfo_path, "openwrt.tar.gz"), "w:gz") as tar:
+                with tarfile.open(os.path.join(tmp_dir.name, "openwrt.tar.gz"), "w:gz") as tar:
                     tar.add(openwrt_path, arcname="openwrt")
+                uploader.add(f"{Context().job}-{config.get("name") if config else ''}-openwrt-{time.time()}",
+                             os.path.join(tmp_dir.name, "openwrt.tar.gz"), retention_days=90, compression_level=0)
 
         with open(os.path.join(errorinfo_path, "files.txt"), "w") as f:
             for root, _, files in os.walk("."):

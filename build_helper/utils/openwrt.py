@@ -13,7 +13,7 @@ from actions_toolkit import core
 from .logger import logger
 from .network import request_get
 from .utils import apply_patch
-
+from .paths import paths
 
 class OpenWrtBase:
     def __init__(self, path: str) -> None:
@@ -229,6 +229,11 @@ class OpenWrt(OpenWrtBase):
                     core.error("修复libpfring失败, 这可能会导致编译错误。\nttps://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865")
             else:
                 core.error("获取libpfring修复补丁失败, 这可能会导致编译错误。\nttps://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865")
+
+        # 修复bcm27xx-gpu-fw
+        logger.info("修复bcm27xx-gpu-fw")
+        if not apply_patch(os.path.join(paths.patches, "bcm27xx-gpu-fw.patch"), self.path):
+            core.error("修复bcm27xx-gpu-fw失败, 这可能会导致生成镜像生成器错误。")
 
     def get_packageinfos(self) -> dict:
         path = os.path.join(self.path, "tmp", ".packageinfo")

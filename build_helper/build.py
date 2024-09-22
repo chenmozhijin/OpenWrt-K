@@ -169,17 +169,22 @@ def build_image_builder(cfg: dict) -> None:
 
     logger.info("修改配置(设置编译所有kmod/取消编译其他软件包/取消生成镜像/)...")
     openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"], only_kmods=True)
-    with open(os.path.join(openwrt.path, ".config")) as f:
+    with open(os.path.join(".", ".config")) as f:
         config = f.read()
-    with open(os.path.join(openwrt.path, ".config"), "w") as f:
+    with open(os.path.join(".", ".config"), "w") as f:
         for line in config.splitlines():
-            if match := re.match(r"CONFIG_(?P<name>[^_=]+)_IMAGES=y", line) or (match := re.match(r"CONFIG_TARGET_ROOTFS_(?P<name>[^_=]+)=y", line)):
+            if ((match := re.match(r"CONFIG_(?P<name>[^_=]+)_IMAGES=y", line)) or
+                (match := re.match(r"CONFIG_TARGET_ROOTFS_(?P<name>[^_=]+)=y", line)) or 
+                (match := re.match(r"CONFIG_TARGET_IMAGES_(?P<name>[^_=]+)=y", line))):
                 name = match.group("name")
-                if name in ("ISO", "VMDK", "TARGZ", "CPIOGZ", "EXT4FS", "SQUASHF", "GZIP"):
+                if name in ("ISO", "VDI", "VMDK", "VHDX", "TARGZ", "CPIOGZ", "EXT4FS", "SQUASHFS", "GZIP"):
                     logger.debug(f"不构建 {name} 格式镜像")
                     f.write(line.replace("=y", "=n") + "\n")
             else:
                 f.write(line + "\n")
+        f.write("CONFIG_IB=y\n")
+        f.write("CONFIG_IB_STANDALONE=y\n")
+        # f.write("CONFIG_SDK=y\n")
     openwrt.make_defconfig()
 
     logger.info("下载编译所需源码...")
