@@ -41,7 +41,7 @@ jobs:
 
       - name: 准备
         id: run
-        run: python3 -m /opt/OpenWrt-K/build_helper --task prepare
+        run: PYTHONPATH=/opt/OpenWrt-K python3 -m build_helper --task prepare
 
       - name: 上传
         uses: ./../../../../../opt/OpenWrt-K/.github/action/upload
@@ -61,7 +61,7 @@ jobs:
 
       - name: 准备编译
         id: prepare
-        run: python3 -m /opt/OpenWrt-K/build_helper --task build-prepare --config ${{ matrix.config }}
+        run: PYTHONPATH=/opt/OpenWrt-K python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
 
       - name: 缓存toolchain
         uses: actions/cache@v4
@@ -84,7 +84,7 @@ jobs:
 
       - name: 编译
         id: build
-        run: python3 -m /opt/OpenWrt-K/build_helper --task base-builds --config ${{ matrix.config }}
+        run: PYTHONPATH=/opt/OpenWrt-K python3 -m build_helper --task base-builds --config ${{ matrix.config }}
         env:
           CACHE_HIT: ${{ steps.cache-toolchain.outputs.cache-hit }}
 
@@ -107,7 +107,7 @@ jobs:
 
       - name: 准备编译
         id: prepare
-        run: python3 -m /opt/OpenWrt-K/build_helper --task build-prepare --config ${{ matrix.config }}
+        run: PYTHONPATH=/opt/OpenWrt-K python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
 
       - name: 缓存ccache
         uses: actions/cache@v4
@@ -120,7 +120,7 @@ jobs:
 
       - name: 编译
         id: build
-        run: python3 -m /opt/OpenWrt-K/build_helper --task build_packages --config ${{ matrix.config }}
+        run: PYTHONPATH=/opt/OpenWrt-K python3 -m build_helper --task build_packages --config ${{ matrix.config }}
 
       - name: 上传
         if: success() || failure()
@@ -141,7 +141,7 @@ jobs:
 
       - name: 准备编译
         id: prepare
-        run: python3 -m /opt/OpenWrt-K/build_helper --task build-prepare --config ${{ matrix.config }}
+        run: PYTHONPATH=/opt/OpenWrt-K python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
 
       - name: 缓存ccache
         uses: actions/cache@v4
@@ -154,7 +154,7 @@ jobs:
 
       - name: 编译
         id: build
-        run: python3 -m /opt/OpenWrt-K/build_helper --task build_image_builder --config ${{ matrix.config }}
+        run: PYTHONPATH=/opt/OpenWrt-K python3 -m build_helper --task build_image_builder --config ${{ matrix.config }}
 
       - name: 上传
         if: success() || failure()
@@ -175,11 +175,11 @@ jobs:
 
       - name: 准备构建
         id: prepare
-        run: python3 -m /opt/OpenWrt-K/build_helper --task build-prepare --config ${{ matrix.config }}
+        run: PYTHONPATH=/opt/OpenWrt-K python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
 
       - name: 构建
         id: build
-        run: python3 -m /opt/OpenWrt-K/build_helper --task build_images --config ${{ matrix.config }}
+        run: PYTHONPATH=/opt/OpenWrt-K python3 -m build_helper --task build_images --config ${{ matrix.config }}
 
       - name: 上传
         if: success() || failure()
@@ -198,4 +198,4 @@ jobs:
         uses: ./../../../../../opt/OpenWrt-K/.github/action/prepare
 
       - name: 发布
-        run: python3 -m /opt/OpenWrt-K/build_helper --task releases --config ${{ matrix.config }}
+        run: PYTHONPATH=/opt/OpenWrt-K python3 -m build_helper --task releases --config ${{ matrix.config }}
