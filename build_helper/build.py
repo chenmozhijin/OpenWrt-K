@@ -209,12 +209,12 @@ def build_image_builder(cfg: dict) -> None:
 
     logger.info("打包kmods...")
 
-    kmods = []
+    kmods_path = os.path.join(paths.uploads, "kmods")
     for root, _dirs, files in os.walk(os.path.join(openwrt.path, "bin")):
         for file in files:
             if file.startswith("kmod-") and file.endswith(".ipk"):
-                kmods.append(os.path.join(root, file))  # noqa: PERF401
-    uploader.add(f"kmods-{cfg['name']}", kmods, retention_days=1)
+                shutil.copy2(os.path.join(root, file), kmods_path)
+    uploader.add(f"kmods-{cfg['name']}", os.path.join(kmods_path, "*"), retention_days=1)
 
     target, subtarget = openwrt.get_target()
     if target is None or subtarget is None:
