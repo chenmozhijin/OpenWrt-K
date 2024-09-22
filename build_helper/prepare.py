@@ -90,12 +90,19 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
                                        *[(pkg["REPOSITORIE"], pkg["BRANCH"]) for config in configs.values() for pkg in config["extpackages"].values()],
                                        *[("https://github.com/sbwml/packages_lang_golang",
                                           config["openwrtext"]["golang_version"]) for config in configs.values()]}
-    cloned_repos: dict[tuple[str, str], str] = {}
-    for repo, branch in to_clone:
-        path = os.path.join(paths.workdir, "repos", repo.split("/")[-2], repo.split("/")[-1],branch if branch else "@default@")
+    cloned_repos: dict[tuple[str, str | None], str] = {}
+    def clone(repo: str, path: str, branch: str | None) -> tuple[str, str | None, str]:
         logger.info("开始克隆仓库 %s", repo if not branch else f"{repo} (分支: {branch})")
         pygit2.clone_repository(repo, path, checkout_branch=branch if branch else None, depth=1)
-        cloned_repos[(repo, branch)] = path
+        logger.info("仓库 %s 克隆完成", repo if not branch else f"{repo} (分支: {branch})")
+        return repo, branch, path
+    with Pool(8) as p:
+        for repo, branch, path in p.starmap(clone,[
+                                             (repo,
+                                              os.path.join(paths.workdir, "repos", repo.split("/")[-2], repo.split("/")[-1],branch if branch else "@default@"),
+                                              branch)
+                                              for repo, branch in to_clone]):
+            cloned_repos[(repo, branch)] = path
 
 
     logger.info("开始处理拓展软件源码...")

@@ -5,11 +5,13 @@ import os
 import yaml
 
 from .paths import paths
+from .logger import logger
 
 
 class UpLoader:
     def __init__(self) -> None:
         self.action_file = os.path.join(paths.openwrt_k, ".github", "action", "upload", "action.yml")
+        logger.debug(f"UpLoad Action file: {self.action_file}")
         with open(self.action_file, encoding='utf-8') as file:
             self.action = yaml.load(file, Loader=yaml.FullLoader)  # noqa: S506
         self.action['runs']['steps'] = []
@@ -22,6 +24,7 @@ class UpLoader:
             compression_level: int | None = None,
             overwrite: bool | None = None,
             include_hidden_files: bool | None = None) -> None:
+        logger.debug(f"Add Artifact: {name} {path}")
         if isinstance(path, list):
             path = "\n".join(path)
         action = {
@@ -46,7 +49,10 @@ class UpLoader:
 
     def save(self) -> None:
         if self.action['runs']['steps']:
+            logger.debug("Save UpLoad Action file to %s0", self.action_file)
             with open(self.action_file, 'w', encoding='utf-8') as file:
                 yaml.dump(self.action, file, allow_unicode=True, sort_keys=False)
+        else:
+            logger.warning("No Artifact to Upload")
 
 uploader = UpLoader()

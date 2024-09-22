@@ -42,7 +42,7 @@ def setup_env(full: bool = False, clear: bool = False) -> None:
         subprocess.run(["sudo", "-E", *list(args)], stdout=subprocess.PIPE)
     def apt(*args: str) -> None:
         subprocess.run(["sudo", "-E", "apt-get", "-y", *list(args)], stdout=subprocess.PIPE)
-    logger.info("开始准备编译环境...%s", f"(full={full}, clear={clear})")
+    logger.info("开始准备编译环境%s...", f"(full={full}, clear={clear})")
     # https://github.com/community/community/discussions/47863
     sudo("apt-mark", "hold", "grub-efi-amd64-signed")
     # 1. 更新包列表
