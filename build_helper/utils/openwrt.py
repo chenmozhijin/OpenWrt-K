@@ -12,8 +12,9 @@ from actions_toolkit import core
 
 from .logger import logger
 from .network import request_get
-from .utils import apply_patch
 from .paths import paths
+from .utils import apply_patch
+
 
 class OpenWrtBase:
     def __init__(self, path: str) -> None:
@@ -232,8 +233,9 @@ class OpenWrt(OpenWrtBase):
 
         # 修复bcm27xx-gpu-fw
         logger.info("修复bcm27xx-gpu-fw")
-        if not apply_patch(os.path.join(paths.patches, "bcm27xx-gpu-fw.patch"), self.path):
-            core.error("修复bcm27xx-gpu-fw失败, 这可能会导致生成镜像生成器错误。")
+        with open(os.path.join(self.path, 'target/linux/raspberrypi/Makefile'), encoding='utf-8') as f:
+            if not apply_patch(f.read(), self.path):
+                core.error("修复bcm27xx-gpu-fw失败, 这可能会导致生成镜像生成器错误。")
 
     def get_packageinfos(self) -> dict:
         path = os.path.join(self.path, "tmp", ".packageinfo")
