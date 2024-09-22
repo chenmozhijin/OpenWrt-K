@@ -9,7 +9,8 @@ from .paths import paths
 
 class UpLoader:
     def __init__(self) -> None:
-        with open(os.path.join(paths.root, ".github", "action", "upload", "action.yml"), encoding='utf-8') as file:
+        self.action_file = os.path.join(paths.openwrt_k, ".github", "action", "upload", "action.yml")
+        with open(self.action_file, encoding='utf-8') as file:
             self.action = yaml.load(file, Loader=yaml.FullLoader)  # noqa: S506
         self.action['runs']['steps'] = []
 
@@ -45,7 +46,7 @@ class UpLoader:
 
     def save(self) -> None:
         if self.action['runs']['steps']:
-            with open(os.path.join(paths.root, ".github", "action", "upload", "action.yml"), 'w', encoding='utf-8') as file:
+            with open(self.action_file, 'w', encoding='utf-8') as file:
                 yaml.dump(self.action, file, allow_unicode=True, sort_keys=False)
 
 uploader = UpLoader()

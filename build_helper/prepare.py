@@ -148,6 +148,7 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
     # 下载AdGuardHome规则与配置
     logger.info("下载AdGuardHome规则与配置...")
     global_files_path = os.path.join(paths.root, "files")
+    shutil.copytree(os.path.join(paths.openwrt_k, "files"), global_files_path, symlinks=True)
     adg_filters_path = os.path.join(global_files_path, "usr", "bin", "AdGuardHome", "data", "filters")
     os.makedirs(adg_filters_path, exist_ok=True)
     filters = {"1628750870.txt": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
@@ -385,7 +386,7 @@ def prepare_cfg(config: dict[str, Any],
             else:
                 f.write(line + "\n")
 
-    logger.info("其他处理")
+    logger.info("%s其他处理", cfg_name)
     with open(os.path.join(openwrt.path, "package", "base-files", "files", "bin", "config_generate"), encoding="utf-8") as f:
         content = f.read()
     with open(os.path.join(openwrt.path, "package", "base-files", "files", "bin", "config_generate"), "w", encoding="utf-8") as f:

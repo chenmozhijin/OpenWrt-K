@@ -15,6 +15,10 @@ class Paths:
             self.root = root
         self.global_config = os.path.join(self.root, "config", "OpenWrt.config")
 
+        self.main = os.path.abspath(__import__("__main__").__file__)
+        self.build_helper = os.path.dirname(self.main)
+        self.openwrt_k = os.path.dirname(self.build_helper)
+
     @property
     def configs(self) -> dict[str, str]:
         """获取配置的名称与路径"""

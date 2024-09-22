@@ -23,9 +23,11 @@ handler.setFormatter(formatter)
 if core.is_debug() or os.getenv("BUILD_HELPER_DEBUG") == "1" or os.getenv("BUILD_HELPER_DEBUG", "").lower() == "true":
     handler.setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
+    debug = True
 else:
     handler.setLevel(logging.INFO)
     logger.setLevel(logging.INFO)
+    debug = False
 logger.addHandler(handler)
 # 文件
 handler = logging.FileHandler(filename=paths.log, encoding="utf-8")

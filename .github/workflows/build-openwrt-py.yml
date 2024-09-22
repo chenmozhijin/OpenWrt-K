@@ -35,15 +35,17 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
+        with:
+          path: /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./.github/action/prepare
+        uses: /opt/OpenWrt-K/.github/action/prepare
 
       - name: 准备
         id: run
         run: python3 -m build_helper --task prepare
 
       - name: 上传
-        uses: ./.github/action/upload
+        uses: /opt/OpenWrt-K/.github/action/upload
 
   base-builds:
     runs-on: ubuntu-22.04
@@ -54,8 +56,10 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
+        with:
+          path: /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./.github/action/prepare
+        uses: /opt/OpenWrt-K/.github/action/prepare
 
       - name: 准备编译
         id: prepare
@@ -88,7 +92,7 @@ jobs:
 
       - name: 上传
         if: success() || failure()
-        uses: ./.github/action/upload
+        uses: /opt/OpenWrt-K/.github/action/upload
 
   build-packages:
     runs-on: ubuntu-22.04
@@ -99,8 +103,10 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
+        with:
+          path: /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./.github/action/prepare
+        uses: /opt/OpenWrt-K/.github/action/prepare
 
       - name: 准备编译
         id: prepare
@@ -121,7 +127,7 @@ jobs:
 
       - name: 上传
         if: success() || failure()
-        uses: ./.github/action/upload
+        uses: /opt/OpenWrt-K/.github/action/upload
 
   build-ImageBuilder:
     runs-on: ubuntu-22.04
@@ -132,8 +138,10 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
+        with:
+          path: /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./.github/action/prepare
+        uses: /opt/OpenWrt-K/.github/action/prepare
 
       - name: 准备编译
         id: prepare
@@ -154,7 +162,7 @@ jobs:
 
       - name: 上传
         if: success() || failure()
-        uses: ./.github/action/upload
+        uses: /opt/OpenWrt-K/.github/action/upload
 
   build-images:
     runs-on: ubuntu-22.04
@@ -165,8 +173,10 @@ jobs:
     steps:
 
       - uses: actions/checkout@v4
+        with:
+          path: /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./.github/action/prepare
+        uses: /opt/OpenWrt-K/.github/action/prepare
 
       - name: 准备构建
         id: prepare
@@ -178,7 +188,7 @@ jobs:
 
       - name: 上传
         if: success() || failure()
-        uses: ./.github/action/upload
+        uses: /opt/OpenWrt-K/.github/action/upload
 
   releases:
     runs-on: ubuntu-22.04
@@ -188,8 +198,10 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: /opt/OpenWrt-K
       - name: 建立环境
-        uses: ./.github/action/prepare
+        uses: /opt/OpenWrt-K/.github/action/prepare
 
       - name: 发布
         run: python3 -m build_helper --task releases --config ${{ matrix.config }}

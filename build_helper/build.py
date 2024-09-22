@@ -39,6 +39,7 @@ def get_cache_restore_key(openwrt: OpenWrt, cfg: dict) -> str:
 
 
 def prepare(cfg: dict) -> None:
+    setup_env(cfg["name"] in ("base-builds", "build-packages", "build-ImageBuilder"), cfg["name"] in ("build-packages", "build-ImageBuilder"))
     context = Context()
     logger.debug("job: %s", context.job)
 
@@ -53,7 +54,6 @@ def prepare(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
     if context.job.startswith("base-builds"):
-        setup_env(True)
         logger.info("构建toolchain缓存key...")
         toolchain_key = f"toolchain-{hash_dirs((os.path.join(openwrt.path, "tools"), os.path.join(openwrt.path, "toolchain")))}"
         target, subtarget = openwrt.get_target()
@@ -64,7 +64,6 @@ def prepare(cfg: dict) -> None:
         core.set_output("toolchain-key", toolchain_key)
 
     elif context.job.startswith(("build-packages", "build-ImageBuilder")):
-        setup_env(True, True)
         if os.path.exists(os.path.join(openwrt.path, "staging_dir")):
             shutil.rmtree(os.path.join(openwrt.path, "staging_dir"))
         base_builds_path = dl_artifact(f"base-builds-{cfg['name']}", tmpdir.name)
@@ -74,7 +73,6 @@ def prepare(cfg: dict) -> None:
             tar.extractall(openwrt.path)  # noqa: S202
 
     elif context.job.startswith("build-images"):
-        setup_env()
         ib_path = dl_artifact(f"Image_Builder-{cfg["name"]}", tmpdir.name)
         with zipfile.ZipFile(ib_path, "r") as zip_ref:
             zip_ref.extract("openwrt-imagebuilder.tar.xz", tmpdir.name)

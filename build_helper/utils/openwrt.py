@@ -206,7 +206,7 @@ class OpenWrt(OpenWrtBase):
         # 修复broadcom.mk中的路径错误
         logger.info("修复broadcom.mk中的路径错误")
         with open(os.path.join(self.path, 'package', "kernel", "mac80211", "broadcom.mk"), encoding='utf-8') as f:
-            content =  f.read().replace(r'	b43-fwsquash.py', r'	$(TOPDIR)/tools/b43-tools/files/b43-fwsquash.py',)
+            content =  f.read().replace(r'	b43-fwsquash.py', r'	$(TOPDIR)/tools/b43-tools/files/b43-fwsquash.py')
         with open(os.path.join(self.path, 'package', "kernel", "mac80211", "broadcom.mk"), 'w', encoding='utf-8') as f:
             f.write(content)
 

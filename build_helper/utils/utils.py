@@ -2,11 +2,13 @@
 # SPDX-License-Identifier: MIT
 import hashlib
 import os
+import shutil
 import subprocess
 
 from actions_toolkit import core
 
 from .logger import logger
+from .paths import paths
 
 
 def parse_config(path: str, prefixs: tuple[str,...]|list[str]) -> dict[str, str | list[str] | bool]:
@@ -40,7 +42,7 @@ def setup_env(full: bool = False, clear: bool = False) -> None:
         subprocess.run(["sudo", "-E", *list(args)], stdout=subprocess.PIPE)
     def apt(*args: str) -> None:
         subprocess.run(["sudo", "-E", "apt-get", "-y", *list(args)], stdout=subprocess.PIPE)
-    logger.info("开始准备编译环境...")
+    logger.info("开始准备编译环境...%s", f"(full={full}, clear={clear})")
     # https://github.com/community/community/discussions/47863
     sudo("apt-mark", "hold", "grub-efi-amd64-signed")
     # 1. 更新包列表
@@ -91,41 +93,40 @@ def setup_env(full: bool = False, clear: bool = False) -> None:
         sudo("rm", "-rf", "/etc/apt/sources.list.d/*", "/usr/share/dotnet", "/usr/local/lib/android", "/opt/ghc",
                 "/etc/mysql", "/etc/php")
 
+        # 移除 swap 文件
+        sudo("swapoff", "-a")
+        sudo("rm", "-f", "/mnt/swapfile")
+        # 创建根分区映像文件
+        root_avail_kb = int(subprocess.check_output(["df", "--block-size=1024", "--output=avail", "/"]).decode().splitlines()[-1])
+        root_size_kb = (root_avail_kb - 1048576) * 1024
+        sudo("fallocate", "-l", str(root_size_kb), "/root.img")
+        root_loop_devname = subprocess.check_output(["sudo", "losetup", "-Pf", "--show", "/root.img"]).decode().strip()
 
-        if False:
-            # 移除 swap 文件
-            sudo("swapoff", "-a")
-            sudo("rm", "-f", "/mnt/swapfile")
-            # 创建根分区映像文件
-            root_avail_kb = int(subprocess.check_output(["df", "--block-size=1024", "--output=avail", "/"]).decode().splitlines()[-1])
-            root_size_kb = (root_avail_kb - 1048576) * 1024
-            sudo("fallocate", "-l", str(root_size_kb), "/root.img")
-            root_loop_devname = subprocess.check_output(["sudo", "losetup", "-Pf", "--show", "/root.img"]).decode().strip()
+        # 创建物理卷
+        sudo("pvcreate", "-f", root_loop_devname)
 
-            # 创建物理卷
-            sudo("pvcreate", "-f", root_loop_devname)
+        # 创建挂载点分区映像文件
+        mnt_avail_kb = int(subprocess.check_output(["df", "--block-size=1024", "--output=avail", "/mnt"]).decode().splitlines()[-1])
+        mnt_size_kb = (mnt_avail_kb - 102400) * 1024
+        sudo("fallocate", "-l", str(mnt_size_kb), "/mnt/mnt.img")
+        mnt_loop_devname = subprocess.check_output(["sudo", "losetup", "-Pf", "--show", "/mnt/mnt.img"]).decode().strip()
 
-            # 创建挂载点分区映像文件
-            mnt_avail_kb = int(subprocess.check_output(["df", "--block-size=1024", "--output=avail", "/mnt"]).decode().splitlines()[-1])
-            mnt_size_kb = (mnt_avail_kb - 102400) * 1024
-            sudo("fallocate", "-l", str(mnt_size_kb), "/mnt/mnt.img")
-            mnt_loop_devname = subprocess.check_output(["sudo", "losetup", "-Pf", "--show", "/mnt/mnt.img"]).decode().strip()
+        # 创建物理卷
+        sudo("pvcreate", "-f", mnt_loop_devname)
 
-            # 创建物理卷
-            sudo("pvcreate", "-f", mnt_loop_devname)
+        # 创建卷组和逻辑卷
+        sudo("vgcreate", "vgstorage", root_loop_devname, mnt_loop_devname)
+        sudo("lvcreate", "-n", "lvstorage", "-l", "100%FREE", "vgstorage")
+        lv_devname = subprocess.check_output(["sudo", "lvscan"]).decode().split("'")[1].strip()
 
-            # 创建卷组和逻辑卷
-            sudo("vgcreate", "vgstorage", root_loop_devname, mnt_loop_devname)
-            sudo("lvcreate", "-n", "lvstorage", "-l", "100%FREE", "vgstorage")
-            lv_devname = subprocess.check_output(["sudo", "lvscan"]).decode().split("'")[1].strip()
+        # 创建文件系统并挂载
+        sudo("mkfs.btrfs", "-L", "combinedisk", lv_devname)
+        sudo("mount", "-o", "compress=zstd", lv_devname, paths.root)
+        sudo("chown", "-R", "runner:runner", paths.root)
 
-            # 创建文件系统并挂载
-            sudo("mkfs.btrfs", "-L", "combinedisk", lv_devname)
-            github_workspace = os.environ.get("GITHUB_WORKSPACE", "/github/workspace")
-            sudo("mount", "-o", "compress=zstd", lv_devname, github_workspace)
-            sudo("chown", "-R", "runner:runner", github_workspace)
-            subprocess.run(["df", "-hT", github_workspace])
-            sudo("btrfs", "filesystem", "usage", github_workspace)
+        # 打印剩余空间
+        total, used, free = shutil.disk_usage(paths.root)
+        logger.info(f"工作区空间使用情况: {used / (1024**3):.2f}/{total / (1024**3):.2f}GB,剩余:  {free / (1024**3):.2f}GB")
 
 
 def apply_patch(patch: str, target: str) -> bool:
