@@ -113,15 +113,18 @@ def base_builds(cfg: dict) -> None:
     logger.info("修改配置(设置编译所有kmod)...")
     openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"])
 
-    logger.info("下载编译所需源码...")
-    openwrt.download_packages_source()
-
     if os.getenv("CACHE_HIT", "").lower().strip() != "true":
+        logger.info("下载编译工具链所需源码...")
+        openwrt.download_source("tools/download")
+        openwrt.download_source("target/prereq")
+        openwrt.download_source("toolchain/download")
         logger.info("开始编译tools...")
         openwrt.make("tools/install")
         logger.info("开始编译toolchain...")
         openwrt.make("toolchain/install")
 
+    logger.info("下载编译内核所需源码...")
+    openwrt.download_source("target/download")
     logger.info("开始编译内核...")
     if tmp_ccache_path:
         shutil.rmtree(ccache_path)
@@ -144,7 +147,7 @@ def build_packages(cfg: dict) -> None:
     openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
 
     logger.info("下载编译所需源码...")
-    openwrt.download_packages_source()
+    openwrt.download_source()
 
     logger.info("开始编译软件包...")
     openwrt.make("package/compile")
@@ -169,9 +172,9 @@ def build_image_builder(cfg: dict) -> None:
 
     logger.info("修改配置(设置编译所有kmod/取消编译其他软件包/取消生成镜像/)...")
     openwrt.enable_kmods(cfg["compile"]["kmod_compile_exclude_list"], only_kmods=True)
-    with open(os.path.join(".", ".config")) as f:
+    with open(os.path.join(openwrt.path, ".config")) as f:
         config = f.read()
-    with open(os.path.join(".", ".config"), "w") as f:
+    with open(os.path.join(openwrt.path, ".config"), "w") as f:
         for line in config.splitlines():
             if ((match := re.match(r"CONFIG_(?P<name>[^_=]+)_IMAGES=y", line)) or
                 (match := re.match(r"CONFIG_TARGET_ROOTFS_(?P<name>[^_=]+)=y", line)) or 
@@ -188,7 +191,7 @@ def build_image_builder(cfg: dict) -> None:
     openwrt.make_defconfig()
 
     logger.info("下载编译所需源码...")
-    openwrt.download_packages_source()
+    openwrt.download_source()
 
     logger.info("开始编译软件包...")
     openwrt.make("package/compile")

@@ -129,8 +129,8 @@ class OpenWrt(OpenWrtBase):
             raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
         logger.debug("运行命令：make defconfig成功\nstdout: %s\nstderr: %s", result.stdout, result.stderr)
 
-    def make_download(self, debug: bool = False) -> None:
-        args = ['make', 'download']
+    def make_download(self, debug: bool = False, taget: str = "download") -> None:
+        args = ['make', taget]
         if debug:
             args.extend(["-j1", "V=s"])
         else:
@@ -138,10 +138,10 @@ class OpenWrt(OpenWrtBase):
         logger.debug("运行命令：%s", " ".join(args))
         subprocess.run(args, cwd=self.path, check=True)
 
-    def download_packages_source(self) -> None:
+    def download_source(self, taget: str = "download") -> None:
         for i in range(2):
             try:
-                self.make_download(debug=bool(i != 0))
+                self.make_download(debug=bool(i != 0), taget=taget)
                 break
             except Exception as e:
                 logger.error(f"下载源码失败: {e}")
