@@ -233,7 +233,7 @@ class OpenWrt(OpenWrtBase):
 
         # 修复bcm27xx-gpu-fw
         logger.info("修复bcm27xx-gpu-fw")
-        with open(os.path.join(self.path, 'target/linux/raspberrypi/Makefile'), encoding='utf-8') as f:
+        with open(os.path.join(paths.openwrt_k, "patches", "bcm27xx-gpu-fw.patch"), encoding='utf-8') as f:
             if not apply_patch(f.read(), self.path):
                 core.error("修复bcm27xx-gpu-fw失败, 这可能会导致生成镜像生成器错误。")
 
