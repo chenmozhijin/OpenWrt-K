@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 
 from actions_toolkit import core
 
-from .utils.logger import logger
+from .utils.logger import debug, logger
 from .utils.upload import uploader
 from .utils.utils import setup_env
 
@@ -65,6 +65,7 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         logger.exception("发生错误")
+        logger.info("开始收集错误信息...")
         import os
         import time
 
@@ -79,8 +80,9 @@ if __name__ == "__main__":
                 shutil.copy2(os.path.join(openwrt_path, ".config"), os.path.join(errorinfo_path, "openwrt.config"))
             if os.path.exists(os.path.join(openwrt_path, "logs")):
                 shutil.copytree(os.path.join(openwrt_path, "logs"), os.path.join(errorinfo_path, "openwrt-logs"))
-            if core.is_debug() or os.getenv("BUILD_HELPER_DEBUG") == "1" or os.getenv("BUILD_HELPER_DEBUG", "").lower() == "true":
+            if debug:
                 import tarfile
+                logger.info("正在打包 openwrt 文件夹...")
                 with tarfile.open(os.path.join(errorinfo_path, "openwrt.tar.gz"), "w:gz") as tar:
                     tar.add(openwrt_path, arcname="openwrt")
 
@@ -92,4 +94,6 @@ if __name__ == "__main__":
 
         uploader.add(f"{Context().job}-{config.get("name") if config else ''}-errorinfo-{time.time()}", errorinfo_path, retention_days=90, compression_level=9)
         uploader.save()
+        if not debug:
+            core.notice("已收集部分错误信息,更详细信息请Re-run jobs并启用debug logging")
         core.set_failed(f"发生错误: {e.__class__.__name__}: {e!s}")

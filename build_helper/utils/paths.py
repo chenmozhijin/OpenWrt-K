@@ -70,7 +70,12 @@ class Paths:
         return errorinfo
     
     def get_tmpdir(self) -> tempfile.TemporaryDirectory:
-        return tempfile.TemporaryDirectory(dir=os.path.join(self.root, "tmp"))
+        tmpdir = os.path.join(self.root, "tmp")
+        if not os.path.exists(tmpdir):
+            os.makedirs(tmpdir)
+        elif not os.path.isdir(tmpdir):
+            core.set_failed(f"临时目录 {tmpdir} 不是一个目录")
+        return tempfile.TemporaryDirectory(dir=tmpdir)
 
 
 paths = Paths()

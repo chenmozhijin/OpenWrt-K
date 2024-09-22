@@ -108,7 +108,7 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
     ext_pkg_paths = {os.path.join(cloned_repos[(pkg["REPOSITORIE"], pkg["BRANCH"])], pkg["PATH"])
                      for config in configs.values() for pkg in config["extpackages"].values()}
     for path in ext_pkg_paths:
-        logger.info("处理拓展包 %s", path)
+        logger.debug("处理拓展包 %s", path)
         for root, dirs, files in os.walk(path):
 
             # 修复Makefile中luci.mk的路径
@@ -132,7 +132,7 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
                             logger.debug("已存在符号链接或目录 %s，跳过", zh_hans)
                             continue
                         if os.path.isfile(zh_hans):
-                            logger.debug("已存在文件 %s，删除", zh_hans)
+                            logger.info("已存在文件 %s，删除", zh_hans)
                             os.remove(zh_hans)
                         os.symlink("zh_Hans", zh_cn, target_is_directory=True)
                         logger.info("创建符号链接 %s -> %s", zh_cn, zh_hans)
