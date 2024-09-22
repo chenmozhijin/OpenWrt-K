@@ -230,7 +230,7 @@ class OpenWrt(OpenWrtBase):
             else:
                 core.error("获取libpfring修复补丁失败, 这可能会导致编译错误。\nttps://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865")
 
-    def get_packageinfo(self) -> dict:
+    def get_packageinfos(self) -> dict:
         path = os.path.join(self.path, "tmp", ".packageinfo")
         if not os.path.exists(path):
             self.make_defconfig()
@@ -310,10 +310,119 @@ class OpenWrt(OpenWrtBase):
         with tarfile.open(path, "w:gz") as tar:
             tar.add(self.path, arcname="openwrt")
 
+    def get_targetinfos(self) -> dict:
+        path = os.path.join(self.path, "tmp", ".targetinfo")
+        if not os.path.exists(path):
+            self.make_defconfig()
+
+        targets = {}
+
+        target = None
+        board = None
+        name = None
+        arch = None
+        arch_packages = None
+        feature = None
+        linux_version = None
+        linux_release = None
+        linux_kernel_arch = None
+        default_packages = None
+        target_profile = {}
+
+        count = 0
+        with open(path) as f:
+            for line in f:
+                if line.startswith("Target: "):
+                    if count != 0:
+                        targets[target] = {
+                            "board": board,
+                            "name": name,
+                            "arch": arch,
+                            "arch_packages": arch_packages,
+                            "feature": feature,
+                            "linux_version": linux_version,
+                            "linux_release": linux_release,
+                            "linux_kernel_arch": linux_kernel_arch,
+                            "default_packages": default_packages,
+                            "target_profile": target_profile,
+                        }
+                    target = line.split("Target: ")[1].strip()
+                    board = None
+                    name = None
+                    arch = None
+                    arch_packages = None
+                    feature = None
+                    linux_version = None
+                    linux_release = None
+                    linux_kernel_arch = None
+                    default_packages = None
+                    target_profile = {}
+                    count += 1
+                elif line.startswith("Target-Board: "):
+                    board = line.split("Target-Board: ")[1].strip()
+                elif line.startswith("Target-Name: "):
+                    name = line.split("Target-Name: ")[1].strip()
+                elif line.startswith("Target-Arch: "):
+                    arch = line.split("Target-Arch: ")[1].strip()
+                elif line.startswith("Target-Arch-Packages: "):
+                    arch_packages = line.split("Target-Arch-Packages: ")[1].strip()
+                elif line.startswith("Target-Feature: "):
+                    feature = line.split("Target-Feature: ")[1].strip().split(" ")
+                elif line.startswith("Linux-Version: "):
+                    linux_version = line.split("Linux-Version: ")[1].strip()
+                elif line.startswith("Linux-Release: "):
+                    linux_release = line.split("Linux-Release: ")[1].strip()
+                elif line.startswith("Linux-Kernel-Arch: "):
+                    linux_kernel_arch = line.split("Linux-Kernel-Arch: ")[1].strip()
+                elif line.startswith("Default-Packages: "):
+                    default_packages = line.split("Default-Packages: ")[1].strip().split(" ")
+                elif line.startswith("Target-Profile: "):
+                    target_profile[line.split("Target-Profile: ")[1].strip()] = {}
+                elif line.startswith("Target-Profile-Name: "):
+                    target_profile[list(target_profile.keys())[-1]]["name"] = line.split("Target-Profile-Name: ")[1].strip()
+                elif line.startswith("Target-Profile-Packages: "):
+                    target_profile[list(target_profile.keys())[-1]]["packages"] = line.split("Target-Profile-Packages: ")[1].strip().split(" ")
+                elif line.startswith("Target-Profile-SupportedDevices: "):
+                    target_profile[list(target_profile.keys())[-1]]["supported_devices"] = line.split("Target-Profile-SupportedDevices: ")[1].strip().split(",")
+
+            if target and target not in targets:
+                targets[target] = {
+                    "board": board,
+                    "name": name,
+                    "arch": arch,
+                    "arch_packages": arch_packages,
+                    "feature": feature,
+                    "linux_version": linux_version,
+                    "linux_release": linux_release,
+                    "linux_kernel_arch": linux_kernel_arch,
+                    "default_packages": default_packages,
+                    "target_profile": target_profile,
+                }
+        if count == 0:
+            msg = "未解析出目标架构信息"
+            raise ValueError(msg)
+        return targets
+
+    def get_targetinfo(self) -> dict | None:
+        targets = self.get_targetinfos()
+        target = None
+        with open(os.path.join(self.path, ".config")) as f:
+            for line in f:
+                if match := re.match(r"CONFIG_TARGET_(?P<target>[^=]+)=", line):
+                    target = targets.get(match.group('target').replace("_", "/"), target)
+
+        return target
+
     def enable_kmods(self, exclude_list: list[str], only_kmods: bool = False) -> None:
-        packages = self.get_packageinfo()
+        packages = self.get_packageinfos()
         kmods = [package for package in packages if (packages[package]["section"] == "kernel" or packages[package]["category"] == "Kernel modules")]
         logger.debug("获取到kmods: %s", kmods)
+        targetinfo = self.get_targetinfo()
+        if targetinfo:
+            default_packages = targetinfo["default_packages"]
+            logger.debug("获取到默认包: %s", default_packages)
+        else:
+            default_packages = []
 
         for _ in range(5):
             with open(os.path.join(self.path, ".config")) as f:
@@ -330,7 +439,8 @@ class OpenWrt(OpenWrtBase):
                         name = match.group('name')
                         package = packages.get(name)
                         if package and (package["section"] not in ("kernel", "base", "boot", "firmware", "sys", "system") and
-                                        package["category"] not in ("Boot Loaders", "Firmware", "Base system", "Kernel modules", "System")):
+                                        package["category"] not in ("Boot Loaders", "Firmware", "Base system", "Kernel modules", "System") and
+                                        package not in default_packages):
                             logger.debug("取消编译包: %s", name)
                             continue
                         f.write(line + "\n")

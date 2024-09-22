@@ -79,11 +79,15 @@ if __name__ == "__main__":
                 shutil.copy2(os.path.join(openwrt_path, ".config"), os.path.join(errorinfo_path, "openwrt.config"))
             if os.path.exists(os.path.join(openwrt_path, "logs")):
                 shutil.copytree(os.path.join(openwrt_path, "logs"), os.path.join(errorinfo_path, "openwrt-logs"))
+            if core.is_debug() or os.getenv("BUILD_HELPER_DEBUG") == "1" or os.getenv("BUILD_HELPER_DEBUG", "").lower() == "true":
+                import tarfile
+                with tarfile.open(os.path.join(errorinfo_path, "openwrt.tar.gz"), "w:gz") as tar:
+                    tar.add(openwrt_path, arcname="openwrt")
 
         with open(os.path.join(errorinfo_path, "files.txt"), "w") as f:
             for root, _, files in os.walk("."):
                 for file in files:
-                    f.write(f"{root}/{file}")
+                    f.write(f"{root}/{file}\n")
 
 
         uploader.add(f"{Context().job}-{config.get("name") if config else ''}-errorinfo-{time.time()}", errorinfo_path, retention_days=90, compression_level=9)
