@@ -161,6 +161,7 @@ def build_packages(cfg: dict) -> None:
 
     logger.info("整理软件包...")
     packages_path = os.path.join(paths.uploads, "packages")
+    os.makedirs(packages_path, exist_ok=True)
     for root, _dirs, files in os.walk(os.path.join(openwrt.path, "bin")):
         for file in files:
             if file.endswith(".ipk"):
@@ -214,6 +215,7 @@ def build_image_builder(cfg: dict) -> None:
     logger.info("整理kmods...")
 
     kmods_path = os.path.join(paths.uploads, "kmods")
+    os.makedirs(kmods_path, exist_ok=True)
     for root, _dirs, files in os.walk(os.path.join(openwrt.path, "bin")):
         for file in files:
             if file.startswith("kmod-") and file.endswith(".ipk"):
