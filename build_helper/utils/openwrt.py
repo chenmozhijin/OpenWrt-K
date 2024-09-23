@@ -232,12 +232,12 @@ class OpenWrt(OpenWrtBase):
                 core.error("获取libpfring修复补丁失败, 这可能会导致编译错误。\nttps://github.com/openwrt/packages/commit/c3a50a9fac8f9d8665f8b012abd85bb9e461e865")
 
         # 修复bcm27xx-gpu-fw
-        logger.info("修复bcm27xx-gpu-fw")
+        # logger.info("修复bcm27xx-gpu-fw")
         # 不知道为什么就是没有被执行Build/InstallDev中的命令把东西复制到KERNEL_BUILD_DIR下
         # https://github.com/openwrt/openwrt/blob/main/package/kernel/bcm27xx-gpu-fw/Makefile
-        with open(os.path.join(paths.openwrt_k, "patches", "bcm27xx-gpu-fw.patch"), encoding='utf-8') as f:
-            if not apply_patch(f.read(), self.path):
-                core.error("修复bcm27xx-gpu-fw失败, 这可能会导致生成镜像生成器错误。")
+        # with open(os.path.join(paths.openwrt_k, "patches", "bcm27xx-gpu-fw.patch"), encoding='utf-8') as f:
+        #    if not apply_patch(f.read(), self.path):
+        #        core.error("修复bcm27xx-gpu-fw失败, 这可能会导致生成镜像生成器错误。")
 
     def get_packageinfos(self) -> dict:
         path = os.path.join(self.path, "tmp", ".packageinfo")
@@ -491,6 +491,6 @@ class ImageBuilder(OpenWrtBase):
         packages = []
         with open(os.path.join(self.path, ".config")) as f:
             for line in f:
-                if match := re.match(r"CONFIG_PACKAGE_(?P<name>.+)=y", line):
+                if match := re.match(r"CONFIG_PACKAGE_(?P<name>[-a-zA-Z0-9]+)=y", line):
                     packages.append(match.group('name'))  # noqa: PERF401
         return packages
