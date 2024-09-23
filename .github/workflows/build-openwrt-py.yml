@@ -163,7 +163,7 @@ jobs:
         if: success() || failure()
         uses: ./../../../../../opt/OpenWrt-K/.github/action/upload
 
-  build-images:
+  build-images-releases:
     runs-on: ubuntu-22.04
     needs: [prepare,base-builds,build-ImageBuilder,build-packages]
     name: build-Image-${{ matrix.name }}
@@ -183,23 +183,8 @@ jobs:
       - name: 构建
         id: build
         working-directory: /opt/OpenWrt-K
-        run: python3 -m build_helper --task build_images --config ${{ matrix.config }}
+        run: python3 -m build_helper --task build_images_releases --config ${{ matrix.config }}
 
       - name: 上传
         if: success() || failure()
         uses: ./../../../../../opt/OpenWrt-K/.github/action/upload
-
-  releases:
-    runs-on: ubuntu-22.04
-    needs: [prepare, build-images]
-    name: releases-${{ matrix.name }}
-    strategy:
-      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: 建立环境
-        uses: ./.github/action/prepare
-
-      - name: 发布
-        working-directory: /opt/OpenWrt-K
-        run: python3 -m build_helper --task releases --config ${{ matrix.config }}

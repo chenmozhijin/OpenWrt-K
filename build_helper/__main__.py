@@ -50,10 +50,9 @@ def main() -> None:
         case "build_image_builder":
             from .build import build_image_builder
             build_image_builder(config)
-        case "build_images":
+        case "build_images_releases":
             from .build import build_images
             build_images(config)
-        case "releases":
             from .releases import releases
             releases(config)
 

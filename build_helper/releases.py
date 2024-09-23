@@ -3,12 +3,11 @@
 import json
 import os
 import shutil
-import tempfile
-import zipfile
 from datetime import datetime, timedelta, timezone
 
 from .utils.logger import logger
 from .utils.network import request_get
+from .utils.openwrt import ImageBuilder
 from .utils.paths import paths
 from .utils.repo import dl_artifact, match_releases, new_release
 
@@ -26,13 +25,14 @@ def releases(cfg: dict) -> None:
     shutil.move(kmods_archive_path, os.path.join(paths.uploads, "kmods.zip"))
     kmods_archive_path = os.path.join(paths.uploads, "kmods.zip")
 
-    firmware_path = os.path.join(paths.uploads, "firmware")
-    os.makedirs(firmware_path)
-    firmware_archive_path = dl_artifact(f"firmware-{cfg['name']}", tmpdir.name)
-    with zipfile.ZipFile(firmware_archive_path, "r") as zip_ref:
-        zip_ref.extractall(firmware_path)
-
     tmpdir.cleanup()
+
+    ib = ImageBuilder(os.path.join(paths.workdir, "ImageBuilder"))
+    target, subtarget = ib.get_target()
+    if target is None or subtarget is None:
+        msg = "无法获取target信息"
+        raise RuntimeError(msg)
+    firmware_path = str(shutil.copytree(os.path.join(ib.path, "bin", "targets", target, subtarget), os.path.join(paths.uploads, "firmware")))
 
     current_manifest = None
     profiles = None

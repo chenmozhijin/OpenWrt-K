@@ -71,7 +71,7 @@ def prepare(cfg: dict) -> None:
         with tarfile.open(os.path.join(tmpdir.name, "builds.tar.gz"), "r:gz") as tar:
             tar.extractall(openwrt.path)  # noqa: S202
 
-    elif context.job == "build-images":
+    elif context.job == "build-images-releases":
         ib_path = dl_artifact(f"Image_Builder-{cfg["name"]}", tmpdir.name)
         with zipfile.ZipFile(ib_path, "r") as zip_ref:
             zip_ref.extract("openwrt-imagebuilder.tar.xz", tmpdir.name)
@@ -95,9 +95,10 @@ def prepare(cfg: dict) -> None:
         msg = f"未知的工作流 {context.job}"
         raise ValueError(msg)
 
-    cache_restore_key = get_cache_restore_key(openwrt, cfg)
-    core.set_output("cache-key", f"{cache_restore_key}-{context.run_id}")
-    core.set_output("cache-restore-key", cache_restore_key)
+    if context.job in ("base-builds", "build-packages", "build-ImageBuilder"):
+        cache_restore_key = get_cache_restore_key(openwrt, cfg)
+        core.set_output("cache-key", f"{cache_restore_key}-{context.run_id}")
+        core.set_output("cache-restore-key", cache_restore_key)
     core.set_output("use-cache", cfg["compile"]["use_cache"])
     core.set_output("openwrt-path", openwrt.path)
 
@@ -177,7 +178,7 @@ def build_image_builder(cfg: dict) -> None:
     with open(os.path.join(openwrt.path, ".config"), "w") as f:
         for line in config.splitlines():
             if ((match := re.match(r"CONFIG_(?P<name>[^_=]+)_IMAGES=y", line)) or
-                (match := re.match(r"CONFIG_TARGET_ROOTFS_(?P<name>[^_=]+)=y", line)) or 
+                (match := re.match(r"CONFIG_TARGET_ROOTFS_(?P<name>[^_=]+)=y", line)) or
                 (match := re.match(r"CONFIG_TARGET_IMAGES_(?P<name>[^_=]+)=y", line))):
                 name = match.group("name")
                 if name in ("ISO", "VDI", "VMDK", "VHDX", "TARGZ", "CPIOGZ", "EXT4FS", "SQUASHFS", "GZIP"):
