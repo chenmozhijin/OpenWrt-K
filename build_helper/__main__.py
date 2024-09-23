@@ -88,7 +88,7 @@ if __name__ == "__main__":
                              os.path.join(tmp_dir.name, "openwrt.tar.gz"), retention_days=90, compression_level=0)
 
         with open(os.path.join(errorinfo_path, "files.txt"), "w") as f:
-            for root, _, files in os.walk("."):
+            for root, _, files in os.walk(paths.root):
                 for file in files:
                     f.write(f"{root}/{file}\n")
 

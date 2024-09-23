@@ -84,7 +84,9 @@ def prepare(cfg: dict) -> None:
         with zipfile.ZipFile(pkgs_path, "r") as zip_ref:
             for membber in zip_ref.infolist():
                 if not os.path.exists(os.path.join(ib.packages_path, membber.filename)) and not membber.is_dir():
-                    zip_ref.extract(membber, ib.packages_path)
+                    with zip_ref.open(membber) as f, open(os.path.join(ib.packages_path, os.path.basename(membber.filename)), "wb") as fw:
+                        shutil.copyfileobj(f, fw)
+                        logger.debug("解压文件 %s到 %s", membber.filename, os.path.join(ib.packages_path, os.path.basename(membber.filename)))
 
         shutil.copytree(os.path.join(openwrt.path, "files"), os.path.join(ib.path, "files"))
         if os.path.exists(os.path.join(ib.path, ".config")):
@@ -157,13 +159,14 @@ def build_packages(cfg: dict) -> None:
     logger.info("开始生成软件包...")
     openwrt.make("package/install")
 
-    logger.info("打包软件包...")
-    packages = []
+    logger.info("整理软件包...")
+    packages_path = os.path.join(paths.uploads, "packages")
     for root, _dirs, files in os.walk(os.path.join(openwrt.path, "bin")):
         for file in files:
             if file.endswith(".ipk"):
-                packages.append(os.path.join(root, file))  # noqa: PERF401
-    uploader.add(f"packages-{cfg['name']}", packages, retention_days=1, compression_level=0)
+                shutil.copy2(os.path.join(root, file), packages_path)
+                logger.debug(f"复制 {file} 到 {packages_path}")
+    uploader.add(f"packages-{cfg['name']}", packages_path, retention_days=1)
 
     logger.info("删除旧缓存...")
     del_cache(get_cache_restore_key(openwrt, cfg))
@@ -208,14 +211,15 @@ def build_image_builder(cfg: dict) -> None:
     openwrt.make("json_overview_image_info")
     openwrt.make("checksum")
 
-    logger.info("打包kmods...")
+    logger.info("整理kmods...")
 
     kmods_path = os.path.join(paths.uploads, "kmods")
     for root, _dirs, files in os.walk(os.path.join(openwrt.path, "bin")):
         for file in files:
             if file.startswith("kmod-") and file.endswith(".ipk"):
                 shutil.copy2(os.path.join(root, file), kmods_path)
-    uploader.add(f"kmods-{cfg['name']}", os.path.join(kmods_path, "*"), retention_days=1)
+                logger.debug(f"复制 {file} 到 {kmods_path}")
+    uploader.add(f"kmods-{cfg['name']}", kmods_path, retention_days=1)
 
     target, subtarget = openwrt.get_target()
     if target is None or subtarget is None:
