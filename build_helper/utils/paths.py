@@ -1,10 +1,13 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 沉默の金 <cmzj@cmzj.org>
 # SPDX-License-Identifier: MIT
 import os
+import tempfile
 
 from actions_toolkit import core
-import tempfile
+
 from .error import ConfigError
+
+
 class Paths:
 
     def __init__(self) -> None:
@@ -26,8 +29,11 @@ class Paths:
         try:
             from .utils import parse_config
             config_names = parse_config(self.global_config, ["config"])['config']
+            if isinstance(config_names, str):
+                config_names = [config_names]
             if not isinstance(config_names, list) or len(config_names) == 0:
-                raise ConfigError("没有获取到任何配置")
+                msg = "没有获取到任何配置"
+                raise ConfigError(msg)
             for config in config_names:
                 path = os.path.join(self.root, "config", config)
                 if os.path.isdir(path):
@@ -35,7 +41,8 @@ class Paths:
                 else:
                     core.warning(f"配置 {config} 不存在")
         except Exception as e:
-            raise ConfigError(f"获取配置时出错: {e.__class__.__name__}: {e!s}") from e
+            msg = f"获取配置时出错: {e.__class__.__name__}: {e!s}"
+            raise ConfigError(msg) from e
         return configs
 
     @property
@@ -44,7 +51,8 @@ class Paths:
         if not os.path.exists(workdir):
             os.makedirs(workdir)
         elif not os.path.isdir(workdir):
-            raise NotADirectoryError(f"工作区路径 {workdir} 不是一个目录")
+            msg = f"工作区路径 {workdir} 不是一个目录"
+            raise NotADirectoryError(msg)
         return workdir
 
     @property
@@ -53,7 +61,8 @@ class Paths:
         if not os.path.exists(uploads):
             os.makedirs(uploads)
         elif not os.path.isdir(uploads):
-            raise NotADirectoryError(f"上传区路径 {uploads} 不是一个目录")
+            msg = f"上传区路径 {uploads} 不是一个目录"
+            raise NotADirectoryError(msg)
         return uploads
 
     @property
@@ -66,19 +75,21 @@ class Paths:
         if not os.path.exists(errorinfo):
             os.makedirs(errorinfo)
         elif not os.path.isdir(errorinfo):
-            raise NotADirectoryError(f"错误信息路径 {errorinfo} 不是一个目录")
+            msg = f"错误信息路径 {errorinfo} 不是一个目录"
+            raise NotADirectoryError(msg)
         return errorinfo
-    
+
     @property
     def patches(self) -> str:
         return os.path.join(self.openwrt_k, "patches")
-    
+
     def get_tmpdir(self) -> tempfile.TemporaryDirectory:
         tmpdir = os.path.join(self.root, "tmp")
         if not os.path.exists(tmpdir):
             os.makedirs(tmpdir)
         elif not os.path.isdir(tmpdir):
-            raise NotADirectoryError(f"临时目录 {tmpdir} 不是一个目录")
+            msg = f"临时目录 {tmpdir} 不是一个目录"
+            raise NotADirectoryError(msg)
         return tempfile.TemporaryDirectory(dir=tmpdir)
 
 
