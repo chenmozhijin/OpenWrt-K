@@ -482,10 +482,15 @@ class ImageBuilder(OpenWrtBase):
         subprocess.run(["make", "info"], cwd=self.path, check=True)
 
     def make_manifest(self) -> None:
-        subprocess.run(["make", "manifest", f'PACKAGES="{" ".join(self.get_packages())}"'], cwd=self.path, check=True)
+        env = os.environ.copy()
+        env["PACKAGES"] = " ".join(self.get_packages())
+        subprocess.run(["make", "manifest"], cwd=self.path, check=True, env=env)
 
     def make_image(self) -> None:
-        subprocess.run(["make", "image", f'PACKAGES="{" ".join(self.get_packages())}"', f'FILES="{os.path.join(self.path, "files")}"'], cwd=self.path, check=True)
+        env = os.environ.copy()
+        env["PACKAGES"] = " ".join(self.get_packages())
+        env["FILES"] = os.path.join(self.path, "files")
+        subprocess.run(["make", "image"], cwd=self.path, check=True, env=env)
 
     def get_packages(self) -> list[str]:
         packages = []
