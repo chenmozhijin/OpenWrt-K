@@ -76,7 +76,7 @@ def new_release(cfg: dict, assets: list[str], body: str) -> None:
             break
         i += 1
 
-    current_repo = pygit2.Repository(paths.root)
+    current_repo = pygit2.Repository(paths.openwrt_k)
     head_commit = current_repo.head.target
     if isinstance(head_commit, pygit2.Oid):
         head_commit = head_commit.raw.hex()
