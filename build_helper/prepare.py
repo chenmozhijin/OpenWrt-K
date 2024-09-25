@@ -39,6 +39,9 @@ def parse_configs() -> dict[str, dict[str, Any]]:
         configs[name]["compile"] = parse_config(os.path.join(k_config_path, "compile.config"),
                                                 ("openwrt_tag/branch", "kmod_compile_exclude_list", "use_cache"))
 
+        if isinstance(configs[name]["compile"]["kmod_compile_exclude_list"], str):
+            configs[name]["compile"]["kmod_compile_exclude_list"] = [configs[name]["compile"]["kmod_compile_exclude_list"]]
+
         configs[name]["openwrtext"] = parse_config(os.path.join(k_config_path, "openwrtext.config"), ("ipaddr", "timezone", "zonename", "golang_version"))
         extpackages_config = os.path.join(k_config_path, "extpackages.config")
         configs[name]["extpackages"] = {}

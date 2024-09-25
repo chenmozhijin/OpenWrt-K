@@ -91,7 +91,6 @@ def new_release(cfg: dict, assets: list[str], body: str) -> None:
                                               body,
                                               head_commit,
                                               "commit",
-                                              draft=True,
                                               )
     for asset in assets:
         logger.info("上传资产: %s", asset)

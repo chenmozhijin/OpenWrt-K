@@ -67,7 +67,7 @@ class Paths:
 
     @property
     def log(self) -> str:
-        return os.path.join(self.uploads, "build_helper.log")
+        return os.path.join(self.build_helper, "build_helper.log")
 
     @property
     def errorinfo(self) -> str:

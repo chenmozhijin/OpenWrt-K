@@ -10,7 +10,6 @@ on:
     paths:
       - '.github/**'
       - 'files/**'
-      - 'scripts/**'
       - 'build_helper/**'
       - 'config/**'
 
@@ -32,6 +31,7 @@ jobs:
     outputs:
       matrix: ${{ steps.run.outputs.matrix }}
     runs-on: ubuntu-22.04
+    name: 规划与准备
     steps:
 
       - uses: actions/checkout@v4
@@ -49,7 +49,7 @@ jobs:
   base-builds:
     runs-on: ubuntu-22.04
     needs: prepare
-    name: base-builds-${{ matrix.name }}
+    name: 构建工具链与内核(${{ matrix.name }})
     strategy:
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
@@ -96,7 +96,7 @@ jobs:
   build-packages:
     runs-on: ubuntu-22.04
     needs: [prepare,base-builds]
-    name: build-packages-${{ matrix.name }}
+    name: 构建软件包(${{ matrix.name }})
     strategy:
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
@@ -131,7 +131,7 @@ jobs:
   build-ImageBuilder:
     runs-on: ubuntu-22.04
     needs: [prepare,base-builds]
-    name: build-ImageBuilder-${{ matrix.name }}
+    name: 构建Image Builder与内核模块(${{ matrix.name }})
     strategy:
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
@@ -166,7 +166,7 @@ jobs:
   build-images-releases:
     runs-on: ubuntu-22.04
     needs: [prepare,base-builds,build-ImageBuilder,build-packages]
-    name: build-Image-${{ matrix.name }}
+    name: 构建镜像并发布(${{ matrix.name }})
     strategy:
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:

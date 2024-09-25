@@ -82,15 +82,15 @@ def releases(cfg: dict) -> None:
 
         changelog = "更新日志:\n" + changelog if changelog else "无任何软件包更新"
 
-        body = f"编译完成于: {datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M:%S')}"
-        body += f"使用的配置: {cfg['name']}"
+        body = f"编译完成于: {datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M:%S')}\n"
+        body += f"使用的配置: {cfg['name']}\n"
         if profiles:
             if (version_number := profiles.get("version_number")) and (version_code := profiles.get('version_code')):
-                body += f"openwrt版本: {version_number} {version_code}"
+                body += f"OpenWrt版本: {version_number} {version_code}\n"
             if target := profiles.get("target"):
-                body += f"目标平台: {target}"
+                body += f"目标平台: {target}\n"
         if current_packages and (kernel_ver := current_packages.get("kernel")):
-            body += f"内核版本: {kernel_ver}"
+            body += f"内核版本: {kernel_ver}\n"
 
         if changelog:
             body += f"\n\n{changelog}"

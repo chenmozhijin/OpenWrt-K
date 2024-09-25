@@ -424,6 +424,7 @@ class OpenWrt(OpenWrtBase):
         return targetinfos
 
     def enable_kmods(self, exclude_list: list[str], only_kmods: bool = False) -> None:
+        exclude_pattern = re.compile(r"|".join(exclude_list))
         packages = self.get_packageinfos()
         kmods = [package for package in packages if (packages[package]["section"] == "kernel" or packages[package]["category"] == "Kernel modules")]
         logger.debug("获取到kmods: %s", kmods)
@@ -441,8 +442,8 @@ class OpenWrt(OpenWrtBase):
                 for line in config.splitlines():
                     if match := re.match(r"# CONFIG_PACKAGE_(?P<name>[^ ]+) is not set", line):
                         name = match.group('name')
-                        if name not in exclude_list and name in kmods:
-                            f.write(f"CONFIG_PACKAGE_{match.group('name')}=m\n")
+                        if not exclude_pattern.match(name) and name in kmods:
+                            f.write(f"CONFIG_PACKAGE_{name}=m\n")
                         else:
                             f.write(line + "\n")
                     elif only_kmods and (match := re.match(r"CONFIG_PACKAGE_(?P<name>[^=]+)=[ym]", line)):
