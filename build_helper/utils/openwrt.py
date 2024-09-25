@@ -12,7 +12,6 @@ from actions_toolkit import core
 
 from .logger import logger
 from .network import request_get
-from .paths import paths
 from .utils import apply_patch
 
 
@@ -482,15 +481,10 @@ class ImageBuilder(OpenWrtBase):
         subprocess.run(["make", "info"], cwd=self.path, check=True)
 
     def make_manifest(self) -> None:
-        env = os.environ.copy()
-        env["PACKAGES"] = " ".join(self.get_packages())
-        subprocess.run(["make", "manifest"], cwd=self.path, check=True, env=env)
+        subprocess.run(["make", "manifest", f'PACKAGES={" ".join(self.get_packages())}'], cwd=self.path, check=True)
 
     def make_image(self) -> None:
-        env = os.environ.copy()
-        env["PACKAGES"] = " ".join(self.get_packages())
-        env["FILES"] = os.path.join(self.path, "files")
-        subprocess.run(["make", "image"], cwd=self.path, check=True, env=env)
+        subprocess.run(["make", "image", f'PACKAGES={" ".join(self.get_packages())}', f'FILES={os.path.join(self.path, "files")}'], cwd=self.path, check=True)
 
     def get_packages(self) -> list[str]:
         packages = []

@@ -4,8 +4,8 @@ import os
 
 import yaml
 
-from .paths import paths
 from .logger import logger
+from .paths import paths
 
 
 class UpLoader:
@@ -24,6 +24,9 @@ class UpLoader:
             compression_level: int | None = None,
             overwrite: bool | None = None,
             include_hidden_files: bool | None = None) -> None:
+        if not path:
+            logger.warning(f"添加Artifact {name} 时没有指定任何要上传的文件, 跳过")
+            return
         logger.debug(f"Add Artifact: {name} {path}")
         if isinstance(path, list):
             path = "\n".join(path)

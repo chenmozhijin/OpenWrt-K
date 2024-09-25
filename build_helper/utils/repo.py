@@ -63,16 +63,19 @@ def del_cache(key_prefix: str) -> None:
         logger.error('Failed to get caches list')
 
 def new_release(cfg: dict, assets: list[str], body: str) -> None:
-    suffix = f"({cfg["target"]}-{cfg["subtarget"]})-[{cfg["compile"]["openwrt_tag/branch"]}]-{cfg["name"]}"
-    name = "v" + datetime.now(timezone(timedelta(hours=8))).strftime('%Y.%m.%d') + "-{n}" + suffix
+    release_suffix = f"({cfg["target"]}-{cfg["subtarget"]})-[{cfg["compile"]["openwrt_tag/branch"]}]-{cfg["name"]}"
+    tag_suffix = f"({cfg["target"]}-{cfg["subtarget"]})-({cfg["compile"]["openwrt_tag/branch"]})-{cfg["name"]}"
+    f_release_name = "v" + datetime.now(timezone(timedelta(hours=8))).strftime('%Y.%m.%d') + "-{n}" + release_suffix
+    f_tag_name = "v" + datetime.now(timezone(timedelta(hours=8))).strftime('%Y.%m.%d') + "-{n}" + tag_suffix
 
     releases = repo.get_releases()
-    releases_names = [release.tag_name for release in releases]
+    tag_names = [release.tag_name for release in releases]
 
     i = 0
     while True:
-        release_name = name.format(n=i)
-        if release_name not in releases_names:
+        tag_name = f_tag_name.format(n=i)
+        if tag_name not in tag_names:
+            release_name = f_release_name.format(n=i)
             break
         i += 1
 
@@ -82,7 +85,7 @@ def new_release(cfg: dict, assets: list[str], body: str) -> None:
         head_commit = head_commit.raw.hex()
 
     logger.info("创建新发布: %s", release_name)
-    release = repo.create_git_tag_and_release(release_name,
+    release = repo.create_git_tag_and_release(tag_name,
                                               f"发布新版本:{release_name}",
                                               release_name,
                                               body,
@@ -96,7 +99,7 @@ def new_release(cfg: dict, assets: list[str], body: str) -> None:
 
     try:
         for release in releases:
-            if release.tag_name.endswith(suffix) and release.tag_name != release_name:
+            if release.tag_name.endswith(tag_suffix) and release.tag_name != tag_name:
                 logger.info("删除旧版本: %s", release.tag_name)
                 release.delete_release()
     except Exception:

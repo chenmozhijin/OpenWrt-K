@@ -40,7 +40,8 @@ def get_cache_restore_key(openwrt: OpenWrt, cfg: dict) -> str:
 def prepare(cfg: dict) -> None:
     context = Context()
     logger.debug("job: %s", context.job)
-    setup_env(context.job in ("build-packages", "build-ImageBuilder", "build-images-releases"), context.job in ("build-packages", "build-ImageBuilder", "build-images-releases"))
+    setup_env(context.job in ("build-packages", "build-ImageBuilder", "build-images-releases"),
+              context.job in ("build-packages", "build-ImageBuilder", "build-images-releases"))
 
     tmpdir = paths.get_tmpdir()
 
@@ -251,5 +252,4 @@ def build_images(cfg: dict) -> None:
         raise RuntimeError(msg)
 
     logger.info("准备上传...")
-    files = [f for f in os.listdir(os.path.join(ib.path, "bin", "targets", target, subtarget)) if os.path.isfile(f)]
-    uploader.add(f"firmware-{cfg['name']}", files, retention_days=1, compression_level=0)
+    uploader.add(f"firmware-{cfg['name']}", os.path.join(ib.path, "bin", "targets", target, subtarget), retention_days=1, compression_level=0)
