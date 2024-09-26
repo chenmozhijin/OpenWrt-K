@@ -1,5 +1,5 @@
 #!/bin/sh
-#   Copyright (C) 2023  沉默の金
+#   Copyright (C) 2023-2024  沉默の金
 
 trap 'rm -rf "$TMPDIR"' EXIT
 TMPDIR=$(mktemp -d) || exit 1
@@ -59,8 +59,6 @@ show_info() {
         echo "固件编译者："$(sed -n  "/^COMPILER=\"/p" /etc/openwrt-k_info | sed -e "s/COMPILER=\"//g" -e "s/\"//g" )
         echo "固件编译仓库地址："$(sed -n  "/REPOSITORY_URL=\"/p" /etc/openwrt-k_info | sed -e "s/REPOSITORY_URL=\"//g" -e "s/\"//g" )
         echo "固件编译时间：UTC+8 "$(sed -n  "/^COMPILE_START_TIME=\"/p" /etc/openwrt-k_info | sed -e "s/COMPILE_START_TIME=\"//g" -e "s/\"/时/g" -e "s/-/日/" -e "s/\./月/g" -e "s/月/年/" )
-        echo "固件发布名称："$(sed -n  "/^RELEASE_NAME=\"/p" /etc/openwrt-k_info | sed -e "s/RELEASE_NAME=\"//g" -e "s/\"//g" )
-        echo "固件标签名称："$(sed -n  "/RELEASE_TAG_NAME=\"/p" /etc/openwrt-k_info | sed -e "s/RELEASE_TAG_NAME=\"//g" -e "s/\"//g" )
     elif [ "$(grep -c "Compiled by" /etc/openwrt_release)" -ne '0' ];then
         echo "固件编译者："$(sed -n  "/Compiled by /p" /etc/openwrt_release|sed -e "s/.*Compiled by //g" -e "s/'//g" )
     fi
@@ -188,15 +186,14 @@ update_package() {
     elif [ "$(grep -c "^REPOSITORY_URL=" /etc/openwrt-k_info)" -eq '0' ]; then
         echo "错误：未知的固件编译仓库地址"
         exit 1
-    elif [ "$(grep -c "^RELEASE_TAG_NAME=" /etc/openwrt-k_info)" -eq '0' ]; then
-        echo "错误：未知的固件标签名称"
+    elif [ "$(grep -c "^TAG_SUFFIX=" /etc/openwrt-k_info)" -eq '0' ]; then
+        echo "错误：未知的固件标签前缀"
         exit 1
     fi
     REPOSITORY_URL=$(sed -n  "/REPOSITORY_URL=\"/p" /etc/openwrt-k_info | sed -e "s/REPOSITORY_URL=\"//g" -e "s/\"//g")
     REPOSITORY=$(echo $REPOSITORY_URL|sed -e "s/https:\/\/github.com\///")
-    RELEASE_TAG_NAME=$(sed -n  "/RELEASE_TAG_NAME=\"/p" /etc/openwrt-k_info | sed -e "s/RELEASE_TAG_NAME=\"//g" -e "s/\"//g")
-    RELEASE_TAG_MAINNAME=$(echo $RELEASE_TAG_NAME | sed "s/v[0-9]\{1,2\}.[0-9]\{2,2\}.[0-9]\{1,2\}-[0-9]\{2,2\}(/(/")
-    latest_ver="$(curl -s https://api.github.com/repos/$REPOSITORY/releases 2>/dev/null | grep -E 'tag_name' | grep "$RELEASE_TAG_MAINNAME" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
+    TAG_SUFFIX=$(sed -n  "/TAG_SUFFIX=\"/p" /etc/openwrt-k_info | sed -e "s/TAG_SUFFIX=\"//g" -e "s/\"//g")
+    latest_ver="$(curl -s https://api.github.com/repos/$REPOSITORY/releases 2>/dev/null | grep -E 'tag_name' | grep "$TAG_SUFFIX" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
     FILE_NAME=$(curl -s "https://api.github.com/repos/$REPOSITORY/releases/tags/$latest_ver"| grep -E 'name'| grep -E '\.manifest'| sed -e 's/      "name": "//' -e 's/",//' | sed -n '1p')
     curl -L --retry 3 --connect-timeout 20 $REPOSITORY_URL/releases/download/${latest_ver}/$FILE_NAME -o package.list || download_failed
     if ! diff installed.list package.list -y -W 80 -B -b | grep  '|' |sed -e "s/^/update:/g" -e 's/|/>/g' -e "/kmod-/d" > update.list; then
@@ -247,7 +244,7 @@ update_package() {
         ;;
     esac
     [[ -d /usr/share/cmzj/download/ ]] && rm -rf /usr/share/cmzj/download/*
-    curl -L --retry 3 --connect-timeout 20 $REPOSITORY_URL/releases/download/${latest_ver}/package.zip -o $DOWNLOAD_PATH || download_failed
+    curl -L --retry 3 --connect-timeout 20 $REPOSITORY_URL/releases/download/${latest_ver}/packages.zip -o $DOWNLOAD_PATH || download_failed
     unzip -l $DOWNLOAD_PATH |grep "-"|grep ":"|grep " "|sed "s/.*[0-9][0-9]-[0-9]\{1,2\}-[0-9]\{1,5\} [0-9]\{1,2\}:[0-9]\{1,2\}   //g"|sed "s/ //g" > newpackage.list
     unzip $DOWNLOAD_PATH $(grep "$(cat update_package.list)" newpackage.list | sed ':label;N;s/\n/ /;b label') -d $TMPDIR/update/package
     rm -rf /usr/share/cmzj/download $TMPDIR/update/package/download
@@ -292,7 +289,6 @@ usage() {
     echo ""
     echo "Commands:"
     echo "update <packages|rules|tool>              更新包/规则/本工具"
-    #echo "update <packages|rules|firmwar|tool>     更新包/规则/固件/本工具"
     echo "info                                      打印固件信息"
 }
 main

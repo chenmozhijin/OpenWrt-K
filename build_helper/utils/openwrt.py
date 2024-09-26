@@ -18,6 +18,7 @@ from .utils import apply_patch
 class OpenWrtBase:
     def __init__(self, path: str) -> None:
         self.path = path
+        self.files = os.path.join(path, 'files')
 
     def get_arch(self) -> tuple[str | None, str | None]:
         arch = None

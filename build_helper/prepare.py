@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import tarfile
+from datetime import datetime, timedelta, timezone
 from multiprocessing.pool import Pool
 from typing import TYPE_CHECKING, Any
 
@@ -16,7 +17,7 @@ from .utils.logger import logger
 from .utils.network import dl2, get_gh_repo_last_releases, request_get, wait_dl_tasks
 from .utils.openwrt import OpenWrt
 from .utils.paths import paths
-from .utils.repo import compiler
+from .utils.repo import compiler, user_repo, get_release_suffix
 from .utils.upload import uploader
 from .utils.utils import parse_config
 
@@ -415,12 +416,21 @@ def prepare_cfg(config: dict[str, Any],
             else:
                 f.write(line + "\n")
 
+    config["target"], config["subtarget"] = openwrt.get_target()
+
+    with open(os.path.join(openwrt.files, "etc", "openwrt-k_info"), "w", encoding="utf-8") as f:
+        content = ""
+        content += f'COMPILE_START_TIME="{datetime.now(timezone(timedelta(hours=8))).strftime('%y.%m.%d-%H')}"\n'
+        content += f'COMPILER="{compiler}"\n'
+        content += f'REPOSITORY_URL="https://github.com/{user_repo}"\n'
+        content += f'TAG_SUFFIX="{get_release_suffix(config)[1]}"\n'
+        f.write(content)
+    logger.debug("openwrt-k_info: %s", content)
+
     logger.info("%s生成源代码归档", cfg_name)
     shutil.rmtree(os.path.join(openwrt.path, ".git"))
     os.makedirs(os.path.join(paths.uploads, cfg_name), exist_ok=True)
     tar_path = os.path.join(paths.uploads, cfg_name, "openwrt-source.tar.gz")
     openwrt.archive(tar_path)
-
-    config["target"], config["subtarget"] = openwrt.get_target()
 
     return cfg_name, config, tar_path
