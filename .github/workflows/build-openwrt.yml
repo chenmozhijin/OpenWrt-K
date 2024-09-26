@@ -1,1456 +1,190 @@
-#=============================================================================#
-#MIT License
-
-#Copyright (c) 2023 沉默の金
-
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
-
-#The above copyright notice and this permission notice shall be included in all
-#copies or substantial portions of the Software.
-
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#SOFTWARE.
-#=============================================================================#
+# SPDX-FileCopyrightText: Copyright (c) 2024 沉默の金 <cmzj@cmzj.org>
+# SPDX-License-Identifier: MIT
 
 name: Build OpenWrt-K
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 4 * * *'
-#  push:
-#    branches:
-#      - main
-#    paths:
-#      - '.github/**'
-#      - 'files/**'
-#      - '!README.md'
-#  pull_request:
-#            branches:
-#              - main
-#            paths:
-#              - 'config/**'
-#              - '.github/**'
-#              - 'files/**'
-#              - '!README.md'
-  workflow_dispatch:
+  push:
+    paths:
+      - '.github/**'
+      - 'files/**'
+      - 'build_helper/**'
+      - 'config/**'
+
+      - '!.gitignore'
+      - '!LICENSE'
+      - '!README.md'
+      - '!img/**'
+
 permissions:
   actions: write
   contents: write
   discussions: write
+env:
+  GITHUB_TOKEN: ${{ github.token }}
+  BUILD_HELPER_DEBUG: true
 jobs:
-  planning:
-    outputs:
-      matrix: ${{ steps.planning.outputs.matrix }}
-      starttime: ${{ steps.time.outputs.starttime }}
-    runs-on: ubuntu-22.04
-    steps:
-    - name: 记录开始时间
-      id: time
-      run: |
-        sudo timedatectl set-timezone "Asia/Shanghai"
-        starttime=$(date +"%y.%m.%d-%H")
-        echo starttime=$starttime >> "$GITHUB_OUTPUT"
-        echo starttime=$starttime >> "$GITHUB_ENV"
-        echo "::notice ::编译开始时间为：$starttime"
-
-    - name: 将存储库签出到运行器
-      uses: actions/checkout@v4
-
-    - name: 规划编译流程
-      id: planning
-      uses: ./.github/action/planning
 
   prepare:
+    outputs:
+      matrix: ${{ steps.run.outputs.matrix }}
     runs-on: ubuntu-22.04
-    needs: planning
-    strategy:
-      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
-    name: prepare-${{ matrix.config }}
+    name: 规划与准备
     steps:
-      - name: 准备环境
-        run: |
-          sudo -E apt update
-          sudo apt install -y curl git rsync unzip wget sed tar || sudo apt install -y curl git rsync unzip wget sed tar
 
-      - name: 将存储库签出到运行器
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: 建立环境
+        uses: ./.github/action/prepare
 
-      - name: 建立工作文件夹
-        run: |
-          mkdir -p download cmzj_package cmzj_patch
-          export DOWNLOAD_ROOT_PATH="$(pwd)/download"
-          export CMZJ_PACKAGE_ROOT_PATH="$(pwd)/cmzj_package"
-          export CMZJ_PATCH_ROOT_PATH="$(pwd)/cmzj_patch"
-          echo "DOWNLOAD_ROOT_PATH=$DOWNLOAD_ROOT_PATH" >> $GITHUB_ENV
-          echo "CMZJ_PACKAGE_ROOT_PATH=$CMZJ_PACKAGE_ROOT_PATH" >> $GITHUB_ENV
-          echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/{firewall4,libnftnl,nftables}/patches/
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/{dnsmasq,libubox,netdata}
-          mkdir -p $CMZJ_PATCH_ROOT_PATH/{hack,pending}-{5.10,5.15,6.1,6.6}
+      - name: 准备
+        id: run
+        working-directory: /opt/OpenWrt-K
+        run: python3 -m build_helper --task prepare
 
-      - name: 克隆补丁所需源代码
-        run: |
-          git clone --depth=1 --single-branch https://github.com/immortalwrt/packages $DOWNLOAD_ROOT_PATH/patch/immortalwrt-packages
-          git clone --depth=1 --single-branch https://github.com/chenmozhijin/turboacc -b package $DOWNLOAD_ROOT_PATH/patch/turboacc
-          git clone https://git.openwrt.org/openwrt/openwrt.git $DOWNLOAD_ROOT_PATH/openwrt
+      - name: 上传
+        uses: ./../../../../../opt/OpenWrt-K/.github/action/upload
 
-      - name: 导入拓展软件包
-        run: |
-          TMPDIR=$(mktemp -d) || exit 1
-          EXT_PKGS_PREP_PATH=$TMPDIR/extpackages_prepare
-          EXT_PKGS_DL_PATH=$DOWNLOAD_ROOT_PATH/extpackages/dl
-          EXT_PKGS_PATH=$DOWNLOAD_ROOT_PATH/extpackages/extpackages
-          EXT_PKGS_CONFIG=$GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/extpackages.config
-          mkdir -p $EXT_PKGS_PREP_PATH $EXT_PKGS_PATH $EXT_PKGS_DL_PATH
-          NUMBER_OF_PKGS=$(grep -c "^EXT_PACKAGES_NAME\[" $EXT_PKGS_CONFIG)
-          n=1
-          while [ "$n" -le $NUMBER_OF_PKGS ]; do
-              EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              EXT_PKG_BRANCH=$(grep "^EXT_PACKAGES_BRANCH\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              echo "REPOSITORIE=$EXT_PKG_REPOSITORIE BRANCH=$EXT_PKG_BRANCH" >> $EXT_PKGS_PREP_PATH/extpackagesbr.config
-              n=$(( n+1 ))
-          done
-          sort $EXT_PKGS_PREP_PATH/extpackagesbr.config|uniq > $EXT_PKGS_PREP_PATH/clone.config
-          sed -i -e "s/BRANCH=$//g" $EXT_PKGS_PREP_PATH/clone.config
-          sed -i -e "s/BRANCH=/--branch /g" $EXT_PKGS_PREP_PATH/clone.config
-          NUMBER_OF_CLONES=$(grep -c "REPOSITORIE=" $EXT_PKGS_PREP_PATH/clone.config)
-          sed -i "s/^REPOSITORIE=//g" $EXT_PKGS_PREP_PATH/clone.config
-          echo "开始克隆拓展软件包仓库"
-          n=1
-          while [ "$n" -le $NUMBER_OF_CLONES ]; do
-              mkdir -p $EXT_PKGS_DL_PATH/TMP
-              COLNE_ARGUMENT=$(sed -n "${n}p" $EXT_PKGS_PREP_PATH/clone.config)
-              echo "正在克隆拓展软件包仓库：$(echo "$COLNE_ARGUMENT" | sed -e "s/ --branch.*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")"
-              git clone --depth=1 --single-branch $COLNE_ARGUMENT $EXT_PKGS_DL_PATH/TMP
-              cd $EXT_PKGS_DL_PATH/TMP
-              if [ "$(echo "$COLNE_ARGUMENT" | grep -c " --branch ")" -ne '0' ];then
-                  BRANCH=$(git rev-parse --abbrev-ref HEAD)
-              else
-                  BRANCH="default_branch"
-              fi
-              REPO_PATH="$BRANCH""/""$(echo "$COLNE_ARGUMENT" | sed -e "s/ --branch.*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")"
-              mkdir -p $EXT_PKGS_DL_PATH/$REPO_PATH
-              cp -RT $EXT_PKGS_DL_PATH/TMP/ $EXT_PKGS_DL_PATH/$REPO_PATH
-              rm -rf $EXT_PKGS_DL_PATH/TMP/
-              cd $GITHUB_WORKSPACE
-              n=$(( n+1 ))
-          done
-          echo "开始整理拓展软件包"
-          n=1
-          while [ "$n" -le $NUMBER_OF_PKGS ]; do
-              NUMBER_OF_PKGS=$(grep -c "^EXT_PACKAGES_NAME\[" $EXT_PKGS_CONFIG)
-              EXT_PKG_NAME=$(grep "^EXT_PACKAGES_NAME\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              EXT_PKG_PATH=$(grep "^EXT_PACKAGES_PATH\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              EXT_PKG_REPOSITORIE=$(grep "^EXT_PACKAGES_REPOSITORIE\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              EXT_PKG_BRANCH=$(grep "^EXT_PACKAGES_BRANCH\[$n\]" $EXT_PKGS_CONFIG| sed -e "s/.*=\"//g" -e "s/\"//g")
-              EXT_PKG_REPO_PATH=$(echo "$EXT_PKG_REPOSITORIE" | sed -e 's/[[:space:]]*$//' -e "s/\.git$//g" -e "s/ .*//g" -e "s@.*://@@g" -e "s/^[a-zA-Z.]\{1,111\}\///" -e "s/\/$//g")
-              if [ -z "$EXT_PKG_BRANCH" ];then
-                  EXT_PKG_BRANCH="default_branch"
-              fi
-              mkdir -p $EXT_PKGS_PATH/$EXT_PKG_NAME
-              cp -RT $EXT_PKGS_DL_PATH/$EXT_PKG_BRANCH/$EXT_PKG_REPO_PATH/$EXT_PKG_PATH $EXT_PKGS_PATH/$EXT_PKG_NAME
-              n=$(( n+1 ))
-          done
-          cp -RT $EXT_PKGS_PATH $CMZJ_PACKAGE_ROOT_PATH
-          [[ -d $TMPDIR ]] && rm -rf "$TMPDIR"
-          cd $CMZJ_PACKAGE_ROOT_PATH
-          echo "CMZJ_PACKAGE_ROOT_PATH"
-          ls -la $(find $CMZJ_PACKAGE_ROOT_PATH -type d)
-
-      - name: 修改Makefile文件
-        working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
-        run: sed -i 's/include ..\/..\/luci.mk/include $(TOPDIR)\/feeds\/luci\/luci.mk/' $(find ./ -type f -name "Makefile")
-
-      - name: 创建符号链接以修复中文支持
-        working-directory:  ${{ env.CMZJ_PACKAGE_ROOT_PATH }}
-        run: |
-          TMPDIR=$(mktemp -d) || exit 1
-          find . -name 'po' -type d > $TMPDIR/podir.list
-          total_rows=$(sed -n '$=' $TMPDIR/podir.list) #行数-文件夹个数
-          n=1
-          while [ "$n" -le $total_rows ]; do
-              DIR=$(sed -n "${n}p" $TMPDIR/podir.list)
-              if [ -h $DIR/zh_Hans ]; then
-                  echo "$DIR/zh_Hans 符号链接以存在无需修复"
-              elif [ -d $DIR/zh_Hans ]; then
-                  echo "$DIR/zh_Hans 目录已存在无需修复"
-              elif [ -e $DIR/zh_Hans ]; then
-                  echo "$DIR/zh_Hans 存在非符号链接文件删除后重新创建"
-                  rm -rf $DIR/zh_Hans||exit 1
-                  ln -s zh-cn $DIR/zh_Hans||exit 1
-              elif [ ! -d $DIR/zh-cn ]; then
-                  echo "$DIR/zh-cn 原汉化文件夹不存在，这可能是该luci插件原生为中文或不支持中文"
-              else
-                  echo "$DIR/zh_Hans 符号链接不存在创建符号链接"
-                  ln -s zh-cn $DIR/zh_Hans||exit 1
-              fi
-              n=$(( n+1 ))
-          done
-          [[ -d $TMPDIR ]] && rm -rf "$TMPDIR"
-
-      - name: 复制到cmzj_patch
-        run: |
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/hack-5.10/952-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/hack-5.10/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-5.10/
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/hack-5.15/952-add-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-5.15/
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/hack-5.15/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-5.15/
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/hack-6.1/952-add-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-6.1/
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/hack-6.1/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-6.1/
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/hack-6.6/952-add-net-conntrack-events-support-multiple-registrant.patch $CMZJ_PATCH_ROOT_PATH/hack-6.6/
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/hack-6.6/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $CMZJ_PATCH_ROOT_PATH/hack-6.6/
-          cp -RT $DOWNLOAD_ROOT_PATH/patch/turboacc/firewall4-$(grep -o 'FIREWALL4_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)/firewall4 $CMZJ_PATCH_ROOT_PATH/firewall4
-          cp -RT $DOWNLOAD_ROOT_PATH/patch/turboacc/libnftnl-$(grep -o 'LIBNFTNL_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)/libnftnl $CMZJ_PATCH_ROOT_PATH/libnftnl
-          cp -RT $DOWNLOAD_ROOT_PATH/patch/turboacc/nftables-$(grep -o 'NFTABLES_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)/nftables $CMZJ_PATCH_ROOT_PATH/nftables
-          cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/network/services/dnsmasq $CMZJ_PATCH_ROOT_PATH/dnsmasq
-          cp -RT $DOWNLOAD_ROOT_PATH/openwrt/package/libs/libubox $CMZJ_PATCH_ROOT_PATH/libubox
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/pending-5.10/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-5.10/
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/pending-5.15/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-5.15/
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/pending-6.1/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-6.1/
-          cp $DOWNLOAD_ROOT_PATH/patch/turboacc/pending-6.6/613-netfilter_optional_tcp_window_check.patch $CMZJ_PATCH_ROOT_PATH/pending-6.6/
-          cp -RT $DOWNLOAD_ROOT_PATH/patch/immortalwrt-packages/admin/netdata $CMZJ_PATCH_ROOT_PATH/netdata
-          echo "FIREWALL4_VERSION=firewall4-$(grep -o 'FIREWALL4_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)"
-          echo "NFTABLES_VERSION=libnftnl-$(grep -o 'NFTABLES_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)"
-          echo "LIBNFTNL_VERSION=nftables-$(grep -o 'LIBNFTNL_VERSION=.*' $DOWNLOAD_ROOT_PATH/patch/turboacc/version | cut -d '=' -f 2)"
-
-      - name: 压缩
-        run: |
-          cd $CMZJ_PACKAGE_ROOT_PATH
-          tar cvpzf $GITHUB_WORKSPACE/cmzj_package.tgz *
-          cd $CMZJ_PATCH_ROOT_PATH
-          tar cvpzf $GITHUB_WORKSPACE/cmzj_patch.tgz *
-
-      - name: 上传 cmzj_package
-        uses: actions/upload-artifact@v4
-        with:
-          name: cmzj_package-${{ matrix.config }}
-          path: cmzj_package.tgz
-
-      - name: 上传 cmzj_patch
-        uses: actions/upload-artifact@v4
-        with:
-          name: cmzj_patch-${{ matrix.config }}
-          path: cmzj_patch.tgz
-
-  build1:
+  base-builds:
     runs-on: ubuntu-22.04
-    needs: [planning,prepare]
+    needs: prepare
+    name: 构建工具链与内核(${{ matrix.name }})
     strategy:
-      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
-    name: build1-${{ matrix.config }}
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
-      - name: 将存储库签出到运行器
-        uses: actions/checkout@v4
 
-      - name: 输出运行器硬件信息
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
+      - uses: actions/checkout@v4
+      - name: 建立环境
+        uses: ./.github/action/prepare
 
-      - name: 安装编译依赖
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/install_compilation_dependencies.sh
-
-      - name: 合并磁盘
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
-
-      - name: 将存储库签出到运行器
-        uses: actions/checkout@v4
-
-      - name: 建立工作文件夹
-        run: |
-          mkdir -p workspace
-          export WORKSPACE_ROOT_PATH="$(pwd)/workspace"
-          echo "WORKSPACE_ROOT_PATH=$WORKSPACE_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p $WORKSPACE_ROOT_PATH/{cmzj_package,cmzj_patch,log}
-          export CMZJ_PACKAGE_ROOT_PATH="$WORKSPACE_ROOT_PATH/cmzj_package"
-          export CMZJ_PATCH_ROOT_PATH="$WORKSPACE_ROOT_PATH/cmzj_patch"
-          export LOG_PATH="$WORKSPACE_ROOT_PATH/log"
-          echo "CMZJ_PACKAGE_ROOT_PATH=$CMZJ_PACKAGE_ROOT_PATH" >> $GITHUB_ENV
-          echo "CMZJ_PATCH_ROOT_PATH=$CMZJ_PATCH_ROOT_PATH" >> $GITHUB_ENV
-          echo "LOG_PATH=$LOG_PATH" >> $GITHUB_ENV
-          cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
-
-      - name: 下载cmzj_package
-        uses: actions/download-artifact@v4
-        with:
-          name: cmzj_package-${{ matrix.config }}
-
-      - name: 下载cmzj_patch
-        uses: actions/download-artifact@v4
-        with:
-          name: cmzj_patch-${{ matrix.config }}
-
-      - name: 解压
-        run: |
-          tar xvpfz $GITHUB_WORKSPACE/cmzj_package.tgz -C $CMZJ_PACKAGE_ROOT_PATH
-          tar xvpfz $GITHUB_WORKSPACE/cmzj_patch.tgz -C $CMZJ_PATCH_ROOT_PATH
-          echo "cmzj_package" >> $LOG_PATH/cmzj_package.log
-          ls $CMZJ_PACKAGE_ROOT_PATH >> $LOG_PATH/cmzj_package.log
-          echo "cmzj_patch"  >> $LOG_PATH/cmzj_patch.log
-          ls $CMZJ_PATCH_ROOT_PATH  >> $LOG_PATH/cmzj_patch.log
-          echo "cmzj_package-permissions" >> $LOG_PATH/cmzj_package.log
-          ls -l $CMZJ_PACKAGE_ROOT_PATH/** >> $LOG_PATH/cmzj_package.log
-          echo "cmzj_patch-permissions" >> $LOG_PATH/cmzj_patch.log
-          ls -l $CMZJ_PATCH_ROOT_PATH/**  >> $LOG_PATH/cmzj_patch.log
-
-      - name: 克隆源代码
-        working-directory:  ${{ env.WORKSPACE_ROOT_PATH }}
-        run: |
-          git clone https://git.openwrt.org/openwrt/openwrt.git
-          cd openwrt
-          export OPENWRT_ROOT_PATH="$(pwd)"
-          echo "OPENWRT_ROOT_PATH=$OPENWRT_ROOT_PATH" >> $GITHUB_ENV
-          cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
-
-      - name: 切换标签/分支
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          openwrt_tag_branch=$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')
-          git checkout $openwrt_tag_branch
-          echo "OPENWRT_TAG_BRANCH=$openwrt_tag_branch" >> $GITHUB_ENV
-          cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
-
-      - name: 复制cmzj_package
-        working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
-        run: |
-          cp -r $CMZJ_PACKAGE_ROOT_PATH $OPENWRT_ROOT_PATH/package/cmzj_package
-          echo "cmzj_package" >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/package/cmzj_package >> $LOG_PATH/cmzj_patch.log
-
-      - name: 更新 feeds
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-
-      - name: 修复问题
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          sed -i 's/256/1024/' ./target/linux/${{ matrix.target }}/image/Makefile
-          bash $GITHUB_WORKSPACE/scripts/fix_problem.sh ${{ matrix.config }}
-
-      - name: 更新smartdns、netdata
-        run: |
-          WORKINGDIR="$OPENWRT_ROOT_PATH/feeds/packages/net/smartdns"
-          mkdir $WORKINGDIR -p
-          rm $WORKINGDIR/* -fr
-          curl -s -L --retry 6 https://github.com/pymumu/openwrt-smartdns/archive/master.zip -o $WORKINGDIR/master.zip
-          unzip $WORKINGDIR/master.zip -d $WORKINGDIR
-          mv $WORKINGDIR/openwrt-smartdns-master/* $WORKINGDIR/
-          rmdir $WORKINGDIR/openwrt-smartdns-master
-          rm $WORKINGDIR/master.zip
-          LUCIBRANCH="master"
-          WORKINGDIR="$OPENWRT_ROOT_PATH/feeds/luci/applications/luci-app-smartdns"
-          mkdir $WORKINGDIR -p
-          rm $WORKINGDIR/* -fr
-          curl -s -L --retry 6 https://github.com/pymumu/luci-app-smartdns/archive/${LUCIBRANCH}.zip -o $WORKINGDIR/${LUCIBRANCH}.zip
-          unzip $WORKINGDIR/${LUCIBRANCH}.zip -d $WORKINGDIR
-          mv $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}/* $WORKINGDIR/
-          rmdir $WORKINGDIR/luci-app-smartdns-${LUCIBRANCH}
-          rm $WORKINGDIR/${LUCIBRANCH}.zip
-          WORKINGDIR="$OPENWRT_ROOT_PATH/feeds/packages/admin/netdata"
-          mkdir $WORKINGDIR -p
-          rm $WORKINGDIR/* -fr
-          cp -RT $CMZJ_PATCH_ROOT_PATH/netdata $WORKINGDIR
-
-      - name: 安装 feeds
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: ./scripts/feeds install -a
-
-      - name: 复制自定义文件并添加编译信息
-        run: |
-          cp -r files $OPENWRT_ROOT_PATH/files
-          chmod 755 $OPENWRT_ROOT_PATH/files/etc/uci-defaults/*
-          chmod 755 $OPENWRT_ROOT_PATH/files/usr/share/cmzj/openwrt-k_tool.sh
-          #替换编译者
-          if [ "$(curl -s https://api.github.com/users/$(echo ${{ github.repository }} | sed "s/\/.*//g") 2>/dev/null|grep -c "^  \"name\": null,$")" -ne '0' ];then
-            compiler=$(echo ${{ github.repository }} | sed "s/\/.*//g")
-          else
-            compiler=$(curl -s https://api.github.com/users/$(echo ${{ github.repository }} | sed "s/\/.*//g") 2>/dev/null  |grep '"name":\ "'|sed 's/  "name":\ "//'|sed 's/",//' 2>/dev/null)
-          fi
-          echo 'Compiled by' $compiler
-          sed -i "s/Compiled by 沉默の金/Compiled by $compiler/g" $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
-          cat $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin | grep 'Compiled by'
-          echo "::notice ::编译者已替换为$compiler"
-          #添加编译信息
-          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')"
-          echo "COMPILE_START_TIME=\"${{ needs.planning.outputs.starttime }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "COMPILER=\"$compiler\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "RELEASE_NAME=\"OpenWrt-K_V${{ needs.planning.outputs.starttime }} (${{ matrix.target }}-${{ matrix.subtarget }})-[$OPENWRT_TAG_BRANCH]\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "RELEASE_TAG_NAME=\"v${{ needs.planning.outputs.starttime }}(${{ matrix.target }}-${{ matrix.subtarget }})-($OPENWRT_TAG_BRANCH)\""  >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "REPOSITORY_URL=\"https://github.com/${{ github.repository }}\"" >> $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-          echo "$OPENWRT_ROOT_PATH/files/etc/openwrt-k_info"
-          cat $OPENWRT_ROOT_PATH/files/etc/openwrt-k_info
-
-      - name: 加载自定义配置并生成配置文件
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          cat $GITHUB_WORKSPACE/config/${{ matrix.config }}/{target,luci,utilities,network,other,kmod,image}.config >> $OPENWRT_ROOT_PATH/.config
-          use_cache=$(sed -n '/use_cache/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')
-          if [ "$use_cache" = "true" ] || [ "$use_cache" = "True" ] || [ "$use_cache" = "TRUE" ];then
-            use_cache=true
-            echo "::notice ::使用ccache加速编译"
-            echo "CONFIG_DEVEL=y" >> $OPENWRT_ROOT_PATH/.config
-            echo "CONFIG_CCACHE=y" >> $OPENWRT_ROOT_PATH/.config
-            echo "USE_CACHE=$use_cache" >> $GITHUB_ENV
-            cat $GITHUB_ENV >> $GITHUB_WORKSPACE/build1_ENV
-          fi
-          make defconfig
-          ./scripts/diffconfig.sh
-          ./scripts/diffconfig.sh >> $LOG_PATH/build1-diffconfig.log
-
-      - name: 添加内核补丁与所需内核配置
-        working-directory: ${{ env.WORKSPACE_ROOT_PATH }}
-        run: |
-          kernel_version="$(sed -n '/CONFIG_LINUX_/p' $OPENWRT_ROOT_PATH/.config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g')"
-          echo kernel_version=$kernel_version
-          if [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_SHORTCUT_FE_DRV=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-shortcut-fe-drv=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
-            sfe=true
-          elif [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_SHORTCUT_FE_CM=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-shortcut-fe-cm=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
-            sfe=true
-          elif [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_SHORTCUT_FE=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-fast-classifier=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
-            sfe=true
-          elif [ "$(grep -c "^CONFIG_PACKAGE_kmod-shortcut-fe=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
-            sfe=true
-          else
-            echo "::notice ::未检测到sfe设为编译进固件"
-            sfe=false
-          fi
-          if [ $sfe = true ];then
-            echo "::notice ::检测到sfe设为编译进固件，添加sfe所需补丁与附加内核配置"
-            cp -f $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/953-net-patch-linux-kernel-to-support-shortcut-fe.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version/
-            cp -f $CMZJ_PATCH_ROOT_PATH/pending-$kernel_version/613-netfilter_optional_tcp_window_check.patch $OPENWRT_ROOT_PATH/target/linux/generic/pending-$kernel_version/
-            echo "# CONFIG_SHORTCUT_FE is not set" >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version
-          fi
-          if [ $sfe = true ] || [ "$(grep -c "^CONFIG_PACKAGE_kmod-nft-fullcone=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_NFT_FULLCONE=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
-            if  [ "$kernel_version" = "6.6" ] || [ "$kernel_version" = "6.1" ] || [ "$kernel_version" = "5.15" ]; then
-              echo "::notice ::添加sfe/fullcone所需补丁与附加内核配置"
-              cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/952-add-net-conntrack-events-support-multiple-registrant.patch $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version
-            elif [ "$kernel_version" = "5.10" ] ; then
-              echo "::notice ::添加sfe/fullcone所需补丁与附加内核配置(5.10内核)"
-              cp $CMZJ_PATCH_ROOT_PATH/hack-$kernel_version/952-net-conntrack-events-support-multiple-registrant.patch  $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version
-            else
-              echo "::error ::OpenWrt-K不支持为5.10以下内核打补丁，如需编译请删除此步骤与turboacc的相关的步骤并删除turboacc及其相关的拓展软件包(luci-app-turboacc、nft-fullcone、shortcut-fe)"
-              exit 1
-            fi
-            echo "# CONFIG_NF_CONNTRACK_CHAIN_EVENTS is not set" >> $OPENWRT_ROOT_PATH/target/linux/generic/config-$kernel_version
-          fi
-          echo "hack-$kernel_version"  >> $LOG_PATH/cmzj_patch.log
-          ls $OPENWRT_ROOT_PATH/target/linux/generic/hack-$kernel_version >> $LOG_PATH/cmzj_patch.log
-
-      - name: 添加turboacc fullcone所需的libnftnl、firewall4、nftables补丁
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          if [ "$(grep -c "^CONFIG_PACKAGE_kmod-nft-fullcone=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ] || [ "$(grep -c "^CONFIG_PACKAGE_luci-app-turboacc_INCLUDE_NFT_FULLCONE=y$" $OPENWRT_ROOT_PATH/.config)" -ne '0' ];then
-            kernel_version="$(sed -n '/CONFIG_LINUX_/p' $OPENWRT_ROOT_PATH/.config | sed -e 's/CONFIG_LINUX_//' -e 's/=y//' -e 's/_/./g')"
-            echo kernel_version=$kernel_version
-            echo "::notice ::检测到nft-fullcone设为编译进固件,添加fullcone所需libnftnl、firewall4、nftables补丁"
-            rm -rf $OPENWRT_ROOT_PATH/package/{libs/libnftnl,network/config/firewall4,network/utils/nftables}
-            mkdir -p $OPENWRT_ROOT_PATH/package/{libs/libnftnl,network/config/firewall4,network/utils/nftables}
-            cp -RT $CMZJ_PATCH_ROOT_PATH/firewall4 $OPENWRT_ROOT_PATH/package/network/config/firewall4
-            cp -RT $CMZJ_PATCH_ROOT_PATH/libnftnl $OPENWRT_ROOT_PATH/package/libs/libnftnl
-            cp -RT $CMZJ_PATCH_ROOT_PATH/nftables $OPENWRT_ROOT_PATH/package/network/utils/nftables
-            echo "cmzj_patch" >> $LOG_PATH/cmzj_patch.log
-            ls $CMZJ_PATCH_ROOT_PATH >> $LOG_PATH/cmzj_patch.log
-            echo "libnftnl-file" >> $LOG_PATH/cmzj_patch.log
-            ls $OPENWRT_ROOT_PATH/package/libs/libnftnl >> $LOG_PATH/cmzj_patch.log
-            echo "firewall4-file" >> $LOG_PATH/cmzj_patch.log
-            ls $OPENWRT_ROOT_PATH/package/network/config/firewall4 >> $LOG_PATH/cmzj_patch.log
-            echo "nftables-file" >> $LOG_PATH/cmzj_patch.log
-            ls $OPENWRT_ROOT_PATH/package/network/utils/nftables >> $LOG_PATH/cmzj_patch.log
-            echo "firewall4-patches" >> $LOG_PATH/cmzj_patch.log
-            ls $OPENWRT_ROOT_PATH/package/network/config/firewall4/patches/ >> $LOG_PATH/cmzj_patch.log
-            echo "libnftnl-patches" >> $LOG_PATH/cmzj_patch.log
-            ls $OPENWRT_ROOT_PATH/package/libs/libnftnl/patches/ >> $LOG_PATH/cmzj_patch.log
-            echo "nftables-patches" >> $LOG_PATH/cmzj_patch.log
-            ls $OPENWRT_ROOT_PATH/package/network/utils/nftables/patches/ >> $LOG_PATH/cmzj_patch.log
-          else
-            echo "::notice ::未检测到nft-fullcone设为编译进固件,跳过添加。"
-          fi
-
-      - name: 为openwrt-22.03/v22.03.*升级dnsmasq与libubox
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          openwrt_tag_branch=$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')
-          if [ "$openwrt_tag_branch" = "openwrt-22.03" ] || [[ "$openwrt_tag_branch" =~ ^v22.03.* ]] ; then
-            echo "::notice ::检测到openwrt-22.03分支/v22.03.*版本升级dnsmasq与libubox"
-            rm -rf $OPENWRT_ROOT_PATH/package/{network/services/dnsmasq,libs/libubox}
-            mkdir -p $OPENWRT_ROOT_PATH/package/{network/services/dnsmasq,libs/libubox}
-            cp -RT $CMZJ_PATCH_ROOT_PATH/libubox $OPENWRT_ROOT_PATH/package/libs/libubox
-            cp -RT $CMZJ_PATCH_ROOT_PATH/dnsmasq $OPENWRT_ROOT_PATH/package/network/services/dnsmasq
-          else
-            echo "::notice ::检测到非openwrt-22.03分支/v22.03.*版本,跳过升级dnsmasq与libubox。"
-          fi
-
-      - name: 检查软件包依赖
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          TMPDIR=$(mktemp -d) || exit 1
-          PACKAGEDEPWARNING=$TMPDIR/packagedepwarning.log
-          gmake -s prepare-tmpinfo
-          ./scripts/package-metadata.pl mk tmp/.packageinfo > tmp/.packagedeps 2>$PACKAGEDEPWARNING || { rm -f tmp/.packagedeps; false; }
-          if [ -n "$(cat $PACKAGEDEPWARNING)" ]; then
-            echo "::error ::检查到软件包依赖问题,这极有可能导致编译错误，请前往build1检查软件包依赖步骤查看详情。"
-            cat $PACKAGEDEPWARNING
-          fi
-          [[ -d $TMPDIR ]] && rm -rf "$TMPDIR"
-
-      - name: 下载AdGuardHome核心与DNS名单
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          if [ "$(grep -c "^CONFIG_PACKAGE_luci-app-adguardhome=y$" .config)" -ne '0' ];then
-              Archt="$(sed -n '/CONFIG_ARCH=/p' .config | sed -e 's/CONFIG_ARCH\=\"//' -e 's/\"//')"
-              case $Archt in
-              "i386")
-              Arch="386"
-              ;;
-              "i686")
-              Arch="386"
-              ;;
-              "x86_64")
-              Arch="amd64"
-              ;;
-              "mipsel")
-              Arch="mipsle"
-              ;;
-              "mips64el")
-              Arch="mips64le"
-              Arch="mipsle"
-              echo -e "mips64el use $Arch may have bug"
-              ;;
-              "mips")
-              Arch="mips"
-              ;;
-              "mips64")
-              Arch="mips64"
-              Arch="mips"
-              echo -e "mips64 use $Arch may have bug"
-              ;;
-              "arm")
-              if [ "$(grep -c "CONFIG_arm_" .config)" -ne '0' ];then
-                armv="$(sed -n '/CONFIG_arm_/p' .config | sed -e 's/CONFIG_arm_//' -e 's/=y//')"
-              else
-                armv=v5
-              fi
-              Arch="arm$armv"
-              ;;
-              "aarch64")
-              Arch="arm64"
-              ;;
-              "powerpc")
-              Arch="ppc"
-              Arch=1
-              echo -e "error not support $Archt"
-              ;;
-              "powerpc64")
-              Arch="ppc64"
-              Arch=1
-              echo -e "error not support $Archt"
-              ;;
-              *)
-              echo -e "error not support $Archt if you can use offical release please issue a bug"
-              Arch=1
-              ;;
-              esac
-              if [ "$Arch" != 1 ];then
-                echo "::notice ::检测到luci-app-adguardhome配置为编译进固件,下载DNS名单与架构为$Arch的AdGuardHome核心"
-                mkdir -p ./files/usr/bin/AdGuardHome/tmp
-                rm -rf ./files/usr/bin/AdGuardHome/tmp/*
-                latest_ver="$(curl -s https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest 2>/dev/null|grep -E 'tag_name' |grep -E 'v[0-9.]+' -o 2>/dev/null)"
-                curl -s -L --retry 6 https://github.com/AdguardTeam/AdGuardHome/releases/download/${latest_ver}/AdGuardHome_linux_${Arch}.tar.gz -o ./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz
-                tar -zxf "./files/usr/bin/AdGuardHome/tmp/AdGuardHome.tar.gz" -C "./files/usr/bin/AdGuardHome/tmp/"
-                mv -f ./files/usr/bin/AdGuardHome/tmp/AdGuardHome/AdGuardHome ./files/usr/bin/AdGuardHome
-                rm -rf ./files/usr/bin/AdGuardHome/tmp
-                chmod 755 $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/AdGuardHome
-                echo "下载AdGuardHome DNS黑白名单"
-                mkdir -p ./files/usr/bin/AdGuardHome/data/filters
-                cd $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome/data/filters
-                curl -o 1628750870.txt https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt -s -L --retry 6
-                curl -o 1628750871.txt https://anti-ad.net/easylist.txt -s -L --retry 6
-                curl -o 1677875715.txt https://easylist-downloads.adblockplus.org/easylist.txt -s -L --retry 6
-                curl -o 1677875716.txt https://easylist-downloads.adblockplus.org/easylistchina.txt -s -L --retry 6
-                curl -o 1677875717.txt https://cdn.jsdelivr.net/gh/cjx82630/cjxlist@master/cjx-annoyance.txt -s -L --retry 6
-                curl -o 1677875718.txt https://cdn.jsdelivr.net/gh/zsakvo/AdGuard-Custom-Rule@master/rule/zhihu-strict.txt -s -L --retry 6
-                curl -o 1677875720.txt https://gist.githubusercontent.com/Ewpratten/a25ae63a7200c02c850fede2f32453cf/raw/b9318009399b99e822515d388b8458557d828c37/hosts-yt-ads -s -L --retry 6
-                curl -o 1677875721.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt -s -L --retry 6
-                curl -o 1677875722.txt https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/v -s -L --retry 6
-                curl -o 1677875724.txt https://raw.githubusercontent.com/banbendalao/ADgk/master/ADgk.txt -s -L --retry 6
-                curl -o 1677875725.txt https://www.i-dont-care-about-cookies.eu/abp/ -s -L --retry 6
-                curl -o 1677875726.txt https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts -s -L --retry 6
-                curl -o 1677875727.txt https://raw.githubusercontent.com/Goooler/1024_hosts/master/hosts -s -L --retry 6
-                curl -o 1677875728.txt https://winhelp2002.mvps.org/hosts.txt -s -L --retry 6
-                curl -o 1677875733.txt https://cdn.jsdelivr.net/gh/hl2gu -s -L --retry 6
-                curl -o 1677875734.txt https://cdn.jsdelivr.net/gh/hg1978/AdGuard-Home-Whitelist@master/whitelist.txt -s -L --retry 6
-                curl -o 1677875735.txt https://cdn.jsdelivr.net/gh/mmotti/adguard-home-filters@master/whitelist.txt -s -L --retry 6
-                curl -o 1677875737.txt https://cdn.jsdelivr.net/gh/liwenjie119/adg-rules@master/white.txt -s -L --retry 6
-                curl -o 1677875739.txt https://cdn.jsdelivr.net/gh/JamesDamp/AdGuard-Home---Personal-Whitelist@master/AdGuardHome-Whitelist.txt -s -L --retry 6
-                curl -o 1677875740.txt https://cdn.jsdelivr.net/gh/scarletbane/AdGuard-Home-Whitelist@main/whitelist.txt -s -L --retry 6
-                ls
-                echo "制作AdGuardHome上游 DNS 服务器规则"
-                cd  $WORKSPACE_ROOT_PATH
-                mkdir -p tmp
-                cd $WORKSPACE_ROOT_PATH/tmp
-                ls
-                rm -rf *
-                curl -s -L --retry 6 --connect-timeout 20 "https://raw.githubusercontent.com/chenmozhijin/AdGuardHome-Rules/main/AdGuardHome-dnslist(by%20cmzj).yaml" -o "AdGuardHomednslist" 
-                cat ./AdGuardHomednslist >> $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml
-                echo "AdGuardHome-dnslist(by cmzj).yaml" >> $LOG_PATH/AdGuardHome.log
-                cat $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist"(by cmzj)".yaml >> $LOG_PATH/AdGuardHome.log
-                rm -rf $WORKSPACE_ROOT_PATH/tmp/*
-                echo "files"
-                ls -la $(find $OPENWRT_ROOT_PATH/files/ -type d)
-              else
-                echo "::warning ::AdGuardHome核心不支持此架构,退出执行下载AdGuardHome核心与DNS名单。"
-                rm -rf $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist\(by\ cmzj\).yaml $OPENWRT_ROOT_PATH/files/etc/AdGuardHome.yaml $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome
-              fi
-          else
-            echo "::notice ::未检测到luci-app-adguardhome配置为编译进固件,退出执行。"
-            rm -rf $OPENWRT_ROOT_PATH/files/etc/AdGuardHome-dnslist\(by\ cmzj\).yaml $OPENWRT_ROOT_PATH/files/etc/AdGuardHome.yaml $OPENWRT_ROOT_PATH/files/usr/bin/AdGuardHome
-          fi
-
-      - name: 下载openclash内核
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          if [ "$(grep -c "^CONFIG_PACKAGE_luci-app-openclash=y$" .config)" -ne '0' ];then
-              ARCHT="$(sed -n '/CONFIG_ARCH=/p' .config | sed -e 's/CONFIG_ARCH\=\"//' -e 's/\"//')"
-              case "${ARCHT}" in
-              	aarch64)
-              		CORE_ARCH="linux-arm64"
-              		;;
-              	arm)
-                  if [ "$(grep -c "CONFIG_arm_" .config)" -ne '0' ];then
-                    armv="$(sed -n '/CONFIG_arm_/p' .config | sed -e 's/CONFIG_arm_//' -e 's/=y//')"
-                  else
-                    armv=v5
-                  fi
-              		CORE_ARCH="linux-arm$armv"
-              		;;
-              	i386)
-              		CORE_ARCH="linux-386"
-              		;;
-              	mips64)
-              		CORE_ARCH="linux-mips64"
-              		;;
-              	mips)
-              		CORE_ARCH="linux-mips-softfloat"
-              		;;
-              	mipsel)
-              		CORE_ARCH="linux-mipsle-softfloat"
-              		;;
-              	x86_64)
-              		CORE_ARCH="linux-amd64"
-              		;;
-              	*)
-              		CORE_ARCH="1"
-              		;;
-              esac
-              echo "::notice ::检测到luci-app-openclash配置为编译进固件,下载架构为$CORE_ARCH的openclash内核"
-              if [ "$CORE_ARCH" != 1 ];then
-                OpenClashTMPDIR=$WORKSPACE_ROOT_PATH/tmp/openclash
-                dev_core_path="$OPENWRT_ROOT_PATH/files/etc/openclash/core/clash"
-                tun_core_path="$OPENWRT_ROOT_PATH/files/etc/openclash/core/clash_tun"
-                meta_core_path="$OPENWRT_ROOT_PATH/files/etc/openclash/core/clash_meta"
-                CPU_MODEL=$CORE_ARCH
-                RELEASE_BRANCH=master
-                mkdir -p $OpenClashTMPDIR $OPENWRT_ROOT_PATH/files/etc/openclash/core/
-                rm -rf $OpenClashTMPDIR/*
-                CORE_LV=$(curl -s -L --retry 6 https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version|sed -n 2p)
-                curl -s -L --retry 6 -o $OpenClashTMPDIR/clash_tun.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/premium/clash-"$CPU_MODEL"-"$CORE_LV".gz
-                curl -s -L --retry 6 -o $OpenClashTMPDIR/clash_meta.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/meta/clash-"$CPU_MODEL".tar.gz
-                curl -s -L --retry 6 -o $OpenClashTMPDIR/clash.tar.gz https://raw.githubusercontent.com/vernesong/OpenClash/core/"$RELEASE_BRANCH"/dev/clash-"$CPU_MODEL".tar.gz
-                #tun
-                gzip -d $OpenClashTMPDIR/clash_tun.gz
-                rm -rf $OpenClashTMPDIR/clash_tun.gz
-                rm -rf "$tun_core_path"
-                chmod 4755 $OpenClashTMPDIR/clash_tun
-                mv $OpenClashTMPDIR/clash_tun "$tun_core_path"
-                #mate
-                rm -rf "$meta_core_path"
-                tar zxvf $OpenClashTMPDIR/clash_meta.tar.gz -C $OpenClashTMPDIR
-                mv $OpenClashTMPDIR/clash $OpenClashTMPDIR/clash_meta
-                rm -rf  $OpenClashTMPDIR/clash_meta.tar.gz
-                chmod 4755 $OpenClashTMPDIR/clash_meta
-                mv $OpenClashTMPDIR/clash_meta "$meta_core_path"
-                #dev
-                rm -rf "$dev_core_path"
-                tar zxvf $OpenClashTMPDIR/clash.tar.gz -C $OpenClashTMPDIR
-                rm -rf $OpenClashTMPDIR/clash.tar.gz
-                chmod 4755 $OpenClashTMPDIR/clash
-                mv $OpenClashTMPDIR/clash "$dev_core_path"
-                echo "files"
-                ls -la $(find $OPENWRT_ROOT_PATH/files/ -type d)
-              else
-                echo "::warning ::openclash内核不支持此架构,退出执行下载openclash内核。"
-                rm -rf $OPENWRT_ROOT_PATH/files/etc/openclash
-              fi
-          else
-            echo "::notice ::未检测到luci-app-openclash配置为编译进固件,退出执行下载openclash内核。"
-            rm -rf $OPENWRT_ROOT_PATH/files/etc/openclash
-          fi
-
-      - name: 更新BT Tracker
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-         export bt_tracker="$(curl  -s -L --retry 6 https://github.com/XIU2/TrackersListCollection/raw/master/all_aria2.txt || curl  -s -L --retry 6 https://cf.trackerslist.com/all_aria2.txt)"
-         sed -i "s#^uci set aria2.main.bt_tracker=.*#uci set aria2.main.bt_tracker=\'$bt_tracker\'#g"  $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
-
-      - name: 设置时区、主机名与IP
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          ipaddr=$(grep "^ipaddr=" $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/openwrtext.config|sed -e "s/ipaddr=//" -e "s/ //g")
-          timezone=$(grep "^timezone=" $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/openwrtext.config|sed -e "s/timezone=//" -e "s/ //g")
-          zonename=$(grep "^zonename=" $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/openwrtext.config|sed -e "s/zonename=//" -e "s/ //g")
-          echo "::notice ::设置openwrt默认ip为$ipaddr,时区为$timezone,时区区域名称为$zonename"
-          sed -i -e "s/set system.@system\[-1].hostname='OpenWrt'/set system.@system\[-1].hostname='OpenWrt-k'/g" -e "s/set system.@system\[-1].timezone='UTC'/set system.@system\[-1].timezone=\'$timezone\'/g" -e "/set system.@system\[-1].timezone='CST-8'/i\		set system.@system\[-1].zonename=\'$zonename\'" $OPENWRT_ROOT_PATH/package/base-files/files/bin/config_generate
-          sed -i "s#^uci set network.lan.ipaddr=.*#uci set network.lan.ipaddr=\"$ipaddr\"#g"  $OPENWRT_ROOT_PATH/files/etc/uci-defaults/zzz-chenmozhijin
-
-      - name: 替换golang版本
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          golang_version=$(grep "^golang_version=" $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/openwrtext.config|sed -e "s/golang_version=//" -e "s/ //g")
-          rm -rf feeds/packages/lang/golang
-          git clone https://github.com/sbwml/packages_lang_golang -b $golang_version feeds/packages/lang/golang
-
-      - name: 获取toolchain commit id
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          toolchain_commit=$(git log --pretty=tformat:"%h" -n1 tools toolchain)
-          echo "TOOLCHAIN_COMMIT=$toolchain_commit" >> $GITHUB_ENV
+      - name: 准备编译
+        id: prepare
+        working-directory: /opt/OpenWrt-K
+        run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
 
       - name: 缓存toolchain
         uses: actions/cache@v4
         id: cache-toolchain
-        if: ${{ env.USE_CACHE }}
+        if: ${{ steps.prepare.outputs.use-cache }}
         with:
           path: |
-            ${{ env.OPENWRT_ROOT_PATH }}/staging_dir/host*
-            ${{ env.OPENWRT_ROOT_PATH }}/staging_dir/tool*
-          key: toolchain-${{ env.TOOLCHAIN_COMMIT }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
+            ${{ steps.prepare.outputs.openwrt-path }}/staging_dir/host*
+            ${{ steps.prepare.outputs.openwrt-path }}/staging_dir/tool*
+          key: ${{ steps.prepare.outputs.toolchain-key }}
 
-      - name: 检查剩余空间
-        run: |
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-
-      - name: 下载 dl 库
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        if: ${{ steps.cache-toolchain.outputs.cache-hit != 'true' }}
-        run: |
-          make download -j16
-          find dl -size -1024c -exec ls -l {} \;
-          find dl -size -1024c -exec rm -f {} \;
-          make download -j16 || make download -j1 V=s
-
-      - name: 构建工具
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        if: ${{ steps.cache-toolchain.outputs.cache-hit != 'true' }}
-        run: |
-          make tools/install -j $(($(nproc)+1)) || make tools/install -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-
-      - name: 构建工具链
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        if: ${{ steps.cache-toolchain.outputs.cache-hit != 'true' }}
-        run: |
-          make toolchain/install -j $(($(nproc)+1)) || make toolchain/install -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-
-      - name: 删除 dl 库
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        if: ${{ steps.cache-toolchain.outputs.cache-hit != 'true' }}
-        run: rm -rf dl
-
-      - name: 准备上传
-        run: |
-          cd $GITHUB_WORKSPACE
-          sudo tar cvpzf /build1_WORKSPACE.tgz *
-          cp $OPENWRT_ROOT_PATH/.config $OPENWRT_ROOT_PATH/build1.config
-          cd $OPENWRT_ROOT_PATH/files
-          tar cvpzf $GITHUB_WORKSPACE/openwrt_files.tgz *
-
-      - name: 上传 build1_WORKSPACE
-        uses: actions/upload-artifact@v4
-        with:
-          name: build1_WORKSPACE-${{ matrix.config }}
-          path: /build1_WORKSPACE.tgz
-
-      - name: 上传 .config
-        uses: actions/upload-artifact@v4
-        with:
-          name: build1_openwrt_config-${{ matrix.config }}
-          path: ${{ env.OPENWRT_ROOT_PATH }}/build1.config
-
-      - name: 上传 files
-        uses: actions/upload-artifact@v4
-        with:
-          name: build1_openwrt_files-${{ matrix.config }}
-          path: openwrt_files.tgz
-
-      - name: 收集日志
-        if: failure()
-        run: |
-          mkdir -p $LOG_PATH/openwrt-logs
-          cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
-          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
-          ls -la $(find $OPENWRT_ROOT_PATH/files/ -type d)  >> $LOG_PATH/files.list
-          if [ -d $OPENWRT_ROOT_PATH/.ccache ];then
-            ls -la $(find $OPENWRT_ROOT_PATH/.ccache -type d)  >> $LOG_PATH/ccache.list
-          fi
-
-      - name: 上传日志
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build1-logs-${{ matrix.config }}
-          path: "${{ env.LOG_PATH }}"
-
-  build-package:
-    runs-on: ubuntu-latest
-    needs: [planning,prepare,build1]
-    strategy:
-      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
-    name: build-package-${{ matrix.config }}
-    steps:
-      - name: 将存储库签出到运行器
-        uses: actions/checkout@v4
-
-      - name: 输出运行器硬件信息
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
-
-      - name: 清理空间
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/clear_space.sh
-
-      - name: 安装编译依赖
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/install_compilation_dependencies.sh
-
-      - name: 合并磁盘
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
-
-      - name: 下载build1_WORKSPACE
-        uses: actions/download-artifact@v4
-        with:
-          name: build1_WORKSPACE-${{ matrix.config }}
-
-      - name: 解压
-        run: |
-          sudo mv $GITHUB_WORKSPACE/build1_WORKSPACE.tgz /build1_WORKSPACE.tgz
-          tar xvpfz /build1_WORKSPACE.tgz  -C $GITHUB_WORKSPACE
-          sudo rm -rf /build1_WORKSPACE.tgz
-          cat build1_ENV
-          cat build1_ENV >> $GITHUB_ENV
-      
-      - name: 缓存
+      - name: 缓存ccache
         uses: actions/cache@v4
-        if: ${{ env.USE_CACHE }}
+        if: ${{ steps.prepare.outputs.use-cache }}
         with:
-          path: ${{ env.OPENWRT_ROOT_PATH }}/.ccache
-          key: build-package-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}-${{ github.run_id }}
+          path: ${{ steps.prepare.outputs.openwrt-path }}/.ccache
+          key: ${{ steps.prepare.outputs.cache-key }}
           restore-keys: |
-            build-package-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
+            ${{ steps.prepare.outputs.cache-restore-key }}
 
-      - name: 环境变量
-        run: env
-
-      - name: 下载 dl 库
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make download -j16
-          find dl -size -1024c -exec ls -l {} \;
-          find dl -size -1024c -exec rm -f {} \;
-          make download -j16 || make download -j1 V=s
-
-      - name: 构建内核
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make target/compile -j $(($(nproc)+1)) || make target/compile -j$(nproc) V=s || make target/compile -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-
-      - name: 编译并生成安装包
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make package/compile -j $(($(nproc)+1)) || make package/compile -j1 V=s
-          make package/install -j $(($(nproc)+1)) || make package/install -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-          du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
-          du -h --max-depth=1 ./build_dir
-          du -h --max-depth=1 ./bin
-
-      - name: 准备 artifact
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          mkdir -p ./artifact/package
-          echo "artifact-/bin" >> $LOG_PATH/cmzj_package.log
-          ls -l ./bin/** >> $LOG_PATH/cmzj_package.log
-          cp -rf $(find ./bin/targets/ -type f -name "*.ipk") ./artifact/package/
-          rm -rf $(find ./bin/targets/ -type d -name "packages")
-          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
-          rm -rf $(find ./artifact/package/ -type f -name "kmod-*")
-
-      - name: 上传 package
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenWrt-package-${{ matrix.config }}
-          path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/package/
-
-      - name: 清理ccache
-        if: ${{ env.USE_CACHE }}
-        run: |
-          echo "清理前"
-          ccache -s 2>/dev/null
-          ccache --max-size 1G 2>/dev/null
-          ccache -c 2>/dev/null
-          echo "清理后"
-          ccache -s 2>/dev/null
-
-      - name: 删除旧缓存
-        run: |
-          set +e
-          gh extension install actions/gh-actions-cache
-
-          oldcacheKeys=$(gh actions-cache list -R $REPO --key build-package-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}- | cut -f 1 )
-          for cacheKey in $oldcacheKeys
-          do
-              gh actions-cache delete $cacheKey -R $REPO --confirm
-          done
+      - name: 编译
+        id: build
+        working-directory: /opt/OpenWrt-K
+        run: python3 -m build_helper --task base-builds --config ${{ matrix.config }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
+          CACHE_HIT: ${{ steps.cache-toolchain.outputs.cache-hit }}
 
-      - name: 收集日志
+      - name: 上传
         if: success() || failure()
-        run: |
-          mkdir -p $LOG_PATH/openwrt-logs
-          cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
-          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
-          if [ -d $OPENWRT_ROOT_PATH/.ccache ];then
-            ls -la $(find $OPENWRT_ROOT_PATH/.ccache -type d)  >> $LOG_PATH/ccache.list
-          fi
+        uses: ./../../../../../opt/OpenWrt-K/.github/action/upload
 
-      - name: 上传日志
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-package-logs-${{ matrix.config }}
-          path: "${{ env.LOG_PATH }}"
-
-  build-Image_Builder:
-    runs-on: ubuntu-latest
-    needs: [planning,prepare,build1]
-    strategy:
-      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
-    name: build-Image_Builder-${{ matrix.config }}
-    steps:
-      - name: 将存储库签出到运行器
-        uses: actions/checkout@v4
-
-      - name: 输出运行器硬件信息
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
-
-      - name: 清理空间
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/clear_space.sh
-
-      - name: 安装编译依赖
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/install_compilation_dependencies.sh
-
-      - name: 合并磁盘
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
-
-      - name: 下载build1_WORKSPACE
-        uses: actions/download-artifact@v4
-        with:
-          name: build1_WORKSPACE-${{ matrix.config }}
-
-      - name: 解压
-        run: |
-          sudo mv $GITHUB_WORKSPACE/build1_WORKSPACE.tgz /build1_WORKSPACE.tgz
-          tar xvpfz /build1_WORKSPACE.tgz  -C $GITHUB_WORKSPACE
-          sudo rm -rf /build1_WORKSPACE.tgz
-          cat build1_ENV
-          cat build1_ENV >> $GITHUB_ENV
-
-      - name: 环境变量
-        run: env
-
-      - name: 缓存
-        uses: actions/cache@v4
-        if: ${{ env.USE_CACHE }}
-        with:
-          path: ${{ env.OPENWRT_ROOT_PATH }}/.ccache
-          key: build-Image_Builder-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}-${{ github.run_id }}
-          restore-keys: |
-            build-Image_Builder-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}
-
-      - name: 加载自定义配置并生成配置文件
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          if [ -n "$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')" ];then
-            kmod_compile_exclude_list=$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//' -e 's/,$//g' -e 's#^#\\(#' -e "s#,#\\\|#g" -e "s/$/\\\)/g" )
-            echo "::notice ::kmod编译排除列表：$(sed -n '/^kmod_compile_exclude_list=/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e "s/=[my]\([,]\{0,1\}\)/\1/g" -e 's/.*=//')"
-          else
-            echo "::warning ::kmod编译排除列表无法获取或为空，这很有可能导致编译失败。"
-          fi
-          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' | sed "s/\($kmod_compile_exclude_list\)=m/\1=n/g" >> .config
-          make defconfig
-          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' | sed "s/\($kmod_compile_exclude_list\)=m/\1=n/g" >> .config
-          make defconfig
-          sed -n  '/^# CONFIG_PACKAGE_kmod/p' .config | sed '/# CONFIG_PACKAGE_kmod is not set/d'|sed 's/# //g'|sed 's/ is not set/=m/g' | sed "s/\($kmod_compile_exclude_list\)=m/\1=n/g" >> .config
-          make defconfig
-          sed -i -n '/CONFIG_PACKAGE_kmod/p' .config
-          echo CONFIG_IB=y >> .config
-          echo CONFIG_IB_STANDALONE=y >> .config
-          cat $GITHUB_WORKSPACE/config/${{ matrix.config }}/{target,image}.config >> $OPENWRT_ROOT_PATH/.config
-          make defconfig
-          sed -i -e  "/^CONFIG_[a-zA-Z0-9]\{1,99\}_IMAGES=y$/s/=y/=cmzjnot/g" -e "/^CONFIG_GRUB_IMAGES=cmzjnot$/s/=cmzjnot/=y/g" -e "/^CONFIG_[a-zA-Z0-9]\{1,99\}_IMAGES=cmzjnot$/s/=cmzjnot/=n/g" .config
-          sed -i -e  "/^CONFIG_TARGET_ROOTFS_TARGZ=y$/s/=y/=n/g" .config
-          sed -i -e  "/^CONFIG_TARGET_ROOTFS_CPIOGZ=y$/s/=y/=n/g" .config
-          make defconfig
-          if [ "$(sed -n "/$kmod_compile_exclude_list/p" .config| grep -c "=m$")" -ne '0' ];then
-            echo "::error ::检测到有kmod被kmod排除列表匹配但仍然设置为编译为模块(=m),到build-Image_Builder的加载自定义配置并生成配置文件步骤查看详情"
-            sed -n "/$kmod_compile_exclude_list/p" .config| grep "=m$"
-          fi
-          if [ "$(sed -n "/$kmod_compile_exclude_list/p" .config| grep -c "=y$")" -ne '0' ];then
-            echo "::warning ::检测到有kmod被配置为编译进固件(=y)同时在kmod排除列表中,到build-Image_Builder的加载自定义配置并生成配置文件步骤查看详情"
-            sed -n "/$kmod_compile_exclude_list/p" .config| grep "=y$"
-          fi
-          if [  ${{ env.USE_CACHE }} = "true" ];then
-            echo "::notice ::使用缓存"
-            echo "CONFIG_DEVEL=y" >> $OPENWRT_ROOT_PATH/.config
-            echo "CONFIG_CCACHE=y" >> $OPENWRT_ROOT_PATH/.config
-            make defconfig
-          fi
-          echo "以下是配置差异文件的内容"
-          ./scripts/diffconfig.sh
-
-      - name: 下载 dl 库
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make download -j16
-          find dl -size -1024c -exec ls -l {} \;
-          find dl -size -1024c -exec rm -f {} \;
-          make download -j16 || make download -j1 V=s
-
-      - name: 构建内核
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make target/compile -j $(($(nproc)+1)) || make target/compile -j$(nproc) V=s || make target/compile -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-
-      - name: 清理包
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make package/cleanup -j $(($(nproc)+1)) || make package/cleanup -j$(nproc) V=s || make package/cleanup -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-
-      - name: 编译并生成安装包
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make package/compile -j $(($(nproc)+1)) || make package/compile -j1 V=s
-          make package/install -j $(($(nproc)+1)) || make package/install -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-          du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
-          du -h --max-depth=1 ./build_dir
-          du -h --max-depth=1 ./bin
-
-      - name: 制作Image Builder包
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make target/install -j $(($(nproc)+1)) || make target/install -j$(nproc) V=s || make target/install -j1 V=s
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-          du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
-          du -h --max-depth=1 ./build_dir
-          du -h --max-depth=1 ./bin
-
-      - name: 制作包索引、镜像概述信息并计算校验和
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          make package/index -j $(($(nproc)+1)) || make package/index -j$(nproc) V=s || make package/index -j1 V=s
-          make json_overview_image_info
-          make checksum
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-          du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
-          du -h --max-depth=1 ./build_dir
-          du -h --max-depth=1 ./bin
-
-      - name: 准备 artifact
-        working-directory: ${{ env.OPENWRT_ROOT_PATH }}
-        run: |
-          mkdir -p ./artifact/{package,kmod,buildinfo}
-          echo "artifact-/bin" >> $LOG_PATH/cmzj_package.log
-          ls -l ./bin/** >> $LOG_PATH/cmzj_package.log
-          ls -l ./bin/targets/${{ matrix.target }}/${{ matrix.subtarget }}/** >> $LOG_PATH/Image_Builder-bin.log
-          cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
-          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
-          cp -rf $(find ./bin/targets/ -type f -name "*.ipk") ./artifact/package/
-          cp -rf $(find ./artifact/package/ -type f -name "kmod-*") ./artifact/kmod/
-
-      - name: 上传 kmod
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenWrt-kmod-${{ matrix.config }}
-          path: ${{ env.OPENWRT_ROOT_PATH }}/artifact/kmod/
-
-      - name: 上传 Image Builder
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenWrt-Image_Builder-${{ matrix.config }}
-          path: ${{ env.OPENWRT_ROOT_PATH }}/bin/targets/${{ matrix.target }}/${{ matrix.subtarget }}/openwrt-imagebuilder-${{ matrix.target }}-${{ matrix.subtarget }}.Linux-x86_64.tar.xz
-
-      - name: 清理ccache
-        if: ${{ env.USE_CACHE }}
-        run: |
-          echo "清理前"
-          ccache -s 2>/dev/null
-          ccache --max-size 1G 2>/dev/null
-          ccache -c 2>/dev/null
-          echo "清理后"
-          ccache -s 2>/dev/null
-
-      - name: 删除旧缓存
-        run: |
-          set +e
-          gh extension install actions/gh-actions-cache
-
-          oldcacheKeys=$(gh actions-cache list -R $REPO --key build-Image_Builder-${{ matrix.config }}-${{ env.OPENWRT_TAG_BRANCH }}-${{ matrix.target }}-${{ matrix.subtarget }}- | cut -f 1 )
-          for cacheKey in $oldcacheKeys
-          do
-              gh actions-cache delete $cacheKey -R $REPO --confirm
-          done
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-
-      - name: 收集日志
-        if: success() || failure()
-        run: |
-          mkdir -p $LOG_PATH/openwrt-logs
-          cp -RT $OPENWRT_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
-          cp $OPENWRT_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
-          if [ -d $OPENWRT_ROOT_PATH/.ccache ];then
-            ls -la $(find $OPENWRT_ROOT_PATH/.ccache -type d)  >> $LOG_PATH/ccache.list
-          fi
-
-      - name: 上传日志
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-Image_Builder-logs-${{ matrix.config }}
-          path: "${{ env.LOG_PATH }}"
-
-  build-Image:
-    runs-on: ubuntu-latest
-    needs:  [planning,prepare,build1,build-package,build-Image_Builder]
-    strategy:
-      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
-    name: build-Image-${{ matrix.config }}
-    steps:
-      - name: 将存储库签出到运行器
-        uses: actions/checkout@v4
-
-      - name: 输出运行器硬件信息
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/hardware_info.sh
-
-      - name: 清理空间
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/clear_space.sh
-
-      - name: 安装编译依赖
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/install_compilation_dependencies.sh
-
-      - name: 合并磁盘
-        run: |
-          bash $GITHUB_WORKSPACE/scripts/merge_disk.sh
-
-      - name: 将存储库签出到运行器
-        uses: actions/checkout@v4
-
-      - name: 下载Image Builder
-        uses: actions/download-artifact@v4
-        with:
-          name: OpenWrt-Image_Builder-${{ matrix.config }}
-
-      - name: 下载包
-        uses: actions/download-artifact@v4
-        with:
-          name: OpenWrt-package-${{ matrix.config }}
-          path: ${{ github.workspace }}/package/
-
-      - name: 下载build1配置文件
-        uses: actions/download-artifact@v4
-        with:
-          name: build1_openwrt_config-${{ matrix.config }}
-
-      - name: 下载 files
-        uses: actions/download-artifact@v4
-        with:
-          name: build1_openwrt_files-${{ matrix.config }}
-
-      - name: 建立日志文件夹
-        run: |
-          cd $GITHUB_WORKSPACE
-          mkdir -p log
-          cd log
-          export LOG_PATH="$(pwd)"
-          echo "LOG_PATH=$LOG_PATH" >> $GITHUB_ENV
-
-      - name: 解压
-        run: |
-          tar -xvJf openwrt-imagebuilder-${{ matrix.target }}-${{ matrix.subtarget }}.Linux-x86_64.tar.xz
-          cd openwrt-imagebuilder-${{ matrix.target }}-${{ matrix.subtarget }}.Linux-x86_64
-          export IMAGE_BUILDER_ROOT_PATH="$(pwd)"
-          echo "IMAGE_BUILDER_ROOT_PATH=$IMAGE_BUILDER_ROOT_PATH" >> $GITHUB_ENV
-          mkdir -p $IMAGE_BUILDER_ROOT_PATH/files
-          cd $GITHUB_WORKSPACE
-          tar xvpfz $GITHUB_WORKSPACE/openwrt_files.tgz  -C $IMAGE_BUILDER_ROOT_PATH/files
-
-      - name: 环境变量
-        run: env
-
-      - name: 复制package到build-Image_Builder
-        run: |
-          cd $GITHUB_WORKSPACE/package/
-          rm -rf $(ls $IMAGE_BUILDER_ROOT_PATH/packages)
-          rm -rf kernel_*
-          cd $GITHUB_WORKSPACE
-          cp $GITHUB_WORKSPACE/package/* $IMAGE_BUILDER_ROOT_PATH/packages/
-
-      - name: 制作包列表
-        run: sed -n "/^CONFIG_PACKAGE_[-a-zA-Z0-9]\{1,99\}=y$/p" build1.config | sed -e "s/CONFIG_PACKAGE_//g" -e "s/=y//g" | sed ':label;N;s/\n/ /;b label' > package.list
-
-      - name: 覆盖配置文件
-        run: |
-          rm -rf $IMAGE_BUILDER_ROOT_PATH/.config
-          cat build1.config > $IMAGE_BUILDER_ROOT_PATH/.config
-
-      - name: 镜像信息
-        working-directory: ${{ env.IMAGE_BUILDER_ROOT_PATH }}
-        run: |
-          echo "可用目标配置文件的列表"
-          make info
-          echo "安装的包列表"
-          make manifest PACKAGES="$(cat $GITHUB_WORKSPACE/package.list)"
-
-      - name: 构建镜像
-        working-directory: ${{ env.IMAGE_BUILDER_ROOT_PATH }}
-        run: |
-          make image FILES="$IMAGE_BUILDER_ROOT_PATH/files" PACKAGES="$(cat $GITHUB_WORKSPACE/package.list)"
-          echo "======================="
-          echo "空间使用情况:"
-          echo "======================="
-          df --total  -Th
-          echo "======================="
-          du -h --max-depth=1 ./ --exclude=bin
-          du -h --max-depth=1 ./bin
-
-      - name: 准备 artifact
-        working-directory: ${{ env.IMAGE_BUILDER_ROOT_PATH }}
-        run: |
-          mkdir -p ./artifact/buildinfo
-          echo "artifact-/bin" >> $LOG_PATH/cmzj_package.log
-          ls -l ./bin/targets/${{ matrix.target }}/${{ matrix.subtarget }}/** >> $LOG_PATH/Image_Builder-bin.log
-          cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
-
-      - name: 上传 firmware
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenWrt-firmware-${{ matrix.config }}
-          path: ${{ env.IMAGE_BUILDER_ROOT_PATH }}/bin/targets/
-
-      - name: 上传 buildinfo
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenWrt-buildinfo-${{ matrix.config }}
-          path: ${{ env.IMAGE_BUILDER_ROOT_PATH }}/artifact/buildinfo/
-
-      - name: 清理缓存
-        if: ${{ env.USE_CACHE }}
-        run: |
-          echo "清理前"
-          ccache -v 2>/dev/null
-          ccache --max-size 1G 2>/dev/null
-          ccache -c 2>/dev/null
-          echo "清理后"
-          ccache -v 2>/dev/null
-
-      - name: 收集日志
-        if: success() || failure()
-        run: |
-          mkdir -p $LOG_PATH/openwrt-logs
-          cp -r $IMAGE_BUILDER_ROOT_PATH/logs $LOG_PATH/openwrt-logs || echo "没有openwrt/logs"
-          cp $IMAGE_BUILDER_ROOT_PATH/.config $LOG_PATH/openwrt.config || echo "没有openwrt/.config"
-
-      - name: 上传日志
-        if: success() || failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-Image-${{ matrix.target }}-${{ matrix.subtarget }}-logs
-          path: "${{ env.LOG_PATH }}"
-
-  upload:
-    needs: [planning,prepare,build1,build-package,build-Image_Builder,build-Image]
-    strategy:
-      matrix: ${{ fromJSON(needs.planning.outputs.matrix) }}
-    name: upload-${{ matrix.config }}
+  build-packages:
     runs-on: ubuntu-22.04
+    needs: [prepare,base-builds]
+    name: 构建软件包(${{ matrix.name }})
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
-      - name: 将存储库签出到运行器
-        uses: actions/checkout@v4
 
-      - name: 建立工作文件夹
-        run: |
-          cd $GITHUB_WORKSPACE
-          mkdir -p upload packagecompare
-          export UPLOAD_ROOT_PATH="$(pwd)/upload"
-          export PACKAGECOMPARE_ROOT_PATH="$(pwd)/packagecompare"
-          echo "UPLOAD_ROOT_PATH=$UPLOAD_ROOT_PATH" >> $GITHUB_ENV
-          echo "PACKAGECOMPARE_ROOT_PATH=$PACKAGECOMPARE_ROOT_PATH" >> $GITHUB_ENV
+      - uses: actions/checkout@v4
+      - name: 建立环境
+        uses: ./.github/action/prepare
 
-      - name: 初始化环境
-        run: |
-          sudo -E apt update
-          sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget || sudo -E apt install -y git aria2 zip bzip2 curl rsync unzip wget
-          sudo timedatectl set-timezone "Asia/Shanghai"
+      - name: 准备编译
+        id: prepare
+        working-directory: /opt/OpenWrt-K
+        run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
 
-      - name: 生成 release 所需变量
-        working-directory: ${{ env.UPLOAD_ROOT_PATH }}
-        run: |
-          export OPENWRT_TAG_BRANCH="$(sed -n '/openwrt_tag\/branch/p' $GITHUB_WORKSPACE/config/${{ matrix.config }}/OpenWrt-K/compile.config | sed -e 's/.*=//')"
-          echo "OPENWRT_TAG_BRANCH=$OPENWRT_TAG_BRANCH" >> $GITHUB_ENV
-          export RELEASE_NAME="OpenWrt-K_V${{ needs.planning.outputs.starttime }} (${{ matrix.target }}-${{ matrix.subtarget }})-[$OPENWRT_TAG_BRANCH]"
-          echo "RELEASE_NAME=$RELEASE_NAME" >> $GITHUB_ENV
-          export RELEASE_TAG_NAME="v${{ needs.planning.outputs.starttime }}(${{ matrix.target }}-${{ matrix.subtarget }})-($OPENWRT_TAG_BRANCH)"
-          echo "RELEASE_TAG_NAME=$RELEASE_TAG_NAME" >> $GITHUB_ENV
-
-      - name: 下载固件
-        uses: actions/download-artifact@v4
+      - name: 缓存ccache
+        uses: actions/cache@v4
+        if: ${{ steps.prepare.outputs.use-cache }}
         with:
-          name: OpenWrt-firmware-${{ matrix.config }}
-          path: ${{ env.UPLOAD_ROOT_PATH }}
+          path: ${{ steps.prepare.outputs.openwrt-path }}/.ccache
+          key: ${{ steps.prepare.outputs.cache-key }}
+          restore-keys: |
+            ${{ steps.prepare.outputs.cache-restore-key }}
 
-      - name: 下载包
-        uses: actions/download-artifact@v4
+      - name: 编译
+        id: build
+        working-directory: /opt/OpenWrt-K
+        run: python3 -m build_helper --task build_packages --config ${{ matrix.config }}
+
+      - name: 上传
+        if: success() || failure()
+        uses: ./../../../../../opt/OpenWrt-K/.github/action/upload
+
+  build-ImageBuilder:
+    runs-on: ubuntu-22.04
+    needs: [prepare,base-builds]
+    name: 构建Image Builder与内核模块(${{ matrix.name }})
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+
+      - uses: actions/checkout@v4
+      - name: 建立环境
+        uses: ./.github/action/prepare
+
+      - name: 准备编译
+        id: prepare
+        working-directory: /opt/OpenWrt-K
+        run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
+
+      - name: 缓存ccache
+        uses: actions/cache@v4
+        if: ${{ steps.prepare.outputs.use-cache }}
         with:
-          name: OpenWrt-package-${{ matrix.config }}
-          path: ${{ env.UPLOAD_ROOT_PATH }}/package
+          path: ${{ steps.prepare.outputs.openwrt-path }}/.ccache
+          key: ${{ steps.prepare.outputs.cache-key }}
+          restore-keys: |
+            ${{ steps.prepare.outputs.cache-restore-key }}
 
-      - name: 下载内核模块
-        uses: actions/download-artifact@v4
-        with:
-          name: OpenWrt-kmod-${{ matrix.config }}
-          path: ${{ env.UPLOAD_ROOT_PATH }}/kmod
+      - name: 编译
+        id: build
+        working-directory: /opt/OpenWrt-K
+        run: python3 -m build_helper --task build_image_builder --config ${{ matrix.config }}
 
-      - name: 整理包
-        working-directory: ${{ env.UPLOAD_ROOT_PATH }}
-        run: |
-          mkdir package-upload
-          zip -r ./package-upload/package.zip package
-          zip -r ./package-upload/allkmod.zip kmod
+      - name: 上传
+        if: success() || failure()
+        uses: ./../../../../../opt/OpenWrt-K/.github/action/upload
 
-      - name: 整理包生成 release body
-        run: |
-          echo 编译完成于$(date +"%Y-%m-%d %H:%M") >> $UPLOAD_ROOT_PATH/release.txt
-          echo "编译的openwrt版本/分支: " $OPENWRT_TAG_BRANCH >> $UPLOAD_ROOT_PATH/release.txt
-          echo "编译使用的配置: " ${{ matrix.config }} >> $UPLOAD_ROOT_PATH/release.txt
-          latest_ver="$(curl -s -L --retry 6 https://api.github.com/repos/${{ github.repository }}/releases 2>/dev/null | grep -E 'tag_name' | grep -E '(${{ matrix.target }}-${{ matrix.subtarget }})' | grep -E "($OPENWRT_TAG_BRANCH)" | sed -e 's/    "tag_name": "//' -e 's/",//' | sed -n '1p')"
-          echo latest_ver=$latest_ver
-          rm -rf $PACKAGECOMPARE_ROOT_PATH/*
-          curl -s -L --retry 6 https://github.com/${{ github.repository }}/releases/download/${latest_ver}/allkmod.zip -o $PACKAGECOMPARE_ROOT_PATH/allkmod.zip -nv  || exit 0
-          curl -s -L --retry 6 https://github.com/${{ github.repository }}/releases/download/${latest_ver}/package.zip -o $PACKAGECOMPARE_ROOT_PATH/package.zip -nv  || exit 0
-          cd $PACKAGECOMPARE_ROOT_PATH
-          unzip package.zip || exit 0
-          unzip allkmod.zip || exit 0
-          mv package oldpackage
-          mv kmod oldkmod
-          cp -rf oldkmod/* oldpackage/
-          ls $PACKAGECOMPARE_ROOT_PATH/oldpackage/|sort| uniq >oldpackage.list
-          sed -i -e "s/_${{ matrix.targetarchpackages }}.ipk//g" -e "s/_all.ipk//g" oldpackage.list
-          rm -rf $PACKAGECOMPARE_ROOT_PATH/package.zip $PACKAGECOMPARE_ROOT_PATH/allkmod.zip
-          cp -f $UPLOAD_ROOT_PATH/package-upload/package.zip $PACKAGECOMPARE_ROOT_PATH/package.zip
-          cp -f $UPLOAD_ROOT_PATH/package-upload/allkmod.zip $PACKAGECOMPARE_ROOT_PATH/allkmod.zip
-          unzip package.zip
-          unzip allkmod.zip
-          mv package newpackage
-          mv kmod newkmod
-          cp -rf newkmod/* newpackage/
-          ls $PACKAGECOMPARE_ROOT_PATH/newpackage/|sort| uniq >newpackage.list
-          sed -i -e "s/_${{ matrix.targetarchpackages }}.ipk//g" -e "s/_all.ipk//g" newpackage.list && echo "list complete"
-          echo "内核版本: "$(sed -n '/kernel_/p' newpackage.list | sed -e 's/kernel_//') >> $UPLOAD_ROOT_PATH/release.txt
-          echo "包更改/版本升级列表" >> $UPLOAD_ROOT_PATH/release.txt
-          diff oldpackage.list newpackage.list -y -B -b |grep -E '[\|><]' >diff.temp && echo "Compare complete" || echo "没有包新增删除或版本升级" >> $UPLOAD_ROOT_PATH/release.txt
-          sed -e "/</s/^/delete:/g" -e "/|/s/^/update:/g" -e "/>/s/^/Add:/g" -e 's/[[:space:]]//g' -e 's/<//g' -e 's/>//g' -e 's/|/ > /g' -e 's/> [a-zA-Z0-9\-]*_/> /g' -e 's/_/ /g' diff.temp >> $UPLOAD_ROOT_PATH/release.txt || echo "没有包新增删除或版本升级"
+  build-images-releases:
+    runs-on: ubuntu-22.04
+    needs: [prepare,base-builds,build-ImageBuilder,build-packages]
+    name: 构建镜像并发布(${{ matrix.name }})
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
 
-      - name: 上传固件到 Release
-        id: firmware-release
-        uses: softprops/action-gh-release@master
-        with:
-          name: ${{ env.RELEASE_NAME }}
-          tag_name: ${{ env.RELEASE_TAG_NAME }}
-          files: |
-            ${{ env.UPLOAD_ROOT_PATH }}/${{ matrix.target }}/${{ matrix.subtarget }}/*
-            ${{ env.UPLOAD_ROOT_PATH }}/package-upload/*
-          body_path: ${{ env.UPLOAD_ROOT_PATH }}/release.txt
+      - uses: actions/checkout@v4
+      - name: 建立环境
+        uses: ./.github/action/prepare
 
-      - name: 删除旧的Releases
-        uses: dev-drprasad/delete-older-releases@v0.3.2
-        with:
-          keep_latest: 10
-          delete_tags: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 准备构建
+        id: prepare
+        working-directory: /opt/OpenWrt-K
+        run: python3 -m build_helper --task build-prepare --config ${{ matrix.config }}
+
+      - name: 构建
+        id: build
+        working-directory: /opt/OpenWrt-K
+        run: python3 -m build_helper --task build_images_releases --config ${{ matrix.config }}
+
+      - name: 上传
+        if: success() || failure()
+        uses: ./../../../../../opt/OpenWrt-K/.github/action/upload

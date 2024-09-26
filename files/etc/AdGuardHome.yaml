@@ -6,7 +6,7 @@ http:
   session_ttl: 720h
 users:
   - name: root
-    password: $2y$10$GyigWcIgiGBggTCpAvR3C.BLdGcnL6lpI57MK3q//sv9xobIYKLCa
+    password: $2y$10$qAIcbPtZYElYD05MSRyqqOTYulNn6XgytFKtNkBTjHl2mIxFMcPI.
 auth_attempts: 5
 block_auth_min: 15
 http_proxy: ""
@@ -34,8 +34,7 @@ dns:
     - 101.226.4.6
     - 180.76.76.76
   fallback_dns: []
-  all_servers: true
-  fastest_addr: false
+  upstream_mode: parallel
   fastest_timeout: 1s
   allowed_clients: []
   disallowed_clients: []
@@ -70,6 +69,8 @@ dns:
   dns64_prefixes: []
   serve_http3: false
   use_http3_upstreams: false
+  serve_plain_dns: true
+  hostsfile_enabled: true
 tls:
   enabled: false
   server_name: ""
@@ -86,12 +87,14 @@ tls:
   private_key_path: ""
   strict_sni_check: false
 querylog:
+  dir_path: ""
   ignored: []
   interval: 168h
   size_memory: 1000
   enabled: true
   file_enabled: true
 statistics:
+  dir_path: ""
   ignored: []
   interval: 2160h
   enabled: true
@@ -124,14 +127,6 @@ filters:
     url: https://gist.githubusercontent.com/Ewpratten/a25ae63a7200c02c850fede2f32453cf/raw/b9318009399b99e822515d388b8458557d828c37/hosts-yt-ads
     name: Youtube去广告
     id: 1677875720
-  - enabled: true
-    url: https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/lazy.txt
-    name: Adbyby-lazy
-    id: 1677875721
-  - enabled: true
-    url: https://raw.githubusercontent.com/adbyby/xwhyc-rules/master/video.txt
-    name: Adbyby-video
-    id: 1677875722
   - enabled: true
     url: https://raw.githubusercontent.com/banbendalao/ADgk/master/ADgk.txt
     name: ADgk
@@ -234,6 +229,7 @@ clients:
     hosts: true
   persistent: []
 log:
+  enabled: true
   file: ""
   max_backups: 0
   max_size: 100
@@ -245,4 +241,4 @@ os:
   group: ""
   user: ""
   rlimit_nofile: 0
-schema_version: 27
+schema_version: 28

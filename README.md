@@ -67,14 +67,12 @@
 1. 其他部分软件包：  
   ethtool-full：网卡工具用于查询及设置网卡参数  
   sudo：sudo命令支持  
-  htop：系统监控与进程管理软件  
-  ipv6helper： ipv6-helper 脚本  
+  htop：系统监控与进程管理软件    
   cfdisk：磁盘分区工具  
   bc：一个命令行计算器  
   coremark：cpu跑分测试  
   pciutils：PCI 设备配置工具  
   usbutils：USB 设备列出工具  
-  ~~[cloudflared](https://github.com/cloudflare/cloudflared)：Cloudflare 隧道客户端~~[暂不支持go 1.21](https://github.com/cloudflare/cloudflared/issues/1054)
 
 1. LuCI主题：[Argon](https://github.com/jerrykuku/luci-theme-argon)
 
@@ -157,10 +155,9 @@
 #### ZeroTier虚拟局域网
 
 ![概览](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/10.webp)
-
 ## 更新日志
 
-2023.7.27： 添加多配置编译支持、移动README部分内容到wiki
+见[CHANGELOG](CHANGELOG.md)
 
 ## 感谢
 

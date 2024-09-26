@@ -1,0 +1,5 @@
+actions-toolkit
+pygit2
+requests
+pySmartDL
+pyyaml

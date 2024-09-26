@@ -1,0 +1,47 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 159
+
+[tool.ruff.lint]
+select = [
+    "ALL",
+
+    "CPY001",
+]
+
+ignore = [
+    "ANN401",  # any-type
+    "BLE001",  # blind-except
+    "D100",  # undocumented-public-module
+    "D101",  # undocumented-public-class
+    "D102",  # undocumented-public-method
+    "D103",  # undocumented-public-function
+    "D104",  # undocumented-public-package
+    "D105",  # undocumented-magic-method
+    "D107",  # undocumented-public-init
+    "D400",  # ends-in-period
+    "D415",  # ends-in-punctuation
+    "ERA001",  # commented-out-code
+    "PLR2004",  # magic-value-comparison
+    "PLW1510",  # subprocess-run-without-check
+    "Q000",  # bad-quotes-inline-string
+    "RUF001",  # ambiguous-unicode-character-string
+    "S603",  # subprocess-without-shell-equals-true
+    "S607",  # start-process-with-partial-path
+    "N802",  # invalid-function-name
+    "N999",  # invalid-name
+
+    "PTH",  # flake8-use-pathlib
+    "FBT",  # flake8-boolean-trap
+]
+preview = true
+explicit-preview-rules = true
+
+[tool.ruff.lint.pylint]
+max-branches = 25  # PLR0912
+max-returns = 15  # PLR0911
+max-statements = 75  # PLR0915
+max-args = 10  # PLR0913
+
+[tool.ruff.lint.mccabe]
+max-complexity = 30  # C901
