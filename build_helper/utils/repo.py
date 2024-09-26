@@ -101,10 +101,17 @@ def new_release(cfg: dict, assets: list[str], body: str) -> None:
         release.upload_asset(asset)
 
     try:
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "Authorization": f'Bearer {token}',
+        }
         for release in releases:
             if release.tag_name.endswith(tag_suffix) and release.tag_name != tag_name:
                 logger.info("删除旧版本: %s", release.tag_name)
                 release.delete_release()
+                requests.delete(f"https://api.github.com/repos/{user_repo}/git/refs/tags/{release.tag_name}", headers=headers, timeout=10)
+
     except Exception:
         logger.exception("删除旧版本失败")
 
