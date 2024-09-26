@@ -17,7 +17,7 @@ from .utils.logger import logger
 from .utils.network import dl2, get_gh_repo_last_releases, request_get, wait_dl_tasks
 from .utils.openwrt import OpenWrt
 from .utils.paths import paths
-from .utils.repo import compiler, user_repo, get_release_suffix
+from .utils.repo import compiler, get_release_suffix, user_repo
 from .utils.upload import uploader
 from .utils.utils import parse_config
 
@@ -31,7 +31,7 @@ def parse_configs() -> dict[str, dict[str, Any]]:
     configs: dict[str, dict] = {}
     for name, path in paths.configs.items():
         logger.info("解析配置: %s", name)
-        configs[name] = {"path": path}
+        configs[name] = {"path": path, "name": name}
         k_config_path = os.path.join(path, "OpenWrt-K")
         if not os.path.isdir(k_config_path):
             msg = f"未找到配置{name}的openwrt文件夹: {k_config_path}"
@@ -84,7 +84,6 @@ def parse_configs() -> dict[str, dict[str, Any]]:
 def get_matrix(configs: dict[str, dict]) -> str:
     matrix = {"include": []}
     for name, config in configs.items():
-        config["name"] = name
         matrix["include"].append({"name": name, "config": gzip.compress(json.dumps(config, separators=(',', ':')).encode("utf-8")).hex().upper()})
     return json.dumps(matrix)
 
