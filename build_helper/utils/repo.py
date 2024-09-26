@@ -63,7 +63,7 @@ def del_cache(key_prefix: str) -> None:
         logger.error('Failed to get caches list')
 
 def new_release(cfg: dict, assets: list[str], body: str) -> None:
-    release_suffix = f"({cfg["target"]}-{cfg["subtarget"]})-[{cfg["compile"]["openwrt_tag/branch"]}]-{cfg["name"]}"
+    release_suffix = f"({cfg["target"]}-{cfg["subtarget"]})-[{cfg["compile"]["openwrt_tag/branch"]}]"
     tag_suffix = f"({cfg["target"]}-{cfg["subtarget"]})-({cfg["compile"]["openwrt_tag/branch"]})-{cfg["name"]}"
     f_release_name = "v" + datetime.now(timezone(timedelta(hours=8))).strftime('%Y.%m.%d') + "-{n}" + release_suffix
     f_tag_name = "v" + datetime.now(timezone(timedelta(hours=8))).strftime('%Y.%m.%d') + "-{n}" + tag_suffix
@@ -106,7 +106,7 @@ def new_release(cfg: dict, assets: list[str], body: str) -> None:
 
 
 def match_releases(cfg: dict) -> github.GitRelease.GitRelease | None:
-    suffix = f"({cfg["target"]}-{cfg["subtarget"]})-[{cfg["compile"]["openwrt_tag/branch"]}]-{cfg["name"]}"
+    suffix = f"({cfg["target"]}-{cfg["subtarget"]})-({cfg["compile"]["openwrt_tag/branch"]})-{cfg["name"]}"
 
     releases = repo.get_releases()
 
