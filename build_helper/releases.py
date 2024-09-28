@@ -72,7 +72,7 @@ def releases(cfg: dict) -> None:
 
                 for pkg, version in current_packages.items():
                     if pkg in old_packages:
-                        if old_packages[pkg] != version:
+                        if old_packages[pkg] != version and not pkg.startswith("luci-i18n-"):
                             changelog += f"更新: {pkg} {old_packages[pkg]} -> {version}\n"
                     else:
                         changelog += f"新增: {pkg} {version}\n"
@@ -80,7 +80,7 @@ def releases(cfg: dict) -> None:
                     if pkg not in current_packages:
                         changelog += f"移除: {pkg} {version}\n"
 
-        changelog = "更新日志:\n" + changelog if changelog else "无任何软件包更新"
+            changelog = "更新日志:\n" + changelog if changelog else "无任何软件包更新"
 
         body = f"编译完成于: {datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M:%S')}\n"
         body += f"使用的配置: {cfg['name']}\n"
