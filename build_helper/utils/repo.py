@@ -25,6 +25,13 @@ compiler = context.repo.owner
 if user_info := gh_api_request(f"https://api.github.com/users/{compiler}", token):
     compiler = user_info.get("name", compiler)
 
+def get_current_commit() -> str:
+    current_repo = pygit2.Repository(paths.openwrt_k)
+    head_commit = current_repo.head.target
+    if isinstance(head_commit, pygit2.Oid):
+        head_commit = head_commit.raw.hex()
+    return head_commit
+
 def dl_artifact(name: str, path: str) -> str:
     for artifact in repo.get_artifacts():
         if artifact.workflow_run.id == context.run_id and artifact.name == name:
@@ -83,10 +90,7 @@ def new_release(cfg: dict, assets: list[str], body: str) -> None:
             break
         i += 1
 
-    current_repo = pygit2.Repository(paths.openwrt_k)
-    head_commit = current_repo.head.target
-    if isinstance(head_commit, pygit2.Oid):
-        head_commit = head_commit.raw.hex()
+    head_commit = get_current_commit()
 
     logger.info("创建新发布: %s", release_name)
     release = repo.create_git_tag_and_release(tag_name,
