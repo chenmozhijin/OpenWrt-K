@@ -126,6 +126,8 @@ def base_builds(cfg: dict) -> None:
         openwrt.make("tools/install")
         logger.info("开始编译toolchain...")
         openwrt.make("toolchain/install")
+        logger.info("正在清理...")
+        openwrt.make("clean")
 
     logger.info("下载编译内核所需源码...")
     openwrt.download_source("target/download")

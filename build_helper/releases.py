@@ -5,12 +5,14 @@ import os
 import shutil
 from datetime import datetime, timedelta, timezone
 
+from actions_toolkit.github import Context
+
 from .utils.logger import logger
 from .utils.network import request_get
 from .utils.openwrt import ImageBuilder
 from .utils.paths import paths
-from .utils.repo import dl_artifact, match_releases, new_release, user_repo, get_current_commit, repo
-from actions_toolkit.github import Context
+from .utils.repo import dl_artifact, get_current_commit, match_releases, new_release, repo, user_repo
+
 
 def releases(cfg: dict) -> None:
     """发布到 GitHub"""
