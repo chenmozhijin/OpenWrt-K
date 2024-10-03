@@ -9,7 +9,7 @@ from actions_toolkit.github import Context
 
 from .utils.logger import logger
 from .utils.network import request_get
-from .utils.openwrt import ImageBuilder
+from .utils.openwrt import ImageBuilder, OpenWrt
 from .utils.paths import paths
 from .utils.repo import dl_artifact, get_current_commit, match_releases, new_release, repo, user_repo
 
@@ -30,6 +30,7 @@ def releases(cfg: dict) -> None:
     tmpdir.cleanup()
 
     ib = ImageBuilder(os.path.join(paths.workdir, "ImageBuilder"))
+    openwrt = OpenWrt(os.path.join(paths.workdir, "openwrt"))
     target, subtarget = ib.get_target()
     if target is None or subtarget is None:
         msg = "无法获取target信息"
@@ -66,6 +67,8 @@ def releases(cfg: dict) -> None:
     try:
         changelog = ""
         if release := match_releases(cfg):
+            packages = openwrt.get_packageinfos()
+
             old_manifest = None
             for asset in release.get_assets():
                 if asset.name.endswith(".manifest"):
@@ -74,15 +77,16 @@ def releases(cfg: dict) -> None:
             if old_manifest and current_packages:
                 old_packages = {line.split(" - ")[0]: line.split(" - ")[1] for line in old_manifest.splitlines()}
 
-                for pkg, version in current_packages.items():
-                    if pkg in old_packages:
-                        if old_packages[pkg] != version and not pkg.startswith("luci-i18n-"):
-                            changelog += f"更新: {pkg} {old_packages[pkg]} -> {version}\n"
+                for pkg_name, version in current_packages.items():
+                    pkg = packages.get(pkg_name)
+                    if pkg_name in old_packages:
+                        if old_packages[pkg_name] != version and pkg and pkg["version"] != "x":
+                            changelog += f"更新: {pkg_name} {old_packages[pkg_name]} -> {version}\n"
                     else:
-                        changelog += f"新增: {pkg} {version}\n"
-                for pkg, version in old_packages.items():
-                    if pkg not in current_packages:
-                        changelog += f"移除: {pkg} {version}\n"
+                        changelog += f"新增: {pkg_name} {version}\n"
+                for pkg_name, version in old_packages.items():
+                    if pkg_name not in current_packages:
+                        changelog += f"移除: {pkg_name} {version}\n"
 
             changelog = "更新日志:\n" + changelog if changelog else "无任何软件包更新"
 
