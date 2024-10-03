@@ -1,5 +1,6 @@
 #!/bin/sh
-#   Copyright (C) 2023-2024  沉默の金
+# SPDX-FileCopyrightText: Copyright (c) 2023-2024 沉默の金 <cmzj@cmzj.org>
+# SPDX-License-Identifier: MIT
 
 trap 'rm -rf "$TMPDIR"' EXIT
 TMPDIR=$(mktemp -d) || exit 1
@@ -126,6 +127,7 @@ update_rule(){
         cd $TMPDIR/update/rule/openclash
         curl -s -L --retry 3 https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/files/etc/openclash/rule_provider/ProxyRule-chenmozhijin.yaml -o ProxyRule-chenmozhijin.yaml || download_failed
         curl -s -L --retry 3 https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/files/etc/openclash/rule_provider/DirectRule-chenmozhijin.yaml -o DirectRule-chenmozhijin.yaml || download_failed
+        curl -s -L --retry 3 https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/files/etc/openclash/rule_provider/HKMOTWRule-chenmozhijin.yaml -o HKMOTWRule-chenmozhijin.yaml || download_failed
         if [ "$(pidof clash)" ] ;then
             echo "检测到clash启动，关闭openclash"
             /etc/init.d/openclash stop
@@ -135,9 +137,13 @@ update_rule(){
             if [ "$(grep -c "^直连规则(by 沉默の金)" /usr/share/openclash/res/rule_providers.list)" -eq '0' ];then
                 sed -i '1i 直连规则(by 沉默の金),沉默の金,classical,chenmozhijin/OpenWrt-K/main/files/etc/openclash/rule_provider/,DirectRule-chenmozhijin.yaml' "/usr/share/openclash/res/rule_providers.list"
             fi
+            if [ "$(grep -c "^港澳台规则(by 沉默の金)" /usr/share/openclash/res/rule_providers.list)" -eq '0' ];then
+                sed -i '1i 港澳台规则(by 沉默の金),沉默の金,classical,chenmozhijin/OpenWrt-K/main/files/etc/openclash/rule_provider/,HKMOTWRule-chenmozhijin.yaml' "/usr/share/openclash/res/rule_providers.list"
+            fi
             rm -rf /etc/openclash/rule_provider/ProxyRule-chenmozhijin.yaml /etc/openclash/rule_provider/DirectRule-chenmozhijin.yaml
             mv -f ProxyRule-chenmozhijin.yaml /etc/openclash/rule_provider/ProxyRule-chenmozhijin.yaml
             mv -f DirectRule-chenmozhijin.yaml /etc/openclash/rule_provider/DirectRule-chenmozhijin.yaml
+            mv -f HKMOTWRule-chenmozhijin.yaml /etc/openclash/rule_provider/HKMOTWRule-chenmozhijin.yaml
             echo "重启openclash"
             /etc/init.d/openclash restart
         else
@@ -147,9 +153,13 @@ update_rule(){
             if [ "$(grep -c "^直连规则(by 沉默の金)" /usr/share/openclash/res/rule_providers.list)" -eq '0' ];then
                 sed -i '1i 直连规则(by 沉默の金),沉默の金,classical,chenmozhijin/OpenWrt-K/main/files/etc/openclash/rule_provider/,DirectRule-chenmozhijin.yaml' "/usr/share/openclash/res/rule_providers.list"
             fi
+            if [ "$(grep -c "^港澳台规则(by 沉默の金)" /usr/share/openclash/res/rule_providers.list)" -eq '0' ];then
+                sed -i '1i 港澳台规则(by 沉默の金),沉默の金,classical,chenmozhijin/OpenWrt-K/main/files/etc/openclash/rule_provider/,HKMOTWRule-chenmozhijin.yaml' "/usr/share/openclash/res/rule_providers.list"
+            fi
             rm -rf /etc/openclash/rule_provider/ProxyRule-chenmozhijin.yaml /etc/openclash/rule_provider/DirectRule-chenmozhijin.yaml
             mv -f ProxyRule-chenmozhijin.yaml /etc/openclash/rule_provider/ProxyRule-chenmozhijin.yaml
             mv -f DirectRule-chenmozhijin.yaml /etc/openclash/rule_provider/DirectRule-chenmozhijin.yaml
+            mv -f HKMOTWRule-chenmozhijin.yaml /etc/openclash/rule_provider/HKMOTWRule-chenmozhijin.yaml
         fi
         echo "更新openclash规则集完成"
     else

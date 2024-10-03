@@ -250,6 +250,9 @@ if [ "$( opkg list-installed 2>/dev/null| grep -c "^luci-app-openclash")" -ne '0
   if [ "$(grep -c "^直连规则(by 沉默の金)" /usr/share/openclash/res/rule_providers.list)" -eq '0' ];then
       sed -i '1i 直连规则(by 沉默の金),沉默の金,classical,chenmozhijin/OpenWrt-K/main/files/etc/openclash/rule_provider/,DirectRule-chenmozhijin.yaml' "/usr/share/openclash/res/rule_providers.list"
   fi
+  if [ "$(grep -c "^港澳台规则(by 沉默の金)" /usr/share/openclash/res/rule_providers.list)" -eq '0' ];then
+      sed -i '1i 港澳台规则(by 沉默の金),沉默の金,classical,chenmozhijin/OpenWrt-K/main/files/etc/openclash/rule_provider/,HKMOTWRule-chenmozhijin.yaml' "/usr/share/openclash/res/rule_providers.list"
+  fi
   if [ "$( opkg list-installed 2>/dev/null| grep -c "^luci-app-adguardhome")" -ne '0' ];then
     n=0
     while [ "$n" -lt $(uci show openclash|grep -c "^openclash.@dns_servers\[[0-9]\{1,10\}\]=dns_servers") ]; do

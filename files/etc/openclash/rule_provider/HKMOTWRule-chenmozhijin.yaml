@@ -1,0 +1,25 @@
+## Hong Kong, Macau and Taiwan Rule
+##-------------------------------------
+###Proxy
+##-------------------------------------
+payload:
+
+# bahamut
+- DOMAIN-SUFFIX,gamer.com.tw
+- DOMAIN-SUFFIX,bahamut.com.tw
+- DOMAIN-SUFFIX,bahamut.akamaized.net
+
+# cdn
+- DOMAIN-SUFFIX,hinet.net
+- DOMAIN-SUFFIX,fbcdn.net
+- DOMAIN-SUFFIX,gvt1.com
+- DOMAIN-SUFFIX,digicert.com
+- DOMAIN-SUFFIX,viblast.com
+
+# hanime1
+- DOMAIN-SUFFIX,hanime1.me
+
+# heaven burns red
+- DOMAIN,heaven-burns-red-assets.akamaized.net
+- DOMAIN-SUFFIX,wfs.games
+- DOMAIN,gl-payment.gree-apps.net

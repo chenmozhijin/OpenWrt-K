@@ -149,6 +149,3 @@ payload:
 
 # > ubisoft connect-china
   - DOMAIN,uplaypc-s-ubisoft.cdn.ubionline.com.cn
-
-# > hikarifield
-  - DOMAIN,store.hikarifield.co.jp
