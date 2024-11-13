@@ -286,15 +286,15 @@ def prepare_cfg(config: dict[str, Any],
         logger.info("%s添加libnftnl、firewall4、nftables补丁", cfg_name)
         pkg_infos = openwrt.get_packageinfos()
         latest_versions = parse_config(os.path.join(turboacc_dir, "version"), ("FIREWALL4_VERSION", "NFTABLES_VERSION", "LIBNFTNL_VERSION"))
-        if not ((libnftnl_ver := pkg_infos.get("libnftnl")) and os.path.join(turboacc_dir, f"libnftnl-{libnftnl_ver}")):
+        if not ((libnftnl_ver := pkg_infos.get("libnftnl", {}).get("version")) and os.path.isdir(os.path.join(turboacc_dir, f"libnftnl-{libnftnl_ver}"))):
+            logger.warning("%s未找到当前libnftnl版本%s，使用最新版本", cfg_name, libnftnl_ver)
             libnftnl_ver = latest_versions["LIBNFTNL_VERSION"]
-            logger.warning("%s未找到当前libnftnl版本，使用最新版本%s", cfg_name, libnftnl_ver)
-        if not ((firewall4_ver := pkg_infos.get("firewall4")) and os.path.join(turboacc_dir, f"firewall4-{firewall4_ver}")):
+        if not ((firewall4_ver := pkg_infos.get("firewall4", {}).get("version")) and os.path.isdir(os.path.join(turboacc_dir, f"firewall4-{firewall4_ver}"))):
+            logger.warning("%s未找到当前firewall4版本%s，使用最新版本", cfg_name, firewall4_ver)
             firewall4_ver = latest_versions["FIREWALL4_VERSION"]
-            logger.warning("%s未找到当前firewall4版本，使用最新版本%s", cfg_name, firewall4_ver)
-        if not ((nftables_ver := pkg_infos.get("nftables")) and os.path.join(turboacc_dir, f"nftables-{nftables_ver}")):
+        if not ((nftables_ver := pkg_infos.get("nftables", {}).get("version")) and os.path.isdir(os.path.join(turboacc_dir, f"nftables-{nftables_ver}"))):
+            logger.warning("%s未找到当前nftables版本%s，使用最新版本", cfg_name, nftables_ver)
             nftables_ver = latest_versions["NFTABLES_VERSION"]
-            logger.warning("%s未找到当前nftables版本，使用最新版本%s", cfg_name, nftables_ver)
         shutil.rmtree(os.path.join(openwrt.path, "package", "libs", "libnftnl"))
         shutil.copytree(os.path.join(turboacc_dir, f"libnftnl-{libnftnl_ver}"), os.path.join(openwrt.path, "package", "libs", "libnftnl"))
         shutil.rmtree(os.path.join(openwrt.path, "package", "network", "config", "firewall4"))
