@@ -290,9 +290,9 @@ def prepare_cfg(config: dict[str, Any],
                 match = re.search(pattern, content)
             return match.group(1) if match else None
 
-        firewall4_ver = get_version('./package/network/config/firewall4/Makefile', r'PKG_SOURCE_VERSION:=(.*)')
-        nftables_ver = get_version('./package/network/utils/nftables/Makefile', r'PKG_VERSION:=(.*)')
-        libnftnl_ver = get_version('./package/libs/libnftnl/Makefile', r'PKG_VERSION:=(.*)')
+        firewall4_ver = get_version(os.path.join(openwrt.path, "package", "network", "config", "firewall4", "Makefile"), r'PKG_SOURCE_VERSION:=(.*)')
+        nftables_ver = get_version(os.path.join(openwrt.path, "package", "network", "utils", "nftables", "Makefile"), r'PKG_VERSION:=(.*)')
+        libnftnl_ver = get_version(os.path.join(openwrt.path, "package", "libs", "libnftnl", "Makefile"), r'PKG_VERSION:=(.*)')
         latest_versions = parse_config(os.path.join(turboacc_dir, "version"), ("FIREWALL4_VERSION", "NFTABLES_VERSION", "LIBNFTNL_VERSION"))
         if not os.path.isdir(os.path.join(turboacc_dir, f"libnftnl-{libnftnl_ver}")):
             logger.warning("%s未找到当前libnftnl版本%s，使用最新版本", cfg_name, libnftnl_ver)
