@@ -284,15 +284,23 @@ def prepare_cfg(config: dict[str, Any],
             f.write("\nCONFIG_SHORTCUT_FE=y")
     if enable_fullcone:
         logger.info("%s添加libnftnl、firewall4、nftables补丁", cfg_name)
-        pkg_infos = openwrt.get_packageinfos()
+        def get_version(file_path: str, pattern: str) -> str | None:
+            with open(file_path, encoding='utf-8') as f:
+                content = f.read()
+                match = re.search(pattern, content)
+            return match.group(1) if match else None
+
+        firewall4_ver = get_version('./package/network/config/firewall4/Makefile', r'PKG_SOURCE_VERSION:=(.*)')
+        nftables_ver = get_version('./package/network/utils/nftables/Makefile', r'PKG_VERSION:=(.*)')
+        libnftnl_ver = get_version('./package/libs/libnftnl/Makefile', r'PKG_VERSION:=(.*)')
         latest_versions = parse_config(os.path.join(turboacc_dir, "version"), ("FIREWALL4_VERSION", "NFTABLES_VERSION", "LIBNFTNL_VERSION"))
-        if not ((libnftnl_ver := pkg_infos.get("libnftnl", {}).get("version")) and os.path.isdir(os.path.join(turboacc_dir, f"libnftnl-{libnftnl_ver}"))):
+        if not os.path.isdir(os.path.join(turboacc_dir, f"libnftnl-{libnftnl_ver}")):
             logger.warning("%s未找到当前libnftnl版本%s，使用最新版本", cfg_name, libnftnl_ver)
             libnftnl_ver = latest_versions["LIBNFTNL_VERSION"]
-        if not ((firewall4_ver := pkg_infos.get("firewall4", {}).get("version")) and os.path.isdir(os.path.join(turboacc_dir, f"firewall4-{firewall4_ver}"))):
+        if not os.path.isdir(os.path.join(turboacc_dir, f"firewall4-{firewall4_ver}")):
             logger.warning("%s未找到当前firewall4版本%s，使用最新版本", cfg_name, firewall4_ver)
             firewall4_ver = latest_versions["FIREWALL4_VERSION"]
-        if not ((nftables_ver := pkg_infos.get("nftables", {}).get("version")) and os.path.isdir(os.path.join(turboacc_dir, f"nftables-{nftables_ver}"))):
+        if not os.path.isdir(os.path.join(turboacc_dir, f"nftables-{nftables_ver}")):
             logger.warning("%s未找到当前nftables版本%s，使用最新版本", cfg_name, nftables_ver)
             nftables_ver = latest_versions["NFTABLES_VERSION"]
         shutil.rmtree(os.path.join(openwrt.path, "package", "libs", "libnftnl"))
