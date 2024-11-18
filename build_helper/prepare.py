@@ -427,7 +427,7 @@ def prepare_cfg(config: dict[str, Any],
             if "set system.@system[-1].hostname='OpenWrt'" in line:
                 f.write(line.replace("set system.@system[-1].hostname='OpenWrt'", "set system.@system[-1].hostname='OpenWrt-k'") + "\n")
             elif "set system.@system[-1].timezone='UTC'" in line:
-                f.write(line.replace("set system.@system.@system[-1].timezone='UTC'",
+                f.write(line.replace("set system.@system[-1].timezone='UTC'",
                                      f"set system.@system[-1].timezone='{config['openwrtext']['timezone']}'") +
                                      f"\n		set system.@system[-1].zonename='{config["openwrtext"]["zonename"]}'\n")
             else:
