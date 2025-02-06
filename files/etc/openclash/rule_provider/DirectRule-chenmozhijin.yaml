@@ -20,7 +20,8 @@ payload:
   - DOMAIN,cn.bing.com
 
 # > cdn
-  - DOMAIN-SUFFIX,akamaized.net
+  - DOMAIN,origin-a.akamaihd.net
+  - DOMAIN,blzddist1-a.akamaihd.net
   - DOMAIN-SUFFIX,alicdn.com
   - DOMAIN-SUFFIX,aliyuncs.com
 
@@ -143,6 +144,7 @@ payload:
   - DOMAIN,avatars.st.dl.eccdnx.com
   - DOMAIN,cdn.steamstatic.com.8686c.com
   - DOMAIN,broadcast.st.dl.eccdnx.com
+  - DOMAIN,steamcommunity-a.akamaihd.net
 
 # > epic-china
   - DOMAIN,epicgames-download1-1251447533.file.myqcloud.com
