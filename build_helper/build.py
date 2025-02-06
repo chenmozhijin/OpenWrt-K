@@ -76,21 +76,22 @@ def prepare(cfg: dict) -> None:
     elif context.job == "build-images-releases":
         ib_path = dl_artifact(f"Image_Builder-{cfg["name"]}", tmpdir.name)
         with zipfile.ZipFile(ib_path, "r") as zip_ref:
-            zip_ref.extract("openwrt-imagebuilder.tar.xz", tmpdir.name)
+            ext = "zst" if "openwrt-imagebuilder.tar.zst" in zip_ref.namelist() else "xz"
+            zip_ref.extract(f"openwrt-imagebuilder.tar.{ext}", tmpdir.name)
 
-        ib_path = os.path.join(tmpdir.name, "openwrt-imagebuilder.tar.zst")
+        ib_path = os.path.join(tmpdir.name, f"openwrt-imagebuilder.tar.{ext}")
 
-        if not os.path.exists(ib_path):
-            ib_path = os.path.join(tmpdir.name, "openwrt-imagebuilder.tar.xz")
-            with tarfile.open(os.path.join(tmpdir.name, "openwrt-imagebuilder.tar.xz"), "r:xz") as tar:
-                tar.extractall(paths.workdir)  # noqa: S202
-                shutil.move(os.path.join(paths.workdir, tar.getnames()[0]), os.path.join(paths.workdir, "ImageBuilder"))
-        else:
+        if ext == "zst":
             with open(ib_path, 'rb') as f:
                 dctx = zstd.ZstdDecompressor()
                 with dctx.stream_reader(f) as reader, tarfile.open(fileobj=reader, mode="r|*") as tar:
                     tar.extractall(paths.workdir)  # noqa: S202
                     shutil.move(os.path.join(paths.workdir, tar.getnames()[0]), os.path.join(paths.workdir, "ImageBuilder"))
+        else:
+            with tarfile.open(os.path.join(tmpdir.name, "openwrt-imagebuilder.tar.xz"), "r:xz") as tar:
+                tar.extractall(paths.workdir)  # noqa: S202
+                shutil.move(os.path.join(paths.workdir, tar.getnames()[0]), os.path.join(paths.workdir, "ImageBuilder"))
+
         ib = ImageBuilder(os.path.join(paths.workdir, "ImageBuilder"))
 
         pkgs_path = dl_artifact(f"packages-{cfg['name']}", tmpdir.name)
