@@ -37,9 +37,7 @@
 1. LuCI插件：  
   [luci-app-adguardhome](https://github.com/chenmozhijin/luci-app-adguardhome) :AdGuardHome广告屏蔽工具的luci设置界面  
   [luci-app-argon-config](https://github.com/jerrykuku/luci-app-argon-config):Argon 主题设置  
-  luci-app-aria2：aria2下载器  
   luci-app-cifs-mount：SMB/CIFS 网络挂载共享客户端  
-  luci-app-ddns：动态 DNS  
   [luci-app-diskman](https://github.com/lisaac/luci-app-diskman)：DiskMan 磁盘管理  
   luci-app-fileassistant：文件助手  
   luci-app-firewall：防火墙  
@@ -50,7 +48,6 @@
   [luci-app-openclash](https://github.com/vernesong/OpenClash):可运行在 OpenWrt 上的 Clash 客户端  
   [luci-app-passwall](https://github.com/xiaorouji/openwrt-passwall)：passwall  
   [luci-app-passwall2](https://github.com/xiaorouji/openwrt-passwall2)：passwall2  
-  luci-app-rclone：Rclone命令行网盘工具设置界面  
   luci-app-samba4：samba网络共享  
   [luci-app-smartdns](https://github.com/pymumu/luci-app-smartdns)：SmartDNS 服务器  
   [luci-app-socat](https://github.com/chenmozhijin/luci-app-socat)：Socat网络工具  
@@ -60,7 +57,6 @@
   luci-app-usb-printer：USB 打印服务器   
   luci-app-webadmin：Web 管理页面设置  
   [luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush)：微信推送  
-  luci-app-wireguard：WireGuard 状态  
   luci-app-wol：网络唤醒  
   luci-app-zerotier：ZeroTier虚拟局域网
 
