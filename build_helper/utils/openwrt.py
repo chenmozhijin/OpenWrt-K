@@ -189,7 +189,7 @@ class OpenWrt(OpenWrtBase):
         return True
 
     def fix_problems(self) -> None:
-        if self.tag_branch not in ("main", "master"):
+        if self.tag_branch.startswith("v") and self.tag_branch[1:3].isdigit() and int(self.tag_branch[1:3]) < 24:
             #https://github.com/openwrt/openwrt/commit/ecc53240945c95bc77663b79ccae6e2bd046c9c8
             patch = request_get("https://github.com/openwrt/openwrt/commit/ecc53240945c95bc77663b79ccae6e2bd046c9c8.patch")
             if patch:

@@ -6,6 +6,7 @@ import shutil
 import tarfile
 import zipfile
 
+import zstandard as zstd
 from actions_toolkit import core
 from actions_toolkit.github import Context
 
@@ -75,10 +76,22 @@ def prepare(cfg: dict) -> None:
     elif context.job == "build-images-releases":
         ib_path = dl_artifact(f"Image_Builder-{cfg["name"]}", tmpdir.name)
         with zipfile.ZipFile(ib_path, "r") as zip_ref:
-            zip_ref.extract("openwrt-imagebuilder.tar.xz", tmpdir.name)
-        with tarfile.open(os.path.join(tmpdir.name, "openwrt-imagebuilder.tar.xz"), "r:xz") as tar:
-            tar.extractall(paths.workdir)  # noqa: S202
-            shutil.move(os.path.join(paths.workdir, tar.getnames()[0]), os.path.join(paths.workdir, "ImageBuilder"))
+            ext = "zst" if "openwrt-imagebuilder.tar.zst" in zip_ref.namelist() else "xz"
+            zip_ref.extract(f"openwrt-imagebuilder.tar.{ext}", tmpdir.name)
+
+        ib_path = os.path.join(tmpdir.name, f"openwrt-imagebuilder.tar.{ext}")
+
+        if ext == "zst":
+            with open(ib_path, 'rb') as f:
+                dctx = zstd.ZstdDecompressor()
+                with dctx.stream_reader(f) as reader, tarfile.open(fileobj=reader, mode="r|*") as tar:
+                    tar.extractall(paths.workdir)  # noqa: S202
+                    shutil.move(os.path.join(paths.workdir, tar.getnames()[0]), os.path.join(paths.workdir, "ImageBuilder"))
+        else:
+            with tarfile.open(os.path.join(tmpdir.name, "openwrt-imagebuilder.tar.xz"), "r:xz") as tar:
+                tar.extractall(paths.workdir)  # noqa: S202
+                shutil.move(os.path.join(paths.workdir, tar.getnames()[0]), os.path.join(paths.workdir, "ImageBuilder"))
+
         ib = ImageBuilder(os.path.join(paths.workdir, "ImageBuilder"))
 
         pkgs_path = dl_artifact(f"packages-{cfg['name']}", tmpdir.name)
@@ -230,9 +243,14 @@ def build_image_builder(cfg: dict) -> None:
     if target is None or subtarget is None:
         msg = "无法获取target信息"
         raise RuntimeError(msg)
-    bl_path = os.path.join(openwrt.path, "bin", "targets", target, subtarget, f"openwrt-imagebuilder-{target}-{subtarget}.Linux-x86_64.tar.xz")
-    shutil.move(bl_path, os.path.join(paths.uploads, "openwrt-imagebuilder.tar.xz"))
-    bl_path = os.path.join(paths.uploads, "openwrt-imagebuilder.tar.xz")
+
+    bl_path = os.path.join(openwrt.path, "bin", "targets", target, subtarget, f"openwrt-imagebuilder-{target}-{subtarget}.Linux-x86_64.tar.zst")
+    ext = "zst"
+    if not os.path.exists(bl_path):
+        bl_path = os.path.join(openwrt.path, "bin", "targets", target, subtarget, f"openwrt-imagebuilder-{target}-{subtarget}.Linux-x86_64.tar.xz")
+        ext = "xz"
+    shutil.move(bl_path, os.path.join(paths.uploads, f"openwrt-imagebuilder.tar.{ext}"))
+    bl_path = os.path.join(paths.uploads, f"openwrt-imagebuilder.tar.{ext}")
     uploader.add(f"Image_Builder-{cfg['name']}", bl_path, retention_days=1, compression_level=0)
 
     logger.info("删除旧缓存...")

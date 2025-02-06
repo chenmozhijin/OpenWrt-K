@@ -10,9 +10,8 @@
 ## 目录
 
 [README](https://github.com/chenmozhijin/OpenWrt-K#openwrt-k):
-
-1. [固件介绍](https://github.com/chenmozhijin/OpenWrt-K#%E5%9B%BA%E4%BB%B6%E4%BB%8B%E7%BB%8D)
-2. [更新日志](https://github.com/chenmozhijin/OpenWrt-K#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97)  
+1. [更新日志](https://github.com/chenmozhijin/OpenWrt-K#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97) 
+2. [固件介绍](https://github.com/chenmozhijin/OpenWrt-K#%E5%9B%BA%E4%BB%B6%E4%BB%8B%E7%BB%8D)
   
 [Wiki页面](https://github.com/chenmozhijin/OpenWrt-K/wiki):
 
@@ -20,6 +19,19 @@
 2. [仓库基本介绍](https://github.com/chenmozhijin/OpenWrt-K/wiki/%E4%BB%93%E5%BA%93%E5%9F%BA%E6%9C%AC%E4%BB%8B%E7%BB%8D)
 3. [定制编译OpenWrt固件](https://github.com/chenmozhijin/OpenWrt-K/wiki/%E5%AE%9A%E5%88%B6%E7%BC%96%E8%AF%91-OpenWrt-%E5%9B%BA%E4%BB%B6)
 4. [常见问题](https://github.com/chenmozhijin/OpenWrt-K/wiki/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
+
+## 更新日志
+[2025/2/7]升级openwrt到v24.10.0,增减部分软件包
+<details><summary>增减列表</summary>
+
+1. 删除:passwall、passwall2、luci-app-rclone、luci-app-ddns、luci-app-aria2(你可以通过修改编译配置把他们加回来)
+2. 添加:luci-app-vlmcsd、luci-app-sqm、luci-app-qbittorrent
+</details>
+<details><summary>完整更新日志</summary>
+
+[2024/9/26] 使用python重构了编译工作流,提高了可维护性, 优化了编译流程,减少资源占用  
+[2023/7/27] 添加多配置编译支持,移动README部分内容到wiki
+</details>
 
 ## 固件介绍
 
@@ -37,9 +49,7 @@
 1. LuCI插件：  
   [luci-app-adguardhome](https://github.com/chenmozhijin/luci-app-adguardhome) :AdGuardHome广告屏蔽工具的luci设置界面  
   [luci-app-argon-config](https://github.com/jerrykuku/luci-app-argon-config):Argon 主题设置  
-  luci-app-aria2：aria2下载器  
   luci-app-cifs-mount：SMB/CIFS 网络挂载共享客户端  
-  luci-app-ddns：动态 DNS  
   [luci-app-diskman](https://github.com/lisaac/luci-app-diskman)：DiskMan 磁盘管理  
   luci-app-fileassistant：文件助手  
   luci-app-firewall：防火墙  
@@ -48,9 +58,6 @@
   luci-app-nlbwmon：网络带宽监视器  
   luci-app-opkg：软件包  
   [luci-app-openclash](https://github.com/vernesong/OpenClash):可运行在 OpenWrt 上的 Clash 客户端  
-  [luci-app-passwall](https://github.com/xiaorouji/openwrt-passwall)：passwall  
-  [luci-app-passwall2](https://github.com/xiaorouji/openwrt-passwall2)：passwall2  
-  luci-app-rclone：Rclone命令行网盘工具设置界面  
   luci-app-samba4：samba网络共享  
   [luci-app-smartdns](https://github.com/pymumu/luci-app-smartdns)：SmartDNS 服务器  
   [luci-app-socat](https://github.com/chenmozhijin/luci-app-socat)：Socat网络工具  
@@ -60,9 +67,11 @@
   luci-app-usb-printer：USB 打印服务器   
   luci-app-webadmin：Web 管理页面设置  
   [luci-app-wechatpush](https://github.com/tty228/luci-app-wechatpush)：微信推送  
-  luci-app-wireguard：WireGuard 状态  
   luci-app-wol：网络唤醒  
   luci-app-zerotier：ZeroTier虚拟局域网
+  luci-app-qbittorrent：qBittorrent-Enhanced-Edition的luci设置界面
+  luci-app-sqm：Smart Queue Management (SQM) QoS
+  luci-app-vlmcsd：VLMCSd KMS 激活工具
 
 1. 其他部分软件包：  
   ethtool-full：网卡工具用于查询及设置网卡参数  
@@ -155,9 +164,6 @@
 #### ZeroTier虚拟局域网
 
 ![概览](https://raw.githubusercontent.com/chenmozhijin/OpenWrt-K/main/img/10.webp)
-## 更新日志
-
-见[CHANGELOG](CHANGELOG.md)
 
 ## 感谢
 

@@ -3,3 +3,4 @@ pygit2
 requests
 pySmartDL
 pyyaml
+zstandard
