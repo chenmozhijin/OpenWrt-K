@@ -6,12 +6,13 @@ from datetime import datetime, timedelta, timezone
 
 import github
 import github.GitRelease
+import httpx
 import pygit2
-import requests
 from actions_toolkit.github import Context, get_octokit
 
+from .downloader import dl2, wait_dl_tasks
 from .logger import logger
-from .network import gh_api_request, multi_thread_download
+from .network import gh_api_request
 from .paths import paths
 
 context = Context()
@@ -51,7 +52,8 @@ def dl_artifact(name: str, path: str) -> str:
                 "X-GitHub-Api-Version": "2022-11-28",
                 "Authorization": f'Bearer {token}',
             }
-    multi_thread_download(dl_url, os.path.join(path, name + ".zip"), headers=headers)
+    task = dl2(dl_url, os.path.join(path, name + ".zip"), headers=headers)
+    wait_dl_tasks([task])
     return os.path.join(path, name + ".zip")
 
 def del_cache(key_prefix: str) -> None:
@@ -65,7 +67,7 @@ def del_cache(key_prefix: str) -> None:
             cache: dict
             if cache['key'].startswith(key_prefix):
                 logger.info(f'Deleting cache {cache["key"]}')
-                requests.delete(f"https://api.github.com/repos/{user_repo}/actions/caches/{cache['id']}", headers=headers, timeout=10)
+                httpx.delete(f"https://api.github.com/repos/{user_repo}/actions/caches/{cache['id']}", headers=headers, timeout=10)
     else:
         logger.error('Failed to get caches list')
 
@@ -114,7 +116,7 @@ def new_release(cfg: dict, assets: list[str], body: str) -> None:
             if release.tag_name.endswith(tag_suffix) and release.tag_name != tag_name:
                 logger.info("删除旧版本: %s", release.tag_name)
                 release.delete_release()
-                requests.delete(f"https://api.github.com/repos/{user_repo}/git/refs/tags/{release.tag_name}", headers=headers, timeout=10)
+                httpx.delete(f"https://api.github.com/repos/{user_repo}/git/refs/tags/{release.tag_name}", headers=headers, timeout=10)
 
     except Exception:
         logger.exception("删除旧版本失败")

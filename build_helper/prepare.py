@@ -8,22 +8,19 @@ import shutil
 import tarfile
 from datetime import datetime, timedelta, timezone
 from multiprocessing.pool import Pool
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pygit2
 
+from .utils.downloader import DLTask, dl2, wait_dl_tasks
 from .utils.error import ConfigError, ConfigParseError
 from .utils.logger import logger
-from .utils.network import dl2, get_gh_repo_last_releases, request_get, wait_dl_tasks
+from .utils.network import get_gh_repo_last_releases, request_get
 from .utils.openwrt import OpenWrt
 from .utils.paths import paths
 from .utils.repo import compiler, get_release_suffix, user_repo
 from .utils.upload import uploader
 from .utils.utils import parse_config
-
-if TYPE_CHECKING:
-    from pySmartDL import SmartDL
-
 
 
 def parse_configs() -> dict[str, dict[str, Any]]:
@@ -185,7 +182,7 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
                "1677875739.txt": "https://raw.githubusercontent.com/JamesDamp/AdGuard-Home---Personal-Whitelist/master/AdGuardHome-Whitelist.txt",
                #"1677875740.txt": "https://raw.githubusercontent.com/scarletbane/AdGuard-Home-Whitelist/main/whitelist.txt"
     }
-    dl_tasks: list[SmartDL] = []
+    dl_tasks: list[DLTask] = []
     for name, url in filters.items():
         dl_tasks.append(dl2(url, os.path.join(adg_filters_path, name)))
 
@@ -346,7 +343,7 @@ def prepare_cfg(config: dict[str, Any],
             adg_arch, clash_arch = None, None
 
     tmpdir = paths.get_tmpdir()
-    dl_tasks: list[SmartDL] = []
+    dl_tasks: list[DLTask] = []
     if adg_arch and openwrt.get_package_config("luci-app-adguardhome") == "y":
         logger.info("%s下载架构为%s的AdGuardHome核心", cfg_name, adg_arch)
         releases = get_gh_repo_last_releases("AdguardTeam/AdGuardHome")
