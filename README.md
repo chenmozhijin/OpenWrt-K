@@ -21,7 +21,7 @@
 4. [常见问题](https://github.com/chenmozhijin/OpenWrt-K/wiki/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
 
 ## 更新日志
-[2025/2/7]升级openwrt到v24.10.0,增减部分软件包
+[2025/2/7]升级openwrt到v24.10.0,修复AdGuardHome规则下载错误导致其无法启动的问题,增减部分软件包
 <details><summary>增减列表</summary>
 
 1. 删除:passwall、passwall2、luci-app-rclone、luci-app-ddns、luci-app-aria2(你可以通过修改编译配置把他们加回来)
