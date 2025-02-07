@@ -8,6 +8,7 @@ payload:
   - DOMAIN-SUFFIX,360kuai.com
   - DOMAIN-SUFFIX,360safe.com
   - DOMAIN-SUFFIX,360.cn
+  - DOMAIN-SUFFIX,so.com
 
 # > apple
   - DOMAIN-SUFFIX,apple.com
@@ -46,6 +47,7 @@ payload:
   - DOMAIN-SUFFIX,bdstatic.com
   - DOMAIN-SUFFIX,bcebos.com
   - DOMAIN-SUFFIX,bdimg.com
+  - DOMAIN-SUFFIX,shifen.com
 
 # > ali
   - DOMAIN-SUFFIX,tmall.com
@@ -151,3 +153,6 @@ payload:
 
 # > ubisoft connect-china
   - DOMAIN,uplaypc-s-ubisoft.cdn.ubionline.com.cn
+
+# > deepseek
+  - DOMAIN-SUFFIX,deepseek.com
