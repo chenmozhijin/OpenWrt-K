@@ -125,6 +125,7 @@ payload:
   - DOMAIN,mirrors.shanghaitech.edu.cn
   - DOMAIN,mirrors.uestc.cn
   - DOMAIN,mirrors.wsyu.edu.cn
+  - DOMAIN-SUFFIX,hf-mirror.com
 
 # > steam-china
   - DOMAIN,ipv6check-http.steamserver.net
