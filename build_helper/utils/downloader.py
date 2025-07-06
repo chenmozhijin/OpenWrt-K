@@ -66,7 +66,7 @@ class DLTask:
                 else:
                     self._download_whole(client)
         except Exception as e:
-            self.error = e
+            self.error = RuntimeError(f"Download failed for {self.url} ({self.path}): {e}")
         finally:
             self.completed = True
 
