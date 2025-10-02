@@ -178,10 +178,6 @@ payload:
 
 # > github
   - DOMAIN-SUFFIX,githubusercontent.com 
-  - DOMAIN,github-releases.githubusercontent.com 
-  - DOMAIN,actions.githubusercontent.com
-  - DOMAIN,pipelines.actions.githubusercontent.com
-  - DOMAIN,objects.githubusercontent.com 
   - DOMAIN,github-production-release-asset-2e65be.s3.amazonaws.com 
   - DOMAIN,github-production-user-asset-6210df.s3.amazonaws.com 
   - DOMAIN,github-cloud.s3.amazonaws.com 
@@ -190,16 +186,7 @@ payload:
   - DOMAIN,codeload.github.com 
   - DOMAIN,github.githubassets.com 
   - DOMAIN,assets-cdn.github.com 
-  - DOMAIN,raw.githubusercontent.com 
   - DOMAIN,raw.github.com 
-  - DOMAIN,camo.githubusercontent.com 
-  - DOMAIN,cloud.githubusercontent.com 
-  - DOMAIN,avatars.githubusercontent.com 
-  - DOMAIN,avatars0.githubusercontent.com 
-  - DOMAIN,avatars1.githubusercontent.com 
-  - DOMAIN,avatars2.githubusercontent.com 
-  - DOMAIN,avatars3.githubusercontent.com 
-  - DOMAIN,user-images.githubusercontent.com 
   - DOMAIN,github.blog 
   - DOMAIN-SUFFIX,github.com 
   - DOMAIN,api.github.com 

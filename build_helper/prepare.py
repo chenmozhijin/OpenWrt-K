@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024 沉默の金 <cmzj@cmzj.org>
+# SPDX-FileCopyrightText: Copyright (c) 2024-2025 沉默の金 <cmzj@cmzj.org>
 # SPDX-License-Identifier: MIT
 import gzip
 import json
@@ -8,22 +8,19 @@ import shutil
 import tarfile
 from datetime import datetime, timedelta, timezone
 from multiprocessing.pool import Pool
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pygit2
 
+from .utils.downloader import DLTask, dl2, wait_dl_tasks
 from .utils.error import ConfigError, ConfigParseError
 from .utils.logger import logger
-from .utils.network import dl2, get_gh_repo_last_releases, request_get, wait_dl_tasks
+from .utils.network import get_gh_repo_last_releases, request_get
 from .utils.openwrt import OpenWrt
 from .utils.paths import paths
 from .utils.repo import compiler, get_release_suffix, user_repo
 from .utils.upload import uploader
 from .utils.utils import parse_config
-
-if TYPE_CHECKING:
-    from pySmartDL import SmartDL
-
 
 
 def parse_configs() -> dict[str, dict[str, Any]]:
@@ -185,7 +182,7 @@ def prepare(configs: dict[str, dict[str, Any]]) -> None:
                "1677875739.txt": "https://raw.githubusercontent.com/JamesDamp/AdGuard-Home---Personal-Whitelist/master/AdGuardHome-Whitelist.txt",
                #"1677875740.txt": "https://raw.githubusercontent.com/scarletbane/AdGuard-Home-Whitelist/main/whitelist.txt"
     }
-    dl_tasks: list[SmartDL] = []
+    dl_tasks: list[DLTask] = []
     for name, url in filters.items():
         dl_tasks.append(dl2(url, os.path.join(adg_filters_path, name)))
 
@@ -346,7 +343,7 @@ def prepare_cfg(config: dict[str, Any],
             adg_arch, clash_arch = None, None
 
     tmpdir = paths.get_tmpdir()
-    dl_tasks: list[SmartDL] = []
+    dl_tasks: list[DLTask] = []
     if adg_arch and openwrt.get_package_config("luci-app-adguardhome") == "y":
         logger.info("%s下载架构为%s的AdGuardHome核心", cfg_name, adg_arch)
         releases = get_gh_repo_last_releases("AdguardTeam/AdGuardHome")
@@ -360,15 +357,10 @@ def prepare_cfg(config: dict[str, Any],
 
     if clash_arch and openwrt.get_package_config("luci-app-openclash") == "y":
         logger.info("%s下载架构为%s的OpenClash核心", cfg_name, clash_arch)
-        latest_versions = request_get("https://raw.githubusercontent.com/vernesong/OpenClash/core/master/core_version")
-        tun_v = latest_versions.splitlines()[1] if latest_versions else None
-        if tun_v:
-            dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/premium/clash-{clash_arch}-{tun_v}.gz",
-                                os.path.join(tmpdir.name, "clash_tun.gz")))
-        dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-{clash_arch}.tar.gz",
+        dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/refs/heads/core/dev/meta/clash-{clash_arch}.tar.gz",
                                 os.path.join(tmpdir.name, "clash_meta.tar.gz")))
-        dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/core/master/dev/clash-{clash_arch}.tar.gz",
-                                os.path.join(tmpdir.name, "clash.tar.gz")))
+        #dl_tasks.append(dl2(f"https://raw.githubusercontent.com/vernesong/OpenClash/refs/heads/core/dev/smart/clash-{clash_arch}.tar.gz",
+        #                        os.path.join(tmpdir.name, "clash.smart.tar.gz")))
 
     wait_dl_tasks(dl_tasks)
     # 解压
@@ -382,10 +374,6 @@ def prepare_cfg(config: dict[str, Any],
     clash_core_path = os.path.join(files_path, "etc", "openclash", "core")
     if not os.path.isdir(clash_core_path):
         os.makedirs(clash_core_path)
-    if os.path.isfile(os.path.join(tmpdir.name, "clash_tun.gz")):
-        with gzip.open(os.path.join(tmpdir.name, "clash_tun.gz"), 'rb') as f_in, open(os.path.join(clash_core_path, "clash_tun"), 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
-        os.chmod(os.path.join(clash_core_path, "clash_tun"), 0o755)  # noqa: S103
 
     if os.path.isfile(os.path.join(tmpdir.name, "clash_meta.tar.gz")):
         with tarfile.open(os.path.join(tmpdir.name, "clash_meta.tar.gz"), "r:gz") as tar:
@@ -394,12 +382,12 @@ def prepare_cfg(config: dict[str, Any],
                     f.write(file.read())
                 os.chmod(os.path.join(clash_core_path, "clash_meta"), 0o755)  # noqa: S103
 
-    if os.path.isfile(os.path.join(tmpdir.name, "clash.tar.gz")):
-        with tarfile.open(os.path.join(tmpdir.name, "clash.tar.gz"), "r:gz") as tar:
-            if file := tar.extractfile("clash"):
-                with open(os.path.join(clash_core_path, "clash"), "wb") as f:
-                    f.write(file.read())
-                os.chmod(os.path.join(clash_core_path, "clash"), 0o755)  # noqa: S103
+    #if os.path.isfile(os.path.join(tmpdir.name, "clash.smart.tar.gz")):
+    #    with tarfile.open(os.path.join(tmpdir.name, "clash.smart.tar.gz"), "r:gz") as tar:
+    #        if file := tar.extractfile("clash"):
+    #            with open(os.path.join(clash_core_path, "clash"), "wb") as f:
+    #                f.write(file.read())
+    #            os.chmod(os.path.join(clash_core_path, "clash"), 0o755)  # noqa: S103
 
     tmpdir.cleanup()
 

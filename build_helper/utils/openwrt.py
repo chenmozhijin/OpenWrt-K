@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024 沉默の金 <cmzj@cmzj.org>
+# SPDX-FileCopyrightText: Copyright (c) 2024-2025 沉默の金 <cmzj@cmzj.org>
 # SPDX-License-Identifier: MIT
 import os
 import re
@@ -189,7 +189,7 @@ class OpenWrt(OpenWrtBase):
         return True
 
     def fix_problems(self) -> None:
-        if self.tag_branch not in ("main", "master"):
+        if self.tag_branch.startswith("v") and self.tag_branch[1:3].isdigit() and int(self.tag_branch[1:3]) < 24:
             #https://github.com/openwrt/openwrt/commit/ecc53240945c95bc77663b79ccae6e2bd046c9c8
             patch = request_get("https://github.com/openwrt/openwrt/commit/ecc53240945c95bc77663b79ccae6e2bd046c9c8.patch")
             if patch:
@@ -209,6 +209,12 @@ class OpenWrt(OpenWrtBase):
         with open(os.path.join(self.path, 'package', "kernel", "mac80211", "broadcom.mk"), encoding='utf-8') as f:
             content =  f.read().replace(r'	b43-fwsquash.py', r'	$(TOPDIR)/tools/b43-tools/files/b43-fwsquash.py')
         with open(os.path.join(self.path, 'package', "kernel", "mac80211", "broadcom.mk"), 'w', encoding='utf-8') as f:
+            f.write(content)
+        # 设置llvm.download-ci-llvm为false
+        logger.info("设置llvm.download-ci-llvm为false")
+        with open(os.path.join(self.path, "feeds", "packages", "lang", "rust", "Makefile"), encoding='utf-8') as f:
+            content =  f.read().replace(r'	--set=llvm.download-ci-llvm=true ', r'	--set=llvm.download-ci-llvm=false ')
+        with open(os.path.join(self.path, "feeds", "packages", "lang", "rust", "Makefile"), 'w', encoding='utf-8') as f:
             f.write(content)
 
         if self.tag_branch == "v23.05.2":
