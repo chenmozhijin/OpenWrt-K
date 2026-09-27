@@ -253,6 +253,11 @@ def prepare_cfg(config: dict[str, Any],
                     os.path.join(openwrt.path, "feeds", "packages", "net", "smartdns"), symlinks=True)
     disable_smartdns_hash_check(os.path.join(openwrt.path, "feeds", "packages", "net", "smartdns", "Makefile"))
 
+    # tailscale与luci-app-tailscale-community由拓展软件包提供(跟随上游最新版本), 先移除feed中被固定的同名包以避免重复定义
+    logger.info("%s移除feed中被固定的tailscale与luci-app-tailscale-community...", cfg_name)
+    shutil.rmtree(os.path.join(openwrt.path, "feeds", "packages", "net", "tailscale"), ignore_errors=True)
+    shutil.rmtree(os.path.join(openwrt.path, "feeds", "luci", "applications", "luci-app-tailscale-community"), ignore_errors=True)
+
     logger.info("%s处理软件包...", cfg_name)
     for pkg_name, pkg in config["extpackages"].items():
         path = os.path.join(openwrt.path, "package", "cmzj_packages", pkg_name)
